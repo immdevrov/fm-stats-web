@@ -1,7 +1,17 @@
+import { Button, HStack } from "@chakra-ui/react"
 import { useState } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
+
+const Demo = () => {
+  return (
+    <HStack>
+      <Button>Click me</Button>
+      <Button>Click me</Button>
+    </HStack>
+  )
+}
 
 function App() {
   const [count, setCount] = useState(0)
@@ -28,6 +38,7 @@ function App() {
       <p className="read-the-docs">
         Click on the Vite and React logos to learn more
       </p>
+      <div><Demo /></div>
     </>
   )
 }
