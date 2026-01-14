@@ -1,46 +1,43 @@
-import { Button, HStack } from "@chakra-ui/react"
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-
-const Demo = () => {
-  return (
-    <HStack>
-      <Button>Click me</Button>
-      <Button>Click me</Button>
-    </HStack>
-  )
-}
+import { Container, Heading, VStack, Box } from "@chakra-ui/react";
+import { FileInput } from "./components/ui/file-input";
+import { extractPlainTextTable, parseRtfTable, transformPlayerStats } from "./parser/rtf-parser";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const handleFileSelect = async (file: File) => {
+    try {
+      const text = await file.text();
+      const tableLines = extractPlainTextTable(text);
+
+      if (tableLines.length === 0) {
+        console.error("Could not extract structured table data from the file.");
+        return;
+      }
+
+      const rawRecords = parseRtfTable(tableLines);
+      const players = transformPlayerStats(rawRecords);
+
+      console.log("Parsed players:", players);
+    } catch (error) {
+      console.error("Error processing file:", error);
+    }
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React1</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-      <div><Demo /></div>
-    </>
-  )
+    <Box minH="100vh" bg="bg.canvas" color="fg.default">
+      <Container maxW="container.md" py={8}>
+        <VStack gap={8} align="stretch">
+          <Heading 
+            size="2xl" 
+            colorPalette="glaucous"
+            color="fg.emphasized"
+          >
+            FM Stats Web
+          </Heading>
+          <FileInput onFileSelect={handleFileSelect} accept=".txt,.rtf" />
+        </VStack>
+      </Container>
+    </Box>
+  );
 }
 
-export default App
+export default App;
