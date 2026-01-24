@@ -1,0 +1,35 @@
+---
+description: Project context and purpose for Fm-Stats application
+alwaysApply: true
+---
+
+# Fm-Stats Application Context
+
+## Overview
+
+**Fm-Stats** is a web application designed to analyze game data from Football Manager 24, with a primary focus on comparing player statistics to help make informed transfer decisions.
+
+## Purpose
+
+The application helps users:
+- **Compare players** to determine who is better
+- **Evaluate player value** to make smart transfer decisions
+- **Identify transfer targets** (who to bring in)
+- **Identify players to sell** (who to transfer out)
+
+## How It Works
+
+1. **Data Import**: Users import a text file containing player statistics exported from Football Manager 24
+2. **Data Processing**: The application parses the imported file (currently supports RTF format with pipe-delimited tables)
+3. **Analysis Features**: Once imported, users can access:
+   - Different screens of statistics
+   - Player comparison mode
+   - Search functionality
+   - Various filtering and analysis tools
+
+## Technical Context
+
+- The application parses RTF files containing player data tables
+- Player statistics include: attributes, performance metrics, contract details, positional data, and various per-90-minute statistics
+- The app supports role-based filtering (goalkeeper, striker, winger, midfielder, defender positions)
+- Data is transformed into structured Player objects for analysis and comparison
