@@ -4,9 +4,10 @@ import { useRef } from "react";
 interface FileInputProps {
   onFileSelect: (file: File) => void;
   accept?: string;
+  disabled?: boolean;
 }
 
-export function FileInput({ onFileSelect, accept }: FileInputProps) {
+export function FileInput({ onFileSelect, accept, disabled }: FileInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -38,6 +39,9 @@ export function FileInput({ onFileSelect, accept }: FileInputProps) {
         color="softBlush.50"
         _hover={{ bg: "glaucous.600" }}
         _active={{ bg: "glaucous.700" }}
+        disabled={disabled}
+        cursor={disabled ? "not-allowed" : "pointer"}
+        opacity={disabled ? 0.6 : 1}
       >
         Select File
       </Button>
