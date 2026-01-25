@@ -8,7 +8,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { path: "/import", label: "Import" },
-  // Add more navigation items here as you create new views
+  { path: "/leagues", label: "Leagues" },
 ];
 
 export function Navigation() {
