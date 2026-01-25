@@ -4,14 +4,14 @@ import type { Player } from "../types";
 
 // Helper to process cell values (e.g., convert "N/A" or "-" to null)
 const createStringProcessor = (str: string) => {
-  return <T extends (s: string) => any>(
+  return <T extends (s: string) => unknown>(
     s: string | null | undefined,
     processFn: T
   ): ReturnType<T> | null => {
     if (s === null || s === undefined || s.trim() === str) {
       return null;
     }
-    return processFn(s);
+    return processFn(s) as ReturnType<T>;
   };
 };
 
@@ -46,116 +46,67 @@ const parseWeight = (record: Record<string, string>): number | null => {
 };
 
 /**
- * Extracts the plain-text table lines from the RTF content.
- * Assumes the structured, pipe-delimited data starts after the RTF header.
- * @param rtfContent The entire content of the RTF file.
- * @returns An array of strings, where each string is a table row (header, separator, or data).
+ * Parses an HTML table into an array of records.
+ * Uses the browser's native DOMParser.
+ * @param html The HTML content containing a table.
+ * @returns An array of objects where keys are headers and values are cell strings.
  */
-export function extractPlainTextTable(rtfContent: string): string[] {
-  const lines = rtfContent.split("\n");
-  const tableLines: string[] = [];
-  let isTable = false;
+export function parseHtmlTable(html: string): Record<string, string>[] {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
+  const table = doc.querySelector("table");
 
-  for (let i = 0; i < lines.length; i++) {
-    const trimmedLine = lines[i].trim();
-
-    if (trimmedLine.includes("UID") && trimmedLine.includes("|")) {
-      isTable = true;
-    }
-
-    if (isTable && trimmedLine.startsWith("|")) {
-      const cleanLine = trimmedLine.replace(/\\(par|tab|b|i)\s*0?\}?\s*/g, "").trim();
-      
-      if (cleanLine.startsWith("|")) {
-        if (cleanLine === "|" && i + 1 < lines.length) {
-          const nextLine = lines[i + 1].trim();
-          if (/^-+/.test(nextLine)) {
-            continue;
-          }
-        }
-        
-        const isSeparator = /^\|[\s-]*$/.test(cleanLine) || cleanLine.startsWith("|-") || cleanLine.startsWith("| -")
-        if (!isSeparator) {
-          tableLines.push(cleanLine);
-        }
-      }
-    }
-  }
-
-  return tableLines;
-}
-
-/**
- * Parses the array of pipe-delimited table lines into an array of raw string records.
- * It uses the pipe positions in the header row for accurate column slicing.
- * @param tableLines An array of clean table rows (header + data).
- * @returns An array of objects where keys are headers and values are raw cell strings.
- */
-export function parseRtfTable(tableLines: string[]): Record<string, string>[] {
-  if (tableLines.length < 2) {
-    // Need at least header and one data row
-    console.error("No valid table data found.");
+  if (!table) {
+    console.error("No table found in HTML content.");
     return [];
   }
 
-  const headerLine = tableLines[0];
-  const dataLines = tableLines.slice(1);
+  // Extract headers from <th> elements
+  const headerCells = table.querySelectorAll("th");
+  const headers: string[] = [];
+  headerCells.forEach((th) => {
+    headers.push(th.textContent?.trim() || "");
+  });
 
-  // 1. Identify raw headers and pipe indices for column slicing
-  const pipeIndices: number[] = [];
-  for (let i = 0; i < headerLine.length; i++) {
-    if (headerLine[i] === "|") {
-      pipeIndices.push(i);
-    }
+  if (headers.length === 0) {
+    console.error("No headers found in table.");
+    return [];
   }
 
-  const rawHeaders = headerLine
-    .split("|")
-    .map((h) => h.trim())
-    .filter((h) => h.length > 0);
+  // Extract data rows (skip the header row)
+  const rows = table.querySelectorAll("tr");
+  const records: Record<string, string>[] = [];
 
-  // 2. Map pipe indices to header start/end positions
-  // The content for header N is between pipeIndices[N] and pipeIndices[N+1]
+  rows.forEach((row, index) => {
+    // Skip the header row (first row with <th> elements)
+    if (index === 0 && row.querySelector("th")) {
+      return;
+    }
 
-  const dataRecords: Record<string, string>[] = [];
-
-  for (const dataLine of dataLines) {
-    if (!dataLine.startsWith("|")) continue; // Ensure it's a valid data row
+    const cells = row.querySelectorAll("td");
+    if (cells.length === 0) {
+      return;
+    }
 
     const record: Record<string, string> = {};
-    let isValidRecord = true;
-
-    // Iterate through headers to extract cell content based on fixed width
-    for (let j = 0; j < rawHeaders.length; j++) {
-      const header = rawHeaders[j];
-      const start = pipeIndices[j] + 1; // Start index after the pipe
-      const end = pipeIndices[j + 1]; // End index at the next pipe
-
-      if (end === undefined || start >= dataLine.length) {
-        // Should not happen with well-formed tables, but serves as a safety break
-        isValidRecord = false;
-        console.warn(`Skipping malformed row: Data too short at column ${header}`);
-        break;
+    cells.forEach((cell, cellIndex) => {
+      if (cellIndex < headers.length) {
+        record[headers[cellIndex]] = cell.textContent?.trim() || "";
       }
+    });
 
-      // Slice the content and aggressively trim
-      let cellContent = dataLine.substring(start, end);
-      cellContent = cellContent.trim(); // Trim leading/trailing whitespace
-
-      record[header] = cellContent;
+    // Only add records that have data
+    if (Object.keys(record).length > 0) {
+      records.push(record);
     }
+  });
 
-    if (isValidRecord && Object.keys(record).length === rawHeaders.length) {
-      dataRecords.push(record);
-    }
-  }
-
-  return dataRecords;
+  return records;
 }
 
 /**
  * Converts the raw string records into the final Player array with correct types.
- * @param rawRecords The array of raw string records from the RTF table.
+ * @param rawRecords The array of raw string records from the HTML table.
  * @returns An array of Player objects.
  */
 export function transformPlayerStats(rawRecords: Record<string, string>[]): Player[] {
@@ -175,7 +126,7 @@ export function transformPlayerStats(rawRecords: Record<string, string>[]): Play
       Wage: parseWage(record),
       Expires: processHyphen(record.Expires, parseCustomDate),
       Position: parsePositions(record.Position),
-      SecPosition: processHyphen(record.Position, parsePositions),
+      SecPosition: processHyphen(record["Sec. Position"], parsePositions),
       Starts: Number(record.Starts),
       Mins: Number(
         typeof record.Mins === "string" ? record.Mins.replace(",", "") : record.Mins
@@ -217,7 +168,7 @@ export function transformPlayerStats(rawRecords: Record<string, string>[]): Play
       exsvPercentage: Number(record["xSv %"].replace("%", "")),
       svPercentage: Number(record["Sv %"].replace("%", "")),
       xGPPer90: processHyphen(record["xGP/90"], parseFloat) ?? 0,
-    } as Player; // Casting to Player, assuming all required fields are added above.
+    } as Player;
 
     players.push(player);
   }

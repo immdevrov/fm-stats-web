@@ -1,7 +1,7 @@
 import { Container, Heading, VStack, Box, Text, Spinner } from "@chakra-ui/react";
 import { useState } from "react";
 import { FileInput } from "../components/ui/file-input";
-import { extractPlainTextTable, parseRtfTable, transformPlayerStats } from "../parser/rtf-parser";
+import { parseHtmlTable, transformPlayerStats } from "../parser/html-parser";
 import { db } from "../services/db";
 import { toaster } from "../components/ui/toaster";
 
@@ -20,14 +20,13 @@ export function ImportView() {
     try {
       // Step 1: Read and parse the file
       const text = await file.text();
-      const tableLines = extractPlainTextTable(text);
+      const rawRecords = parseHtmlTable(text);
 
-      if (tableLines.length === 0) {
-        throw new Error("Could not extract structured table data from the file.");
+      if (rawRecords.length === 0) {
+        throw new Error("Could not extract table data from the HTML file.");
       }
 
-      // Step 2: Parse the RTF table
-      const rawRecords = parseRtfTable(tableLines);
+      // Step 2: Transform records to Player objects
       const players = transformPlayerStats(rawRecords);
 
       if (players.length === 0) {
@@ -35,7 +34,8 @@ export function ImportView() {
       }
 
       // Step 3: Save to IndexedDB
-      // Best Practice: Use batch save for better performance
+      // Clear existing data first, then save new players
+      await db.clearAllPlayers();
       await db.savePlayers(players);
 
       // Step 4: Show success feedback
@@ -108,14 +108,14 @@ export function ImportView() {
             </Box>
           )}
 
-          <FileInput 
-            onFileSelect={handleFileSelect} 
-            accept=".txt,.rtf"
+          <FileInput
+            onFileSelect={handleFileSelect}
+            accept=".html,.htm"
             disabled={isImporting}
           />
 
           <Text fontSize="sm" color="fg.muted" textAlign="center">
-            Select a text or RTF file exported from Football Manager 24.
+            Select an HTML file exported from Football Manager 24.
             The player data will be saved to your browser's local storage.
           </Text>
         </VStack>

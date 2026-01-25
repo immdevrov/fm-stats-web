@@ -46,7 +46,7 @@ export function FileInput({ onFileSelect, accept, disabled }: FileInputProps) {
         Select File
       </Button>
       <Text fontSize="sm" color="fg.muted">
-        Choose a text file with player statistics
+        Choose an HTML file with player statistics
       </Text>
     </VStack>
   );
