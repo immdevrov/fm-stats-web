@@ -1,6 +1,6 @@
 import { openDB } from 'idb';
 import type { DBSchema, IDBPDatabase } from 'idb';
-import type { Player } from '../types/types';
+import type { Player, LeagueRanking } from '../types/types';
 
 /**
  * IndexedDB Database Schema
@@ -18,6 +18,10 @@ interface FmStatsDB extends DBSchema {
       'by-position': string; // Index for filtering by position
     };
   };
+  leagueRankings: {
+    key: number; // rank (1-6)
+    value: LeagueRanking;
+  };
 }
 
 /**
@@ -28,7 +32,7 @@ interface FmStatsDB extends DBSchema {
  * - DB_VERSION: Increment this when you need to change the schema
  */
 const DB_NAME = 'fm-stats-db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 /**
  * IndexedDB Service
@@ -59,7 +63,7 @@ class DatabaseService {
          * Best Practice: Always handle upgrades explicitly.
          * This is where you create/delete object stores and indexes.
          */
-        upgrade(db) {
+        upgrade(db, oldVersion) {
           // Create 'players' object store if it doesn't exist
           if (!db.objectStoreNames.contains('players')) {
             const playerStore = db.createObjectStore('players', {
@@ -73,10 +77,12 @@ class DatabaseService {
             playerStore.createIndex('by-position', 'Position', { unique: false });
           }
 
-          // Future migrations would go here:
-          // if (oldVersion < 2) {
-          //   // Add new store or index
-          // }
+          // Migration for leagueRankings store
+          if (oldVersion < 2) {
+            db.createObjectStore('leagueRankings', {
+              keyPath: 'rank',
+            });
+          }
         },
       });
     }
@@ -232,6 +238,50 @@ class DatabaseService {
       return await db.count('players');
     } catch (error) {
       throw new Error(`Failed to get player count: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Save league rankings
+   *
+   * Clears existing rankings and saves new ones in a single transaction.
+   */
+  async saveLeagueRankings(rankings: LeagueRanking[]): Promise<void> {
+    try {
+      const db = await this.getDB();
+      const tx = db.transaction('leagueRankings', 'readwrite');
+      await tx.store.clear();
+      await Promise.all(rankings.map(ranking => tx.store.put(ranking)));
+      await tx.done;
+    } catch (error) {
+      throw new Error(`Failed to save league rankings: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Get all league rankings sorted by rank
+   */
+  async getLeagueRankings(): Promise<LeagueRanking[]> {
+    try {
+      const db = await this.getDB();
+      const rankings = await db.getAll('leagueRankings');
+      return rankings.sort((a, b) => a.rank - b.rank);
+    } catch (error) {
+      throw new Error(`Failed to get league rankings: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Clear all league rankings
+   */
+  async clearLeagueRankings(): Promise<void> {
+    try {
+      const db = await this.getDB();
+      const tx = db.transaction('leagueRankings', 'readwrite');
+      await tx.store.clear();
+      await tx.done;
+    } catch (error) {
+      throw new Error(`Failed to clear league rankings: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }
