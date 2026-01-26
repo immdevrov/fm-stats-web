@@ -1,117 +1,71 @@
-import { getFilters } from "../filters";
-import { KeyOfType, Player } from "../types";
-import { calculateArchetypes, displayDate, formatWage, printTable } from "../utils";
-import { applyFilters } from "./_filter";
-import { Role, IRole } from "./_role";
+import type { Player } from "../types";
+import {
+  type IPossessionStats,
+  type IPassingStats,
+  type ICreativeStats,
+  type IAttackingStats,
+  type IMovementStats,
+  extractPossessionStats,
+  extractPassingStats,
+  extractCreativeStats,
+  extractAttackingStats,
+  extractMovementStats,
+} from "../types/stat-categories";
+import { type IRole, Role } from "./_role";
 
-interface IAttackingMidfilder extends IRole {
-  progressivePassesPer90: number;
-  passesPercent: number;
-  posessionWonPer90: number;
-  posessionLostPer90: number;
-  keyPasses: number;
-  dribbles: number;
-  xA: number;
-  conv: number;
-  npXG: number;
-  chancesCreated: number;
-}
+export interface IAttackingMidfielder
+  extends IRole,
+    IPossessionStats,
+    IPassingStats,
+    ICreativeStats,
+    Pick<IAttackingStats, "npxG" | "conversionRatio">,
+    Pick<IMovementStats, "dribbles"> {}
 
-export class AttackingMidfilderProcessor {
-  players: AttackingMidfilder[];
-  private ARHETYPE_NAMES = {
-    ADVANCED_PLAYMAKER: "advanced playmaker",
-  };
-  constructor(players: Player[]) {
-    const pl = players.filter(AttackingMidfilder.isRole);
+export class AttackingMidfielder extends Role implements IAttackingMidfielder {
+  // Possession stats
+  readonly possessionWon: number;
+  readonly possessionLost: number;
+  readonly ballRetention: number;
 
-    this.players = pl.map((p) => new AttackingMidfilder(p));
-  }
-
-  get archetypes(): Record<string, KeyOfType<IAttackingMidfilder, number>[]> {
-    return {
-      [this.ARHETYPE_NAMES.ADVANCED_PLAYMAKER]: ["keyPasses", "chancesCreated", "npXG"],
-    };
-  }
-
-  analize(players: AttackingMidfilder[]) {
-    const playersWithArhetype = calculateArchetypes(players, this.archetypes);
-
-    return playersWithArhetype;
-  }
-
-  filter() {
-    const filtered = applyFilters(this.players, {
-      noInjuriesFilter: getFilters().noInjuriesFilter,
-      minutes: getFilters().timePlayed,
-      notEmptyFilter: (f: AttackingMidfilder) =>
-        f.progressivePassesPer90 > 0 && f.conv > 0,
-    });
-
-    return filtered;
-  }
-
-  print(defenders: AttackingMidfilder[]) {
-    const display = defenders.map((g) => {
-      const {
-        uid,
-        name,
-        nat,
-        progressivePassesPer90: prPass,
-        passesPercent,
-        keyPasses,
-        dribbles,
-        xA,
-        npXG,
-        conv,
-        contractExpires,
-        wage,
-      } = g;
-      return {
-        uid,
-        name,
-        nat,
-        "pass%": passesPercent,
-        prPass,
-        keyPasses,
-        dribbles,
-        xA,
-        npXG,
-        conv,
-        wage: wage ? formatWage(wage) : null,
-        contractExpires: contractExpires ? displayDate(contractExpires) : null,
-      };
-    });
-    console.log(`There is ${display.length} attacking midfilders to watch`);
-    printTable(display);
-  }
-}
-
-export class AttackingMidfilder extends Role implements IAttackingMidfilder {
-  readonly progressivePassesPer90: number;
-  readonly passesPercent: number;
-  readonly posessionWonPer90: number;
-  readonly posessionLostPer90: number;
+  // Passing stats
+  readonly passRatio: number;
+  readonly progressivePasses: number;
   readonly keyPasses: number;
-  readonly dribbles: number;
+
+  // Creative stats
   readonly xA: number;
-  readonly conv: number;
-  readonly npXG: number;
   readonly chancesCreated: number;
+
+  // Attacking stats (partial)
+  readonly npxG: number;
+  readonly conversionRatio: number;
+
+  // Movement stats (partial)
+  readonly dribbles: number;
 
   constructor(player: Player) {
     super(player);
 
-    this.progressivePassesPer90 = player.PrPassesPer90;
-    this.passesPercent = player.PasPercentage;
-    this.posessionWonPer90 = player.PossWonPer90;
-    this.posessionLostPer90 = player.PossLostPer90;
-    this.keyPasses = player.OPKPPer90;
-    this.dribbles = player.DrbPer90;
-    this.xA = player.xAPer90;
-    this.conv = player.ConvPercentage;
-    this.npXG = player.NPxGPer90;
-    this.chancesCreated = player.ChCPer90;
+    const possessionStats = extractPossessionStats(player);
+    this.possessionWon = possessionStats.possessionWon;
+    this.possessionLost = possessionStats.possessionLost;
+    this.ballRetention = possessionStats.ballRetention;
+
+    const passStats = extractPassingStats(player);
+    this.passRatio = passStats.passRatio;
+    this.progressivePasses = passStats.progressivePasses;
+    this.keyPasses = passStats.keyPasses;
+
+    const creativeStats = extractCreativeStats(player);
+    this.xA = creativeStats.xA;
+    this.chancesCreated = creativeStats.chancesCreated;
+
+    const attackingStats = extractAttackingStats(player);
+    this.npxG = attackingStats.npxG;
+    this.conversionRatio = attackingStats.conversionRatio;
+
+    const movementStats = extractMovementStats(player);
+    this.dribbles = movementStats.dribbles;
   }
 
   static isRole(player: Player): boolean {

@@ -2,7 +2,6 @@ import { parsePositions } from "../fields/positions";
 import { parseCustomDate } from "../utils";
 import type { Player } from "../types";
 
-// Helper to process cell values (e.g., convert "N/A" or "-" to null)
 const createStringProcessor = (str: string) => {
   return <T extends (s: string) => unknown>(
     s: string | null | undefined,
@@ -18,7 +17,6 @@ const createStringProcessor = (str: string) => {
 const processHyphen = createStringProcessor("-");
 const processNA = createStringProcessor("N/A");
 
-// Functions to parse specific data types
 const parseWage = (record: Record<string, string>) => {
   const rawWage = record["Wage"];
   const fn = (str: string) =>
@@ -61,7 +59,6 @@ export function parseHtmlTable(html: string): Record<string, string>[] {
     return [];
   }
 
-  // Extract headers from <th> elements
   const headerCells = table.querySelectorAll("th");
   const headers: string[] = [];
   headerCells.forEach((th) => {
@@ -73,12 +70,10 @@ export function parseHtmlTable(html: string): Record<string, string>[] {
     return [];
   }
 
-  // Extract data rows (skip the header row)
   const rows = table.querySelectorAll("tr");
   const records: Record<string, string>[] = [];
 
   rows.forEach((row, index) => {
-    // Skip the header row (first row with <th> elements)
     if (index === 0 && row.querySelector("th")) {
       return;
     }
@@ -95,7 +90,6 @@ export function parseHtmlTable(html: string): Record<string, string>[] {
       }
     });
 
-    // Only add records that have data
     if (Object.keys(record).length > 0) {
       records.push(record);
     }

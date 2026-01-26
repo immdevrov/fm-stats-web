@@ -1,6 +1,18 @@
 import { type IRole } from "../roles/_role";
 import type { KeyOfType, Table } from "../types";
 
+/**
+ * Coerces a value to a valid number.
+ * Returns 0 for undefined, null, NaN, or non-finite values.
+ */
+export function safeNumber(value: unknown): number {
+  if (value === undefined || value === null) {
+    return 0;
+  }
+  const num = Number(value);
+  return Number.isFinite(num) ? num : 0;
+}
+
 export function average(arr: number[]) {
   if (!arr.length) {
     return null;

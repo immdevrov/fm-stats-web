@@ -1,120 +1,86 @@
-import { getFilters } from "../filters";
-import { KeyOfType, Player } from "../types";
-import { calculateArchetypes, displayDate, formatWage, printTable } from "../utils";
-import { applyFilters } from "./_filter";
-import { Role, IRole } from "./_role";
+import type { Player } from "../types";
+import {
+  type IAerialStats,
+  type IPossessionStats,
+  type IPassingStats,
+  type IDefensiveStats,
+  type IPhysicalStats,
+  type IErrorStats,
+  extractAerialStats,
+  extractPossessionStats,
+  extractPassingStats,
+  extractDefensiveStats,
+  extractPhysicalStats,
+  extractErrorStats,
+} from "../types/stat-categories";
+import { type IRole, Role } from "./_role";
 
-interface ICentralDefender extends IRole {
-  height: number;
-  mistakes: number;
-  tackleRating: number;
-  tacklesPer90: number;
-  progressivePassesPer90: number;
-  passesPercent: number;
-  headersWonRatio: number;
-  arealAttempsPer90: number;
-  posessionWonPer90: number;
-  posessionLostPer90: number;
-}
+export interface ICentralDefender
+  extends IRole,
+    IAerialStats,
+    IPossessionStats,
+    IPassingStats,
+    IDefensiveStats,
+    IPhysicalStats,
+    IErrorStats {}
 
-export class CentralDefenderProcessor {
-  players: CentralDefender[];
-
-  private ARHETYPE_NAMES = {
-    AGGRESSOR: "aggressor",
-    SPREADER: "spreader",
-  };
-  constructor(players: Player[]) {
-    const pl = players.filter(CentralDefender.isRole);
-
-    this.players = pl.map((p) => new CentralDefender(p));
-  }
-  get archetypes(): Record<string, KeyOfType<ICentralDefender, number>[]> {
-    return {
-      [this.ARHETYPE_NAMES.AGGRESSOR]: ["tackleRating", "headersWonRatio"],
-      [this.ARHETYPE_NAMES.SPREADER]: ["progressivePassesPer90"],
-    };
-  }
-
-  analize(players: CentralDefender[]) {
-    const playersWithArhetype = calculateArchetypes(players, this.archetypes);
-
-    return playersWithArhetype;
-  }
-
-  filter() {
-    const filtered = applyFilters(this.players, {
-      noInjuriesFilter: getFilters().noInjuriesFilter,
-      minutes: getFilters().timePlayed,
-    });
-
-    return filtered;
-  }
-
-  print(defenders: CentralDefender[]) {
-    const display = defenders.map((g) => {
-      const {
-        uid,
-        name,
-        nat,
-        mistakes,
-        progressivePassesPer90: prPass,
-        passesPercent,
-        arealAttempsPer90: ArealAttps,
-        headersWonRatio: hdrsWonRatio,
-        tacklesPer90: tclks,
-        tackleRating: tclsR,
-        posessionLostPer90: posLost,
-        posessionWonPer90: posWon,
-        contractExpires,
-        wage,
-      } = g;
-      return {
-        uid,
-        name,
-        nat,
-        mistakes,
-        ArealAttps,
-        hdrsWonRatio,
-        "pass%": passesPercent,
-        prPass,
-        tclks,
-        tclsR,
-        posLost,
-        posWon,
-        wage: wage ? formatWage(wage) : null,
-        contractExpires: contractExpires ? displayDate(contractExpires) : null,
-      };
-    });
-    console.log(`There is ${display.length} defenders to watch`);
-    printTable(display);
-  }
-}
 export class CentralDefender extends Role implements ICentralDefender {
-  readonly height: number;
-  readonly mistakes: number;
-  readonly tackleRating: number;
-  readonly progressivePassesPer90: number;
-  readonly passesPercent: number;
-  readonly tacklesPer90: number;
+  // Aerial stats
   readonly headersWonRatio: number;
-  readonly arealAttempsPer90: number;
-  readonly posessionWonPer90: number;
-  readonly posessionLostPer90: number;
+  readonly aerialAttempts: number;
+  readonly keyHeaders: number;
+
+  // Possession stats
+  readonly possessionWon: number;
+  readonly possessionLost: number;
+  readonly ballRetention: number;
+
+  // Passing stats
+  readonly passRatio: number;
+  readonly progressivePasses: number;
+  readonly keyPasses: number;
+
+  // Defensive stats
+  readonly tackles: number;
+  readonly tackleRatio: number;
+  readonly pressuresSuccessful: number;
+
+  // Physical stats
+  readonly height: number;
+  readonly age: number;
+
+  // Error stats
+  readonly mistakes: number;
 
   constructor(player: Player) {
     super(player);
 
-    this.height = player.Height;
-    this.mistakes = player.GlMst;
-    this.tackleRating = player.TckR;
-    this.progressivePassesPer90 = player.PrPassesPer90;
-    this.passesPercent = player.PasPercentage;
-    this.tacklesPer90 = player.TckPer90;
-    this.headersWonRatio = player.HdrPercentage;
-    this.arealAttempsPer90 = player.AerAPer90;
-    this.posessionWonPer90 = player.PossWonPer90;
-    this.posessionLostPer90 = player.PossLostPer90;
+    const aerialStats = extractAerialStats(player);
+    this.headersWonRatio = aerialStats.headersWonRatio;
+    this.aerialAttempts = aerialStats.aerialAttempts;
+    this.keyHeaders = aerialStats.keyHeaders;
+
+    const possessionStats = extractPossessionStats(player);
+    this.possessionWon = possessionStats.possessionWon;
+    this.possessionLost = possessionStats.possessionLost;
+    this.ballRetention = possessionStats.ballRetention;
+
+    const passStats = extractPassingStats(player);
+    this.passRatio = passStats.passRatio;
+    this.progressivePasses = passStats.progressivePasses;
+    this.keyPasses = passStats.keyPasses;
+
+    const defensiveStats = extractDefensiveStats(player);
+    this.tackles = defensiveStats.tackles;
+    this.tackleRatio = defensiveStats.tackleRatio;
+    this.pressuresSuccessful = defensiveStats.pressuresSuccessful;
+
+    const physicalStats = extractPhysicalStats(player);
+    this.height = physicalStats.height;
+    this.age = physicalStats.age;
+
+    const errorStats = extractErrorStats(player);
+    this.mistakes = errorStats.mistakes;
   }
 
   static isRole(player: Player): boolean {

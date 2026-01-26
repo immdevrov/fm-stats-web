@@ -1,4 +1,4 @@
-import { Player } from "../types";
+import type { Player } from "../types";
 
 export const DATE_OPTIONS = {
   ONE_MONTH: "ONE_MONTH",
