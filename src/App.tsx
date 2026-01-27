@@ -4,6 +4,7 @@ import { ImportView } from "./views/ImportView";
 import { LeaguesView } from "./views/LeaguesView";
 import { TeamsView } from "./views/TeamsView";
 import { TeamView } from "./views/TeamView";
+import { PlayersView } from "./views/PlayersView";
 
 function App() {
   return (
@@ -14,6 +15,8 @@ function App() {
         <Route path="leagues" element={<LeaguesView />} />
         <Route path="teams" element={<TeamsView />} />
         <Route path="teams/:teamName" element={<TeamView />} />
+        <Route path="players" element={<PlayersView />} />
+        <Route path="players/:playerId" element={<div>Player Profile (Coming Soon)</div>} />
       </Route>
     </Routes>
   );

@@ -13,6 +13,7 @@ export interface Column<T> {
 interface TablePropsBase<T> {
   data: T[];
   columns: Column<T>[];
+  onRowClick?: (row: T) => void;
 }
 
 interface UncontrolledTableProps<T> extends TablePropsBase<T> {
@@ -40,7 +41,7 @@ function isControlled<T>(
 }
 
 export function Table<T extends Record<string, unknown>>(props: TableProps<T>) {
-  const { data, columns } = props;
+  const { data, columns, onRowClick } = props;
 
   // Internal state for uncontrolled mode
   const [internalSortKey, setInternalSortKey] = useState<keyof T | undefined>(
@@ -137,7 +138,13 @@ export function Table<T extends Record<string, unknown>>(props: TableProps<T>) {
         </ChakraTable.Header>
         <ChakraTable.Body>
           {displayData.map((row, index) => (
-            <ChakraTable.Row key={index} bg={index % 2 === 0 ? "bg.muted" : "bg"}>
+            <ChakraTable.Row
+              key={index}
+              bg={index % 2 === 0 ? "bg.muted" : "bg"}
+              cursor={onRowClick ? "pointer" : "default"}
+              _hover={onRowClick ? { bg: "bg.subtle" } : undefined}
+              onClick={() => onRowClick?.(row)}
+            >
               {columns.map((column) => (
                 <ChakraTable.Cell key={String(column.key)}>
                   {column.render

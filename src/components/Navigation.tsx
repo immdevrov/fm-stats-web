@@ -10,6 +10,7 @@ const navItems: NavItem[] = [
   { path: "/import", label: "Import" },
   { path: "/leagues", label: "Leagues" },
   { path: "/teams", label: "Teams" },
+  { path: "/players", label: "Players" },
 ];
 
 export function Navigation() {
