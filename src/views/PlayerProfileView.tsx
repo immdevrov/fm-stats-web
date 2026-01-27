@@ -9,11 +9,13 @@ import {
   Button,
   Badge,
   SimpleGrid,
+  Tabs,
+  Checkbox,
 } from "@chakra-ui/react";
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect, useMemo } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { db } from "../services/db";
-import type { Player } from "../types/types";
+import type { Player, LeagueRanking } from "../types/types";
 import {
   extractPassingStats,
   extractDefensiveStats,
@@ -24,7 +26,9 @@ import {
   extractMovementStats,
   extractGoalkeeperStats,
 } from "../types/stat-categories";
-import { formatWage, displayDate, formatPositions } from "../utils/utils";
+import { formatWage, displayDate, formatPositions, getPercentile, getColumn } from "../utils/utils";
+import { ROLE_CONFIG, STAT_LABELS, type RoleConfig } from "../roles";
+import { PercentileBar } from "../components/PercentileBar";
 
 export function PlayerProfileView() {
   const { playerId } = useParams<{ playerId: string }>();
@@ -103,10 +107,7 @@ export function PlayerProfileView() {
         <HStack align="start" gap={3}>
             <PlayerInfoColumn player={player} />
 
-            <Box flex={1} bg="bg.subtle" p={2} borderRadius="md" minH="300px">
-              <Text color="fg.muted">Comparison graphs coming soon</Text>
-              <Text color="fg.muted">Similar players coming soon</Text>
-            </Box>
+            <ComparisonColumn player={player} />
           </HStack>
       </Container>
     </Box>
@@ -146,7 +147,11 @@ function PlayerHeader({ player }: { player: Player }) {
         <VStack align="stretch" gap={0} fontSize="sm">
           <HStack justify="space-between">
             <Text color="fg.emphasized">Club</Text>
-            <Text fontWeight="medium">{player.Club}</Text>
+            <Link to={`/teams/${encodeURIComponent(player.Club)}`}>
+              <Text fontWeight="medium" color="glaucous.400" _hover={{ textDecoration: "underline" }}>
+                {player.Club}
+              </Text>
+            </Link>
           </HStack>
           <HStack justify="space-between">
             <Text color="fg.emphasized">Division</Text>
@@ -343,4 +348,175 @@ function StatSection({ title, stats }: { title: string; stats: StatItem[] }) {
 
 function formatPercent(value: number): string {
   return `${value.toFixed(1)}%`;
+}
+
+interface StatPercentile {
+  statKey: string;
+  label: string;
+  value: number;
+  percentile: number;
+}
+
+function getPlayerRoles(player: Player): RoleConfig[] {
+  return ROLE_CONFIG.filter(({ RoleClass }) => RoleClass.isRole(player));
+}
+
+function getComparisonCohort(
+  RoleClass: RoleConfig["RoleClass"],
+  allPlayers: Player[],
+  leagueRankings: LeagueRanking[],
+  sameLeagueOnly?: string
+): Record<string, unknown>[] {
+  const rankedLeagues = new Set(
+    leagueRankings.filter((r) => r.rank < 999).map((r) => r.league)
+  );
+
+  return allPlayers
+    .filter(
+      (p) =>
+        RoleClass.isRole(p) &&
+        rankedLeagues.has(p.Division) &&
+        p.Starts >= 5 &&
+        (!sameLeagueOnly || p.Division === sameLeagueOnly)
+    )
+    .map((p) => new RoleClass(p) as unknown as Record<string, unknown>);
+}
+
+function calculateRolePercentiles(
+  playerRole: Record<string, unknown>,
+  cohort: Record<string, unknown>[],
+  statKeys: string[]
+): StatPercentile[] {
+  return statKeys.map((key) => {
+    const playerValue = playerRole[key] as number;
+    const cohortValues = getColumn(cohort, key) as number[];
+
+    return {
+      statKey: key,
+      label: STAT_LABELS[key] ?? key,
+      value: playerValue,
+      percentile: getPercentile(playerValue, cohortValues),
+    };
+  });
+}
+
+function ComparisonColumn({ player }: { player: Player }) {
+  const [selectedRole, setSelectedRole] = useState<string | null>(null);
+  const [allPlayers, setAllPlayers] = useState<Player[]>([]);
+  const [leagueRankings, setLeagueRankings] = useState<LeagueRanking[]>([]);
+  const [percentiles, setPercentiles] = useState<StatPercentile[]>([]);
+  const [cohortSize, setCohortSize] = useState(0);
+  const [sameLeagueOnly, setSameLeagueOnly] = useState(false);
+
+  const applicableRoles = useMemo(() => getPlayerRoles(player), [player]);
+
+  useEffect(() => {
+    Promise.all([db.getAllPlayers(), db.getLeagueRankings()]).then(
+      ([players, rankings]) => {
+        setAllPlayers(players);
+        setLeagueRankings(rankings);
+      }
+    );
+  }, []);
+
+  useEffect(() => {
+    if (applicableRoles.length > 0 && !selectedRole) {
+      setSelectedRole(applicableRoles[0].key);
+    }
+  }, [applicableRoles, selectedRole]);
+
+  useEffect(() => {
+    if (!selectedRole || !allPlayers.length) return;
+
+    const roleConfig = ROLE_CONFIG.find((r) => r.key === selectedRole);
+    if (!roleConfig) return;
+
+    const cohort = getComparisonCohort(
+      roleConfig.RoleClass,
+      allPlayers,
+      leagueRankings,
+      sameLeagueOnly ? player.Division : undefined
+    );
+    const playerRole = new roleConfig.RoleClass(player) as unknown as Record<string, unknown>;
+    const stats = calculateRolePercentiles(
+      playerRole,
+      cohort,
+      roleConfig.statKeys
+    );
+
+    setCohortSize(cohort.length);
+    setPercentiles(stats);
+  }, [selectedRole, allPlayers, leagueRankings, player, sameLeagueOnly]);
+
+  if (applicableRoles.length === 0) {
+    return (
+      <Box flex={1} bg="bg.subtle" p={2} borderRadius="md" minH="300px">
+        <Text color="fg.muted">No applicable roles found for this player</Text>
+      </Box>
+    );
+  }
+
+  const comparisonText = sameLeagueOnly
+    ? `Compared to ${cohortSize} players in ${player.Division} with 5+ starts`
+    : `Compared to ${cohortSize} players in ranked leagues with 5+ starts`;
+
+  return (
+    <Box flex={1} bg="bg.subtle" p={2} borderRadius="md" minH="300px">
+      <Tabs.Root
+        value={selectedRole ?? undefined}
+        onValueChange={(e) => setSelectedRole(e.value)}
+      >
+        <Tabs.List>
+          {applicableRoles.map((role) => (
+            <Tabs.Trigger key={role.key} value={role.key}>
+              {role.name}
+            </Tabs.Trigger>
+          ))}
+        </Tabs.List>
+      </Tabs.Root>
+
+      <HStack justify="space-between" align="flex-start" mt={2} minH="36px">
+        <Text fontSize="xs" color="fg.muted">
+          {comparisonText}
+        </Text>
+        <Checkbox.Root
+          size="sm"
+          checked={sameLeagueOnly}
+          onCheckedChange={(e) => setSameLeagueOnly(!!e.checked)}
+          flexShrink={0}
+        >
+          <Checkbox.HiddenInput />
+          <Checkbox.Control />
+          <Checkbox.Label>
+            <Text fontSize="xs">Same league only</Text>
+          </Checkbox.Label>
+        </Checkbox.Root>
+      </HStack>
+
+      <HStack gap={2} mt={3} mb={1}>
+        <Text w="120px" fontSize="xs" color="fg.muted" flexShrink={0}>
+          Stat
+        </Text>
+        <Text flex={1} fontSize="xs" color="fg.muted">
+          Percentile
+        </Text>
+        <Text w="32px" fontSize="xs" color="fg.muted" textAlign="right" flexShrink={0}>
+          %
+        </Text>
+        <Text w="50px" fontSize="xs" color="fg.muted" textAlign="right" flexShrink={0}>
+          Value
+        </Text>
+      </HStack>
+      <VStack align="stretch" gap={1}>
+        {percentiles.map((stat) => (
+          <PercentileBar
+            key={stat.statKey}
+            label={stat.label}
+            value={stat.value}
+            percentile={stat.percentile}
+          />
+        ))}
+      </VStack>
+    </Box>
+  );
 }

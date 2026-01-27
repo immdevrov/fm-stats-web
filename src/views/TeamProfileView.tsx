@@ -28,7 +28,7 @@ interface TeamProfileRow extends Record<string, unknown> {
   uid: number;
 }
 
-export function TeamView() {
+export function TeamProfileView() {
   const { teamName } = useParams<{ teamName: string }>();
   const navigate = useNavigate();
   const [players, setPlayers] = useState<Player[]>([]);

@@ -55,6 +55,25 @@ npm run preview  # Preview production build
 - **Computed Stats**: Roles can derive stats (e.g., `saveRatioOverExpected = saveRatio - expectedSaveRatio`)
 - **Archetype System**: Archetypes map names to stat key arrays; badges awarded when all stats hit 60th percentile
 
+### Available Roles
+8 role classes in `src/roles/`:
+| Role | Class | Position Detection |
+|------|-------|-------------------|
+| Goalkeeper | `GoalKeeper` | type = "GK" |
+| Central Defender | `CentralDefender` | type = "D" + side includes "C" |
+| Fullback | `Fullback` | type = "D" or "WB" + side includes "L" or "R" |
+| Defensive Mid | `DefensiveMidfielder` | type = "DM" or (type = "M" + side includes "C") |
+| Central Mid | `CentralMidfielder` | type = "DM" or (type = "M" + side includes "C") |
+| Attacking Mid | `AttackingMidfielder` | type = "M" or "AM" + side includes "C" |
+| Winger | `Winger` | type = "AM" or "M" + side includes "L" or "R" |
+| Striker | `Striker` | type = "ST" |
+
+### Percentile Comparison System
+- **Cohort Filtering**: Players compared must have same role, be in ranked leagues, and have 5+ starts
+- **getPercentile()**: Standard formula `(countBelow + 0.5 * countEqual) / total * 100`
+- **Display**: Horizontal bars with color coding (red < 30, yellow 30-60, green > 60)
+- **ROLE_CONFIG**: Defined in `src/roles/index.ts` - maps roles to their display stat keys
+
 ### IndexedDB Schema (v2)
 - **players** store: keyPath `UID`, indexes: `by-name`, `by-club`, `by-position`
 - **leagueRankings** store: keyPath `rank`
