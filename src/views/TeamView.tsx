@@ -12,6 +12,21 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { db } from "../services/db";
 import type { Player } from "../types/types";
+import { Table, type Column } from "../components/ui/table";
+import { formatWage, displayDate, formatPositions } from "../utils/utils";
+
+interface TeamProfileRow extends Record<string, unknown> {
+  name: string;
+  age: number;
+  position: string;
+  starts: number;
+  minutes: number;
+  nat: string;
+  wage: number;
+  injuries: boolean;
+  contractExpires: Date | null;
+  uid: number;
+}
 
 export function TeamView() {
   const { teamName } = useParams<{ teamName: string }>();
@@ -97,17 +112,55 @@ export function TeamView() {
               No players found for this team.
             </Text>
           ) : (
-            <Box p={4} borderRadius="md" bg="bg.muted">
-              <Text color="fg.muted">
-                {players.length} player{players.length !== 1 ? "s" : ""} in squad
-              </Text>
-              <Text color="fg.muted" fontSize="sm" mt={2}>
-                Team details view coming soon...
-              </Text>
-            </Box>
+            <TeamProfileTable players={players} />
           )}
         </VStack>
       </Container>
     </Box>
+  );
+}
+
+const columns: Column<TeamProfileRow>[] = [
+  { key: "name", header: "Name" },
+  { key: "age", header: "Age" },
+  { key: "position", header: "Position" },
+  { key: "starts", header: "Starts" },
+  { key: "minutes", header: "Minutes" },
+  { key: "nat", header: "Nat" },
+  { key: "wage", header: "Wage", render: (v) => formatWage(v as number) },
+  {
+    key: "injuries",
+    header: "Rc. Injuries",
+    render: (v) => (v ? String(v) : "-"),
+  },
+  {
+    key: "contractExpires",
+    header: "Contract Expires",
+    render: (v) => (v ? displayDate(v as Date) : "-"),
+  },
+  { key: "uid", header: "UID", sortable: false },
+];
+
+function TeamProfileTable({ players }: { players: Player[] }) {
+  const data: TeamProfileRow[] = players.map((p) => ({
+    name: p.Name,
+    age: p.Age,
+    position: formatPositions(p.Position),
+    starts: p.Starts,
+    minutes: p.Mins,
+    nat: p.Nat,
+    wage: p.Wage,
+    injuries: p.RcInjury,
+    contractExpires: p.Expires,
+    uid: p.UID,
+  }));
+
+  return (
+    <Table<TeamProfileRow>
+      data={data}
+      columns={columns}
+      defaultSortKey="starts"
+      defaultSortDirection="desc"
+    />
   );
 }

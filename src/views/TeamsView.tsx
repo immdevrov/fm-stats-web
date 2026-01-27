@@ -34,15 +34,12 @@ export function TeamsView() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLeague, setSelectedLeague] = useState<string>("");
 
-  // Sorting
   const [sortKey, setSortKey] = useState<keyof TeamData>("averageWage");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
-  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
@@ -50,7 +47,6 @@ export function TeamsView() {
       try {
         const players = await db.getAllPlayers();
 
-        // Group players by club
         const clubMap = new Map<
           string,
           { league: string; wages: number[]; ages: number[] }
@@ -94,16 +90,13 @@ export function TeamsView() {
     loadData();
   }, []);
 
-  // Filter and sort teams
   const filteredAndSortedTeams = useMemo(() => {
     let result = teams;
 
-    // Filter by league
     if (selectedLeague) {
       result = result.filter((team) => team.league === selectedLeague);
     }
 
-    // Search by name (min 3 chars, case-insensitive contains)
     if (searchQuery.length >= MIN_SEARCH_LENGTH) {
       const lowerSearch = searchQuery.toLowerCase();
       result = result.filter((team) =>
@@ -111,7 +104,6 @@ export function TeamsView() {
       );
     }
 
-    // Sort
     result = [...result].sort((a, b) => {
       const aVal = a[sortKey];
       const bVal = b[sortKey];
@@ -132,14 +124,12 @@ export function TeamsView() {
     return result;
   }, [teams, searchQuery, selectedLeague, sortKey, sortDirection]);
 
-  // Paginated data
   const totalPages = Math.ceil(filteredAndSortedTeams.length / ITEMS_PER_PAGE);
   const paginatedTeams = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
     return filteredAndSortedTeams.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredAndSortedTeams, currentPage]);
 
-  // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, selectedLeague, sortKey, sortDirection]);

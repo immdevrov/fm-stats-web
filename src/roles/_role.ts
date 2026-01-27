@@ -3,6 +3,8 @@ import { type Player } from "../types";
 export interface IRole {
   uid: number;
   name: string;
+  age: number;
+  starts: number;
   minutes: number;
   injuries: boolean;
   nat: string;
@@ -33,12 +35,20 @@ export abstract class Role implements IRole {
     return this.player.UID;
   }
 
+  get starts() {
+    return this.player.Starts;
+  }
+
   get minutes() {
     return this.player.Mins;
   }
 
   get name() {
     return this.player.Name;
+  }
+
+  get age() {
+    return this.player.Age;
   }
 
   get division() {

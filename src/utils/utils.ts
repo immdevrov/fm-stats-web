@@ -1,3 +1,4 @@
+import { type PlayerPositions } from "../fields/positions";
 import { type IRole } from "../roles/_role";
 import type { KeyOfType, Table } from "../types";
 
@@ -65,6 +66,15 @@ export function formatWage(number: number) {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(number);
+}
+
+export function formatPositions(positions: PlayerPositions): string {
+  return positions
+    .map((pos) => {
+      const base = pos.type;
+      return pos.side?.length ? `${base}(${pos.side.join("")})` : base;
+    })
+    .join(", ");
 }
 
 export function calculateArchetypes<

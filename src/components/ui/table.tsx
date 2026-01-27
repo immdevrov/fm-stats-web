@@ -73,23 +73,39 @@ export function Table<T extends Record<string, unknown>>(props: TableProps<T>) {
   const displayData = isControlled(props)
     ? data
     : [...data].sort((a, b) => {
-        if (!sortKey) return 0;
+      if (!sortKey) return 0;
 
-        const aVal = a[sortKey];
-        const bVal = b[sortKey];
+      const aVal = a[sortKey];
+      const bVal = b[sortKey];
 
-        if (typeof aVal === "number" && typeof bVal === "number") {
-          return sortDirection === "asc" ? aVal - bVal : bVal - aVal;
-        }
+      if (aVal === null && bVal === null) return 0;
+      if (aVal === null) return 1;
+      if (bVal === null) return -1;
 
-        if (typeof aVal === "string" && typeof bVal === "string") {
-          return sortDirection === "asc"
-            ? aVal.localeCompare(bVal)
-            : bVal.localeCompare(aVal);
-        }
+      if (aVal instanceof Date && bVal instanceof Date) {
+        return sortDirection === "asc"
+          ? aVal.getTime() - bVal.getTime()
+          : bVal.getTime() - aVal.getTime();
+      }
 
-        return 0;
-      });
+      if (typeof aVal === "boolean" && typeof bVal === "boolean") {
+        const aNum = aVal ? 1 : 0;
+        const bNum = bVal ? 1 : 0;
+        return sortDirection === "asc" ? aNum - bNum : bNum - aNum;
+      }
+
+      if (typeof aVal === "number" && typeof bVal === "number") {
+        return sortDirection === "asc" ? aVal - bVal : bVal - aVal;
+      }
+
+      if (typeof aVal === "string" && typeof bVal === "string") {
+        return sortDirection === "asc"
+          ? aVal.localeCompare(bVal)
+          : bVal.localeCompare(aVal);
+      }
+
+      return 0;
+    });
 
   const getSortIndicator = (key: keyof T) => {
     if (sortKey !== key) return null;
@@ -121,7 +137,7 @@ export function Table<T extends Record<string, unknown>>(props: TableProps<T>) {
         </ChakraTable.Header>
         <ChakraTable.Body>
           {displayData.map((row, index) => (
-            <ChakraTable.Row key={index}>
+            <ChakraTable.Row key={index} bg={index % 2 === 0 ? "bg.muted" : "bg"}>
               {columns.map((column) => (
                 <ChakraTable.Cell key={String(column.key)}>
                   {column.render
