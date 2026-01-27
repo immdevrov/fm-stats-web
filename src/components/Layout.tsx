@@ -9,7 +9,8 @@ export function Layout() {
       <HStack align="stretch" gap={0} h="100vh">
         {/* Navigation Panel */}
         <Box
-          w="250px"
+          w="12%"
+          minW="140px"
           bg="bg.subtle"
           borderRightWidth="1px"
           borderColor="border.emphasized"

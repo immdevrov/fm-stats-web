@@ -107,5 +107,12 @@ export const customSystem = createSystem(defaultConfig, {
         },
       },
     },
+    recipes: {
+      container: {
+        base: {
+          paddingInline: "2",
+        },
+      },
+    },
   },
 });
