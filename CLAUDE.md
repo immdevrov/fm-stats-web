@@ -48,6 +48,25 @@ npm run preview  # Preview production build
 - **Singleton service**: `DatabaseService` manages all IndexedDB operations
 - **Path alias**: `@/*` maps to `./src/*`
 
+### Role System Details
+- **Stat Categories** (`stat-categories.ts`): 11 category interfaces (Aerial, Possession, Passing, Defensive, Creative, Attacking, Movement, Goalkeeper, Physical, Error) with `extract*Stats()` functions
+- **Role Detection**: Each role has static `isRole(player)` checking `player.Position` array
+- **Sub-role Pattern**: Some roles extend others (e.g., LeftFullback extends Fullback with side filtering)
+- **Computed Stats**: Roles can derive stats (e.g., `saveRatioOverExpected = saveRatio - expectedSaveRatio`)
+- **Archetype System**: Archetypes map names to stat key arrays; badges awarded when all stats hit 60th percentile
+
+### IndexedDB Schema (v2)
+- **players** store: keyPath `UID`, indexes: `by-name`, `by-club`, `by-position`
+- **leagueRankings** store: keyPath `rank`
+- Batch writes use single transaction with `Promise.all()`
+- Connection is lazy (opens on first access)
+
+### HTML Parser
+- Uses browser's native `DOMParser` (not regex/string manipulation)
+- `createStringProcessor()` HOF for conditional field processing
+- Special values (`-`, `N/A`) coerced to `null`
+- Field-specific parsers: wage (currency stripping), height/weight (unit removal)
+
 ### Player Positions
 GK (Goalkeeper), D (Defender), WB (Wing Back), DM (Defensive Midfielder), M (Midfielder), AM (Attacking Midfielder), ST (Striker) — with L/C/R side variations.
 
@@ -57,3 +76,31 @@ GK (Goalkeeper), D (Defender), WB (Wing Back), DM (Defensive Midfielder), M (Mid
 - Interface prefix: `I` (e.g., `IRole`, `IStriker`)
 - Private methods: underscore prefix in service classes
 - Functional components only (no class components)
+- **No generic code comments** - only add comments in complex/hard-to-understand places. User will ask for comments if needed.
+
+## Component Patterns
+
+- **State**: Basic React hooks, no external state management
+- **Table Component**: Dual mode (controlled via `sortKey`/`onSortChange`, or uncontrolled via `defaultSortKey`); custom `render()` per column
+- **Deferred State**: `useRef` for pending data while dialogs open (see ImportView)
+- **Toaster**: `toaster.create({ title, description, type, duration })`
+
+## Chakra UI 3 Theme
+
+- Semantic tokens: `fg.default`, `fg.emphasized`, `fg.muted`, `bg.canvas`, `bg.subtle`, `bg.muted`
+- Custom palettes: `carbonBlack`, `glaucous`, `thistle`, `spicyPaprika`, `softBlush`
+- Dark mode via `_dark` variants in semantic tokens
+
+## Key Utilities
+
+- `safeNumber()` — returns 0 for undefined/null/NaN
+- `getPercentile()` — standard percentile calculation
+- `sortIntoCohorts()` — splits into bottom/middle/top thirds
+- `formatWage()` — EUR currency (de-DE locale)
+- `formatPositions()` — "D(RC), WB(L)" format
+- `parseCustomDate()` — parses "DD/MM/YYYY" format
+
+## Type Utilities
+
+- `KeyOfType<T, V>` — extracts keys where value is type V
+- `Table<T>` — alias for `Array<T>`
