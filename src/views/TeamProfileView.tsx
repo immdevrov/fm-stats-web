@@ -9,7 +9,7 @@ import {
   Button,
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { db } from "../services/db";
 import type { Player } from "../types/types";
 import { Table, type Column } from "../components/ui/table";
@@ -121,7 +121,17 @@ export function TeamProfileView() {
 }
 
 const columns: Column<TeamProfileRow>[] = [
-  { key: "name", header: "Name" },
+  {
+    key: "name",
+    header: "Name",
+    render: (value, row) => (
+      <Link to={`/players/${row.uid}`}>
+        <Text color="glaucous.400" _hover={{ textDecoration: "underline" }}>
+          {value as string}
+        </Text>
+      </Link>
+    ),
+  },
   { key: "age", header: "Age" },
   { key: "position", header: "Position" },
   { key: "starts", header: "Starts" },

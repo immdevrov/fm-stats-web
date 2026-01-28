@@ -8,12 +8,12 @@ import {
   HStack,
   Input,
   Button,
-  NativeSelect,
 } from "@chakra-ui/react";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { db } from "../services/db";
 import { Table, type Column, type SortDirection } from "../components/ui/table";
+import { SearchableSelect } from "../components/SearchableSelect";
 import { formatWage, average } from "../utils/utils";
 
 interface TeamData {
@@ -227,20 +227,14 @@ export function TeamsView() {
               maxW="300px"
             />
 
-            <NativeSelect.Root size="sm" width="200px">
-              <NativeSelect.Field
-                value={selectedLeague}
-                onChange={(e) => setSelectedLeague(e.target.value)}
-              >
-                <option value="">All Leagues</option>
-                {leagues.map((league) => (
-                  <option key={league} value={league}>
-                    {league}
-                  </option>
-                ))}
-              </NativeSelect.Field>
-              <NativeSelect.Indicator />
-            </NativeSelect.Root>
+            <SearchableSelect
+              options={leagues}
+              value={selectedLeague}
+              onChange={setSelectedLeague}
+              placeholder="Search leagues..."
+              allLabel="All Leagues"
+              width="220px"
+            />
           </HStack>
 
           {/* Results info */}

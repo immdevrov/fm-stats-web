@@ -13,7 +13,7 @@ import {
 } from "@chakra-ui/react";
 import { useState, useEffect, useMemo } from "react";
 import { db } from "../services/db";
-import { Table, type Column } from "../components/ui/table";
+import { Table, type Column, type SortDirection } from "../components/ui/table";
 import { formatWage, average } from "../utils/utils";
 import type { Player, LeagueRanking } from "../types/types";
 import { toaster } from "../components/ui/toaster";
@@ -32,6 +32,10 @@ export function LeaguesView() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hideUnknown, setHideUnknown] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortKey, setSortKey] = useState<keyof LeagueData>("averageWage");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const pageSize = 20;
 
   // Rankings state
   const [savedRankings, setSavedRankings] = useState<Map<string, number>>(new Map());
@@ -93,10 +97,46 @@ export function LeaguesView() {
     loadData();
   }, []);
 
-  const filteredLeagues = useMemo(() => {
-    if (!hideUnknown) return leagues;
-    return leagues.filter((league) => league.league !== "Unknown");
-  }, [leagues, hideUnknown]);
+  const sortedLeagues = useMemo(() => {
+    let result = leagues.filter((league) => league.playerCount >= 10);
+    if (hideUnknown) {
+      result = result.filter((league) => league.league !== "Unknown");
+    }
+    return [...result].sort((a, b) => {
+      const aVal = a[sortKey];
+      const bVal = b[sortKey];
+      if (typeof aVal === "number" && typeof bVal === "number") {
+        return sortDirection === "asc" ? aVal - bVal : bVal - aVal;
+      }
+      if (typeof aVal === "string" && typeof bVal === "string") {
+        return sortDirection === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+      }
+      return 0;
+    });
+  }, [leagues, hideUnknown, sortKey, sortDirection]);
+
+  const totalPages = Math.ceil(sortedLeagues.length / pageSize);
+  const paginatedLeagues = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return sortedLeagues.slice(start, start + pageSize);
+  }, [sortedLeagues, currentPage]);
+
+  const handleSortChange = (key: keyof LeagueData, direction: SortDirection) => {
+    setSortKey(key);
+    setSortDirection(direction);
+    setCurrentPage(1);
+  };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [hideUnknown]);
+
+  useEffect(() => {
+    if (savedRankings.size > 0) {
+      setSortKey("rank");
+      setSortDirection("asc");
+    }
+  }, [savedRankings]);
 
   const handleToggleUnknown = () => {
     const newValue = !hideUnknown;
@@ -329,17 +369,43 @@ export function LeaguesView() {
             </Box>
           )}
 
-          {filteredLeagues.length === 0 ? (
+          {sortedLeagues.length === 0 ? (
             <Text color="fg.muted" textAlign="center">
               No player data found. Import players first.
             </Text>
           ) : (
-            <Table
-              data={filteredLeagues}
-              columns={columns}
-              defaultSortKey={savedRankings.size > 0 ? "rank" : "averageWage"}
-              defaultSortDirection={savedRankings.size > 0 ? "asc" : "desc"}
-            />
+            <>
+              <Table
+                data={paginatedLeagues}
+                columns={columns}
+                sortKey={sortKey}
+                sortDirection={sortDirection}
+                onSortChange={handleSortChange}
+              />
+              {totalPages > 1 && (
+                <HStack justify="center" gap={2}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </Button>
+                  <Text fontSize="sm" color="fg.muted">
+                    Page {currentPage} of {totalPages}
+                  </Text>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                  </Button>
+                </HStack>
+              )}
+            </>
           )}
         </VStack>
       </Container>
