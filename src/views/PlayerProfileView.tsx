@@ -29,6 +29,7 @@ import {
 import { formatWage, displayDate, formatPositions, getPercentile, getColumn } from "../utils/utils";
 import { ROLE_CONFIG, STAT_LABELS, type RoleConfig } from "../roles";
 import { PercentileBar } from "../components/PercentileBar";
+import { SimilarPlayers } from "../components/SimilarPlayers";
 
 export function PlayerProfileView() {
   const { playerId } = useParams<{ playerId: string }>();
@@ -407,6 +408,7 @@ function ComparisonColumn({ player }: { player: Player }) {
   const [percentiles, setPercentiles] = useState<StatPercentile[]>([]);
   const [cohortSize, setCohortSize] = useState(0);
   const [sameLeagueOnly, setSameLeagueOnly] = useState(false);
+  const [cohort, setCohort] = useState<Record<string, unknown>[]>([]);
 
   const applicableRoles = useMemo(() => getPlayerRoles(player), [player]);
 
@@ -431,7 +433,7 @@ function ComparisonColumn({ player }: { player: Player }) {
     const roleConfig = ROLE_CONFIG.find((r) => r.key === selectedRole);
     if (!roleConfig) return;
 
-    const cohort = getComparisonCohort(
+    const newCohort = getComparisonCohort(
       roleConfig.RoleClass,
       allPlayers,
       leagueRankings,
@@ -440,11 +442,12 @@ function ComparisonColumn({ player }: { player: Player }) {
     const playerRole = new roleConfig.RoleClass(player) as unknown as Record<string, unknown>;
     const stats = calculateRolePercentiles(
       playerRole,
-      cohort,
+      newCohort,
       roleConfig.statKeys
     );
 
-    setCohortSize(cohort.length);
+    setCohort(newCohort);
+    setCohortSize(newCohort.length);
     setPercentiles(stats);
   }, [selectedRole, allPlayers, leagueRankings, player, sameLeagueOnly]);
 
@@ -459,6 +462,15 @@ function ComparisonColumn({ player }: { player: Player }) {
   const comparisonText = sameLeagueOnly
     ? `Compared to ${cohortSize} players in ${player.Division} with 5+ starts`
     : `Compared to ${cohortSize} players in ranked leagues with 5+ starts`;
+
+  const currentRoleConfig = ROLE_CONFIG.find((r) => r.key === selectedRole);
+  const targetPercentiles = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const stat of percentiles) {
+      map[stat.statKey] = stat.percentile;
+    }
+    return map;
+  }, [percentiles]);
 
   return (
     <Box flex={1} bg="bg.subtle" p={2} borderRadius="md" minH="300px">
@@ -517,6 +529,15 @@ function ComparisonColumn({ player }: { player: Player }) {
           />
         ))}
       </VStack>
+
+      {currentRoleConfig && (
+        <SimilarPlayers
+          playerUid={player.UID}
+          roleConfig={currentRoleConfig}
+          cohort={cohort}
+          targetPercentiles={targetPercentiles}
+        />
+      )}
     </Box>
   );
 }

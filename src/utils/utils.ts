@@ -124,18 +124,12 @@ export function calculateArchetypes<
   });
 }
 
-export function getPercentile(value: number, list: number[]): number {
-  // Handle edge cases
-  if (list.length === 0) {
+export function getPercentileFromSorted(value: number, sortedList: number[]): number {
+  if (sortedList.length === 0) {
     throw new Error("List cannot be empty");
   }
 
-  // Sort the list in ascending order
-  const sortedList = [...list].toSorted((a, b) => a - b);
-
-  // Count how many values are strictly less than the given value
   let countBelow = 0;
-  // Count how many values are equal to the given value
   let countEqual = 0;
 
   for (const item of sortedList) {
@@ -144,15 +138,20 @@ export function getPercentile(value: number, list: number[]): number {
     } else if (item === value) {
       countEqual++;
     } else {
-      break; // Since list is sorted, no need to continue
+      break;
     }
   }
 
-  // Calculate percentile using the standard formula:
-  // Percentile = (countBelow + 0.5 * countEqual) / totalCount * 100
-  const percentile = ((countBelow + 0.5 * countEqual) / list.length) * 100;
-
+  const percentile = ((countBelow + 0.5 * countEqual) / sortedList.length) * 100;
   return Math.round(percentile * 100) / 100;
+}
+
+export function getPercentile(value: number, list: number[]): number {
+  if (list.length === 0) {
+    throw new Error("List cannot be empty");
+  }
+  const sortedList = [...list].toSorted((a, b) => a - b);
+  return getPercentileFromSorted(value, sortedList);
 }
 
 export function sortIntoCohorts(numbers: number[]): {
