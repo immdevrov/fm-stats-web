@@ -22,6 +22,10 @@ interface FmStatsDB extends DBSchema {
     key: number; // rank (1-6)
     value: LeagueRanking;
   };
+  compareList: {
+    key: string;
+    value: { id: string; uids: number[] };
+  };
 }
 
 /**
@@ -32,7 +36,7 @@ interface FmStatsDB extends DBSchema {
  * - DB_VERSION: Increment this when you need to change the schema
  */
 const DB_NAME = 'fm-stats-db';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 /**
  * IndexedDB Service
@@ -77,10 +81,15 @@ class DatabaseService {
             playerStore.createIndex('by-position', 'Position', { unique: false });
           }
 
-          // Migration for leagueRankings store
           if (oldVersion < 2) {
             db.createObjectStore('leagueRankings', {
               keyPath: 'rank',
+            });
+          }
+
+          if (oldVersion < 3) {
+            db.createObjectStore('compareList', {
+              keyPath: 'id',
             });
           }
         },
@@ -284,8 +293,24 @@ class DatabaseService {
       throw new Error(`Failed to clear league rankings: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
+  async getCompareList(): Promise<number[]> {
+    try {
+      const db = await this.getDB();
+      const entry = await db.get('compareList', 'default');
+      return entry?.uids ?? [];
+    } catch {
+      return [];
+    }
+  }
+
+  async saveCompareList(uids: number[]): Promise<void> {
+    try {
+      const db = await this.getDB();
+      await db.put('compareList', { id: 'default', uids });
+    } catch (error) {
+      throw new Error(`Failed to save compare list: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
 }
 
-// Export a singleton instance
-// Best Practice: Export a single instance to ensure consistent database access
 export const db = new DatabaseService();

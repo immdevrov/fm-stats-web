@@ -1,13 +1,17 @@
 import { Table as ChakraTable, Box } from "@chakra-ui/react";
 import { useState } from "react";
+import { Tooltip } from "./tooltip";
 
 export type SortDirection = "asc" | "desc";
 
 export interface Column<T> {
   key: keyof T;
   header: string;
+  headerTooltip?: string;
   render?: (value: T[keyof T], row: T) => React.ReactNode;
   sortable?: boolean;
+  highlighted?: boolean;
+  width?: string;
 }
 
 interface TablePropsBase<T> {
@@ -115,7 +119,7 @@ export function Table<T extends Record<string, unknown>>(props: TableProps<T>) {
 
   return (
     <Box overflowX="auto">
-      <ChakraTable.Root size="sm">
+      <ChakraTable.Root size="sm" borderWidth="1px" borderRadius="md">
         <ChakraTable.Header>
           <ChakraTable.Row>
             {columns.map((column) => (
@@ -129,9 +133,25 @@ export function Table<T extends Record<string, unknown>>(props: TableProps<T>) {
                   column.sortable !== false ? { bg: "bg.muted" } : undefined
                 }
                 userSelect="none"
+                borderRightWidth="1px"
+                borderColor="border.emphasized"
+                bg={column.highlighted ? "glaucous.900/10" : undefined}
+                width={column.width}
+                whiteSpace={column.width ? "normal" : undefined}
               >
-                {column.header}
-                {column.sortable !== false && getSortIndicator(column.key)}
+                {column.headerTooltip ? (
+                  <Tooltip content={column.headerTooltip}>
+                    <span>
+                      {column.header}
+                      {column.sortable !== false && getSortIndicator(column.key)}
+                    </span>
+                  </Tooltip>
+                ) : (
+                  <>
+                    {column.header}
+                    {column.sortable !== false && getSortIndicator(column.key)}
+                  </>
+                )}
               </ChakraTable.ColumnHeader>
             ))}
           </ChakraTable.Row>
@@ -142,11 +162,16 @@ export function Table<T extends Record<string, unknown>>(props: TableProps<T>) {
               key={index}
               bg={index % 2 === 0 ? "bg.muted" : "bg"}
               cursor={onRowClick ? "pointer" : "default"}
-              _hover={onRowClick ? { bg: "bg.subtle" } : undefined}
+              _hover={{ bg: "glaucous.900/20" }}
               onClick={() => onRowClick?.(row)}
             >
               {columns.map((column) => (
-                <ChakraTable.Cell key={String(column.key)}>
+                <ChakraTable.Cell
+                  key={String(column.key)}
+                  borderRightWidth="1px"
+                  borderColor="border.emphasized"
+                  width={column.width}
+                >
                   {column.render
                     ? column.render(row[column.key], row)
                     : String(row[column.key] ?? "")}

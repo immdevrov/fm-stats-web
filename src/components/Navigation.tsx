@@ -11,6 +11,8 @@ const navItems: NavItem[] = [
   { path: "/leagues", label: "Leagues" },
   { path: "/teams", label: "Teams" },
   { path: "/players", label: "Players" },
+  { path: "/scouting", label: "Scouting" },
+  { path: "/compare", label: "Compare" },
 ];
 
 export function Navigation() {

@@ -2,7 +2,7 @@ import { Box, HStack, VStack, Text, Spinner } from "@chakra-ui/react";
 import { useState, useEffect, useTransition } from "react";
 import { Link } from "react-router-dom";
 import type { RoleConfig } from "../roles";
-import { STAT_LABELS } from "../roles";
+import { STAT_LABELS, INVERTED_STATS } from "../roles";
 import { findSimilarPlayers, type SimilarPlayer } from "../utils/similarity";
 import { Tooltip } from "./ui/tooltip";
 
@@ -13,11 +13,13 @@ interface PercentileBlockProps {
 
 function PercentileBlock({ percentile, statKey }: PercentileBlockProps) {
   const safePercentile = percentile ?? 0;
-  const color = safePercentile < 30 ? "red" : safePercentile < 60 ? "yellow" : "green";
+  const inverted = INVERTED_STATS.has(statKey);
+  const displayPercentile = inverted ? 100 - safePercentile : safePercentile;
+  const color = displayPercentile < 30 ? "red" : displayPercentile < 60 ? "yellow" : "green";
   const label = STAT_LABELS[statKey] ?? statKey;
 
   return (
-    <Tooltip content={`${label}: ${safePercentile.toFixed(0)}%`}>
+    <Tooltip content={`${label}: ${displayPercentile.toFixed(0)}%`}>
       <Box
         w="10px"
         h="10px"

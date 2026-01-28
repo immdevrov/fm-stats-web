@@ -11,9 +11,12 @@ import {
   SimpleGrid,
   Tabs,
   Checkbox,
+  Dialog,
+  Portal,
 } from "@chakra-ui/react";
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import { useCompare } from "../contexts/CompareContext";
 import { db } from "../services/db";
 import type { Player, LeagueRanking } from "../types/types";
 import {
@@ -27,7 +30,7 @@ import {
   extractGoalkeeperStats,
 } from "../types/stat-categories";
 import { formatWage, displayDate, formatPositions, getPercentile, getColumn } from "../utils/utils";
-import { ROLE_CONFIG, STAT_LABELS, type RoleConfig } from "../roles";
+import { ROLE_CONFIG, STAT_LABELS, INVERTED_STATS, type RoleConfig } from "../roles";
 import { PercentileBar } from "../components/PercentileBar";
 import { SimilarPlayers } from "../components/SimilarPlayers";
 
@@ -133,6 +136,19 @@ function PlayerInfoColumn({ player }: { player: Player }) {
 }
 
 function PlayerHeader({ player }: { player: Player }) {
+  const { compareList, addPlayer } = useCompare();
+  const navigate = useNavigate();
+  const [showDialog, setShowDialog] = useState(false);
+  const isInCompare = compareList.includes(player.UID);
+
+  const handleAddToCompare = () => {
+    const added = addPlayer(player.UID);
+    if (!added) return;
+    if (compareList.length >= 1) {
+      setShowDialog(true);
+    }
+  };
+
   return (
     <Box borderWidth="1px" borderRadius="md" p={2}>
       <VStack align="stretch" gap={1}>
@@ -140,10 +156,51 @@ function PlayerHeader({ player }: { player: Player }) {
           <Heading size="lg" color="fg.emphasized">
             {player.Name}
           </Heading>
-          <Badge colorPalette="glaucous" variant="subtle" fontSize="xs">
-            UID: {player.UID}
-          </Badge>
+          <HStack gap={2}>
+            <Button
+              size="xs"
+              variant={isInCompare ? "subtle" : "outline"}
+              colorPalette="glaucous"
+              disabled={isInCompare}
+              onClick={handleAddToCompare}
+            >
+              {isInCompare ? "In Compare" : "Add to Compare"}
+            </Button>
+            <Badge colorPalette="glaucous" variant="subtle" fontSize="xs">
+              UID: {player.UID}
+            </Badge>
+          </HStack>
         </HStack>
+
+        <Dialog.Root open={showDialog} onOpenChange={(e) => setShowDialog(e.open)}>
+          <Portal>
+            <Dialog.Backdrop />
+            <Dialog.Positioner>
+              <Dialog.Content>
+                <Dialog.Header>
+                  <Dialog.Title>Player Added</Dialog.Title>
+                </Dialog.Header>
+                <Dialog.Body>
+                  <Text>{player.Name} has been added to the compare list. Would you like to go to the compare view?</Text>
+                </Dialog.Body>
+                <Dialog.Footer>
+                  <Button variant="outline" onClick={() => setShowDialog(false)}>
+                    Stay Here
+                  </Button>
+                  <Button
+                    colorPalette="glaucous"
+                    onClick={() => {
+                      setShowDialog(false);
+                      navigate("/compare");
+                    }}
+                  >
+                    Go to Compare
+                  </Button>
+                </Dialog.Footer>
+              </Dialog.Content>
+            </Dialog.Positioner>
+          </Portal>
+        </Dialog.Root>
 
         <VStack align="stretch" gap={0} fontSize="sm">
           <HStack justify="space-between">
@@ -439,15 +496,21 @@ function ComparisonColumn({ player }: { player: Player }) {
       leagueRankings,
       sameLeagueOnly ? player.Division : undefined
     );
+
+    setCohort(newCohort);
+    setCohortSize(newCohort.length);
+
+    if (newCohort.length === 0) {
+      setPercentiles([]);
+      return;
+    }
+
     const playerRole = new roleConfig.RoleClass(player) as unknown as Record<string, unknown>;
     const stats = calculateRolePercentiles(
       playerRole,
       newCohort,
       roleConfig.statKeys
     );
-
-    setCohort(newCohort);
-    setCohortSize(newCohort.length);
     setPercentiles(stats);
   }, [selectedRole, allPlayers, leagueRankings, player, sameLeagueOnly]);
 
@@ -520,14 +583,21 @@ function ComparisonColumn({ player }: { player: Player }) {
         </Text>
       </HStack>
       <VStack align="stretch" gap={1}>
-        {percentiles.map((stat) => (
-          <PercentileBar
-            key={stat.statKey}
-            label={stat.label}
-            value={stat.value}
-            percentile={stat.percentile}
-          />
-        ))}
+        {cohortSize === 0 ? (
+          <Text color="fg.muted" fontSize="sm" py={4}>
+            No comparable players found in {sameLeagueOnly ? "this league" : "ranked leagues"} with 5+ starts.
+          </Text>
+        ) : (
+          percentiles.map((stat) => (
+            <PercentileBar
+              key={stat.statKey}
+              label={stat.label}
+              value={stat.value}
+              percentile={stat.percentile}
+              inverted={INVERTED_STATS.has(stat.statKey)}
+            />
+          ))
+        )}
       </VStack>
 
       {currentRoleConfig && (

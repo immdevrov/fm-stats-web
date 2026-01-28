@@ -6,6 +6,8 @@ import { TeamsView } from "./views/TeamsView";
 import { TeamProfileView } from "./views/TeamProfileView";
 import { PlayersView } from "./views/PlayersView";
 import { PlayerProfileView } from "./views/PlayerProfileView";
+import { ScoutingView } from "./views/ScoutingView";
+import { CompareView } from "./views/CompareView";
 
 function App() {
   return (
@@ -18,6 +20,8 @@ function App() {
         <Route path="teams/:teamName" element={<TeamProfileView />} />
         <Route path="players" element={<PlayersView />} />
         <Route path="players/:playerId" element={<PlayerProfileView />} />
+        <Route path="scouting" element={<ScoutingView />} />
+        <Route path="compare" element={<CompareView />} />
       </Route>
     </Routes>
   );

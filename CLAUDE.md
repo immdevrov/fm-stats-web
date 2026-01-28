@@ -119,6 +119,21 @@ GK (Goalkeeper), D (Defender), WB (Wing Back), DM (Defensive Midfielder), M (Mid
 - `formatPositions()` — "D(RC), WB(L)" format
 - `parseCustomDate()` — parses "DD/MM/YYYY" format
 
+## Scouting View
+
+Route: `/scouting` — role-based player scouting with percentile analysis.
+
+### Architecture
+- **`src/utils/stat-group-mapping.ts`**: Maps each role to stat groups (e.g. defensive, aerial, passing). `getStatGroupsForRole(roleKey)` returns `StatGroup[]`.
+- **`src/utils/scouting-engine.ts`**: `buildScoutingCohort()` filters players (role match + ranked league + 5+ starts). `computeScoutingData()` computes per-stat percentiles and group ratings (sum of adjusted percentiles ranked as a percentile).
+- **`src/views/ScoutingView.tsx`**: Role tabs, side selector (FB/W), filters (wage, contract, injuries, leagues), percentile table with color coding, pagination.
+
+### Key Design Decisions
+- Percentiles computed on full cohort BEFORE filters. Filters only hide rows.
+- Group ratings: sum stat percentiles (inverted for INVERTED_STATS) → rank sum as percentile across cohort.
+- Side selector (FB/W) changes the cohort class (LeftFullback, RightFullback, etc.) and recomputes percentiles.
+- `useTransition` wraps cohort computation for responsive UI during role/side switches.
+
 ## Type Utilities
 
 - `KeyOfType<T, V>` — extracts keys where value is type V

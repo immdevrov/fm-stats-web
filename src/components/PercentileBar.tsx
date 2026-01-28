@@ -5,6 +5,7 @@ interface PercentileBarProps {
   value: number;
   percentile: number;
   formatValue?: (v: number) => string;
+  inverted?: boolean;
 }
 
 export function PercentileBar({
@@ -12,8 +13,10 @@ export function PercentileBar({
   value,
   percentile,
   formatValue,
+  inverted = false,
 }: PercentileBarProps) {
-  const color = percentile < 30 ? "red" : percentile < 60 ? "yellow" : "green";
+  const displayPercentile = inverted ? 100 - percentile : percentile;
+  const color = displayPercentile < 30 ? "red" : displayPercentile < 60 ? "yellow" : "green";
 
   return (
     <HStack gap={2}>
@@ -22,14 +25,14 @@ export function PercentileBar({
       </Text>
       <Box flex={1} h="12px" bg="bg.muted" borderRadius="sm" overflow="hidden">
         <Box
-          w={`${percentile}%`}
+          w={`${displayPercentile}%`}
           h="100%"
           bg={`${color}.500`}
           borderRadius="sm"
         />
       </Box>
       <Text w="32px" fontSize="xs" textAlign="right" flexShrink={0}>
-        {percentile.toFixed(0)}
+        {displayPercentile.toFixed(0)}
       </Text>
       <Text w="50px" fontSize="xs" color="fg.muted" textAlign="right" flexShrink={0}>
         {formatValue?.(value) ?? value.toFixed(2)}
