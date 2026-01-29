@@ -18,6 +18,7 @@ interface TablePropsBase<T> {
   data: T[];
   columns: Column<T>[];
   onRowClick?: (row: T) => void;
+  filterRow?: React.ReactNode;
 }
 
 interface UncontrolledTableProps<T> extends TablePropsBase<T> {
@@ -45,7 +46,7 @@ function isControlled<T>(
 }
 
 export function Table<T extends Record<string, unknown>>(props: TableProps<T>) {
-  const { data, columns, onRowClick } = props;
+  const { data, columns, onRowClick, filterRow } = props;
 
   // Internal state for uncontrolled mode
   const [internalSortKey, setInternalSortKey] = useState<keyof T | undefined>(
@@ -141,10 +142,10 @@ export function Table<T extends Record<string, unknown>>(props: TableProps<T>) {
               >
                 {column.headerTooltip ? (
                   <Tooltip content={column.headerTooltip}>
-                    <span>
+                    <Box display="flex" alignItems="center" w="100%" h="100%">
                       {column.header}
                       {column.sortable !== false && getSortIndicator(column.key)}
-                    </span>
+                    </Box>
                   </Tooltip>
                 ) : (
                   <>
@@ -155,6 +156,7 @@ export function Table<T extends Record<string, unknown>>(props: TableProps<T>) {
               </ChakraTable.ColumnHeader>
             ))}
           </ChakraTable.Row>
+          {filterRow}
         </ChakraTable.Header>
         <ChakraTable.Body>
           {displayData.map((row, index) => (

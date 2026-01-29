@@ -7,10 +7,13 @@ import {
   HStack,
   Button,
   Input,
+  Table as CTable,
+  Popover as ChakraPopover,
 } from "@chakra-ui/react";
 import { useState, useEffect, useMemo, useCallback, useTransition, useRef } from "react";
 import { Link } from "react-router-dom";
 import { db } from "../services/db";
+import { useCompare } from "../contexts/CompareContext";
 import type { Player, LeagueRanking } from "../types/types";
 import { Table, type Column, type SortDirection } from "../components/ui/table";
 import {
@@ -77,6 +80,32 @@ import {
 
 const PAGE_SIZE = 20;
 const DEBOUNCE_MS = 300;
+const STORAGE_KEY = "scouting-filters";
+
+interface SavedFilters {
+  selectedRoleIndex: number;
+  side: Side;
+  contractBefore: string;
+  columnFilters: Record<string, { min?: string; max?: string }>;
+  excludeInjuries: boolean;
+  excludedLeagues: string[];
+  sortKey: string;
+  sortDirection: SortDirection;
+}
+
+function loadFilters(): Partial<SavedFilters> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch { /* ignore */ }
+  return {};
+}
+
+function saveFilters(filters: SavedFilters) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(filters));
+  } catch { /* ignore */ }
+}
 
 function useDebouncedValue<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -191,26 +220,85 @@ function LeagueMultiSelect({ leagues, excluded, onToggle }: LeagueMultiSelectPro
   );
 }
 
+function ColumnFilterPopover({
+  colKey,
+  minVal,
+  maxVal,
+  onChange,
+}: {
+  colKey: string;
+  minVal: string;
+  maxVal: string;
+  onChange: (key: string, field: "min" | "max", value: string) => void;
+}) {
+  const hasFilter = minVal !== "" || maxVal !== "";
+
+  return (
+    <ChakraPopover.Root positioning={{ placement: "bottom" }}>
+      <ChakraPopover.Trigger asChild>
+        <Button
+          size="xs"
+          variant={hasFilter ? "solid" : "outline"}
+          colorPalette={hasFilter ? "glaucous" : undefined}
+          px={1}
+          minW="20px"
+          h="20px"
+          fontSize="xs"
+        >
+          f
+        </Button>
+      </ChakraPopover.Trigger>
+      <ChakraPopover.Positioner>
+        <ChakraPopover.Content w="auto" p={2}>
+          <ChakraPopover.Body p={0}>
+            <VStack gap={1.5} align="stretch">
+              <Input
+                size="xs"
+                placeholder="min"
+                value={minVal}
+                onChange={(e) => onChange(colKey, "min", e.target.value)}
+                type="number"
+                w="100px"
+              />
+              <Input
+                size="xs"
+                placeholder="max"
+                value={maxVal}
+                onChange={(e) => onChange(colKey, "max", e.target.value)}
+                type="number"
+                w="100px"
+              />
+            </VStack>
+          </ChakraPopover.Body>
+        </ChakraPopover.Content>
+      </ChakraPopover.Positioner>
+    </ChakraPopover.Root>
+  );
+}
+
 export function ScoutingView() {
   const [allPlayers, setAllPlayers] = useState<Player[]>([]);
   const [leagueRankings, setLeagueRankings] = useState<LeagueRanking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [selectedRoleIndex, setSelectedRoleIndex] = useState(0);
-  const [side, setSide] = useState<Side>("both");
+  const { compareList, addPlayer, removePlayer } = useCompare();
+  const compareSet = useMemo(() => new Set(compareList), [compareList]);
 
-  const [wageMinRaw, setWageMin] = useState("");
-  const [wageMaxRaw, setWageMax] = useState("");
-  const [contractBeforeRaw, setContractBefore] = useState("");
-  const wageMin = useDebouncedValue(wageMinRaw, DEBOUNCE_MS);
-  const wageMax = useDebouncedValue(wageMaxRaw, DEBOUNCE_MS);
+  const [saved] = useState(loadFilters);
+
+  const [selectedRoleIndex, setSelectedRoleIndex] = useState(saved.selectedRoleIndex ?? 0);
+  const [side, setSide] = useState<Side>(saved.side ?? "both");
+
+  const [contractBeforeRaw, setContractBefore] = useState(saved.contractBefore ?? "");
   const contractBefore = useDebouncedValue(contractBeforeRaw, DEBOUNCE_MS);
-  const [excludeInjuries, setExcludeInjuries] = useState(true);
-  const [excludedLeagues, setExcludedLeagues] = useState<Set<string>>(new Set());
+  const [columnFiltersRaw, setColumnFiltersRaw] = useState<Record<string, { min?: string; max?: string }>>(saved.columnFilters ?? {});
+  const columnFilters = useDebouncedValue(columnFiltersRaw, DEBOUNCE_MS);
+  const [excludeInjuries, setExcludeInjuries] = useState(saved.excludeInjuries ?? true);
+  const [excludedLeagues, setExcludedLeagues] = useState<Set<string>>(new Set(saved.excludedLeagues));
 
-  const [sortKey, setSortKey] = useState<keyof ScoutingRow>("name");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [sortKey, setSortKey] = useState<keyof ScoutingRow>((saved.sortKey as keyof ScoutingRow) ?? "name");
+  const [sortDirection, setSortDirection] = useState<SortDirection>(saved.sortDirection ?? "asc");
   const [currentPage, setCurrentPage] = useState(1);
 
   const [scoutingData, setScoutingData] = useState<ScoutingRow[]>([]);
@@ -251,6 +339,19 @@ export function ScoutingView() {
     });
   }, [allPlayers, leagueRankings, roleConfig, side, statGroups]);
 
+  useEffect(() => {
+    saveFilters({
+      selectedRoleIndex,
+      side,
+      contractBefore: contractBeforeRaw,
+      columnFilters: columnFiltersRaw,
+      excludeInjuries,
+      excludedLeagues: Array.from(excludedLeagues),
+      sortKey: sortKey as string,
+      sortDirection,
+    });
+  }, [selectedRoleIndex, side, contractBeforeRaw, columnFiltersRaw, excludeInjuries, excludedLeagues, sortKey, sortDirection]);
+
   const availableLeagues = useMemo(() => {
     const leagues = new Set<string>();
     for (const row of scoutingData) {
@@ -265,20 +366,37 @@ export function ScoutingView() {
     if (excludeInjuries) {
       result = result.filter((r) => !r.injuries);
     }
-    if (wageMin) {
-      const min = Number(wageMin);
-      if (!isNaN(min)) result = result.filter((r) => r.wage >= min);
-    }
-    if (wageMax) {
-      const max = Number(wageMax);
-      if (!isNaN(max)) result = result.filter((r) => r.wage <= max);
-    }
     if (contractBefore) {
       const before = new Date(contractBefore);
       result = result.filter((r) => r.contractExpires && r.contractExpires <= before);
     }
     if (excludedLeagues.size > 0) {
       result = result.filter((r) => !excludedLeagues.has(r.division));
+    }
+
+    for (const [key, bounds] of Object.entries(columnFilters)) {
+      const min = bounds.min ? Number(bounds.min) : undefined;
+      const max = bounds.max ? Number(bounds.max) : undefined;
+      if (min === undefined && max === undefined) continue;
+
+      result = result.filter((r) => {
+        let val: number | undefined;
+        if (key.startsWith("stat_")) {
+          const statKey = key.slice(5);
+          val = r.statPercentiles[statKey];
+          if (val !== undefined && INVERTED_STATS.has(statKey)) val = 100 - val;
+        } else if (key.startsWith("group_")) {
+          val = r.groupRatings[key.slice(6)];
+        } else if (key === "age") {
+          val = r.age;
+        } else if (key === "wage") {
+          val = r.wage;
+        }
+        if (val === undefined) return true;
+        if (min !== undefined && !isNaN(min) && val < min) return false;
+        if (max !== undefined && !isNaN(max) && val > max) return false;
+        return true;
+      });
     }
 
     return [...result].sort((a, b) => {
@@ -318,7 +436,7 @@ export function ScoutingView() {
       }
       return 0;
     });
-  }, [scoutingData, excludeInjuries, wageMin, wageMax, contractBefore, excludedLeagues, sortKey, sortDirection]);
+  }, [scoutingData, excludeInjuries, columnFilters, contractBefore, excludedLeagues, sortKey, sortDirection]);
 
   const totalPages = Math.ceil(filteredAndSorted.length / PAGE_SIZE);
   const paginatedData = useMemo(() => {
@@ -328,7 +446,7 @@ export function ScoutingView() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedRoleIndex, side, wageMin, wageMax, contractBefore, excludeInjuries, excludedLeagues, sortKey, sortDirection]);
+  }, [selectedRoleIndex, side, columnFilters, contractBefore, excludeInjuries, excludedLeagues, sortKey, sortDirection]);
 
   useEffect(() => {
     setSide("both");
@@ -341,6 +459,31 @@ export function ScoutingView() {
     },
     []
   );
+
+  const setColumnFilter = useCallback((key: string, field: "min" | "max", value: string) => {
+    setColumnFiltersRaw((prev) => {
+      const entry = prev[key] ?? {};
+      const updated = { ...entry, [field]: value };
+      if (!updated.min && !updated.max) {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      }
+      return { ...prev, [key]: updated };
+    });
+  }, []);
+
+  const clearFilters = useCallback(() => {
+    setContractBefore("");
+    setColumnFiltersRaw({});
+    setExcludeInjuries(true);
+    setExcludedLeagues(new Set());
+  }, []);
+
+  const hasActiveFilters = contractBeforeRaw !== "" ||
+    Object.keys(columnFiltersRaw).length > 0 ||
+    !excludeInjuries ||
+    excludedLeagues.size > 0;
 
   const toggleLeague = useCallback((league: string) => {
     setExcludedLeagues((prev) => {
@@ -359,13 +502,34 @@ export function ScoutingView() {
       {
         key: "name",
         header: "Name",
-        render: (_v, row) => (
-          <Link to={`/players/${row.uid}`}>
-            <Text color="glaucous.400" _hover={{ textDecoration: "underline" }} fontSize="sm">
-              {row.name}
-            </Text>
-          </Link>
-        ),
+        render: (_v, row) => {
+          const inCompare = compareSet.has(row.uid);
+          return (
+            <HStack gap={1}>
+              <Link to={`/players/${row.uid}`}>
+                <Text color="glaucous.400" _hover={{ textDecoration: "underline" }} fontSize="sm">
+                  {row.name}
+                </Text>
+              </Link>
+              <Button
+                size="xs"
+                variant={inCompare ? "solid" : "outline"}
+                colorPalette={inCompare ? "glaucous" : undefined}
+                px={1}
+                minW="18px"
+                h="18px"
+                fontSize="2xs"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (inCompare) removePlayer(row.uid);
+                  else addPlayer(row.uid);
+                }}
+              >
+                vs
+              </Button>
+            </HStack>
+          );
+        },
       },
       { key: "age", header: "Age" },
       { key: "club", header: "Club", sortable: false },
@@ -406,7 +570,42 @@ export function ScoutingView() {
     }
 
     return base;
-  }, [roleConfig.statKeys, statGroups]);
+  }, [roleConfig.statKeys, statGroups, compareSet, addPlayer, removePlayer]);
+
+  const filterRow = useMemo(() => {
+    const filterableKeys = new Set(["age", "wage"]);
+
+    return (
+      <CTable.Row bg="bg.subtle">
+        {columns.map((col) => {
+          const key = String(col.key);
+          const isFilterable =
+            filterableKeys.has(key) ||
+            key.startsWith("stat_") ||
+            key.startsWith("group_");
+
+          return (
+            <CTable.Cell
+              key={key}
+              borderRightWidth="1px"
+              borderColor="border.emphasized"
+              p={1}
+              textAlign="center"
+            >
+              {isFilterable ? (
+                <ColumnFilterPopover
+                  colKey={key}
+                  minVal={columnFiltersRaw[key]?.min ?? ""}
+                  maxVal={columnFiltersRaw[key]?.max ?? ""}
+                  onChange={setColumnFilter}
+                />
+              ) : null}
+            </CTable.Cell>
+          );
+        })}
+      </CTable.Row>
+    );
+  }, [columns, columnFiltersRaw, setColumnFilter]);
 
   if (isLoading) {
     return (
@@ -468,22 +667,6 @@ export function ScoutingView() {
           </HStack>
 
           <HStack gap={3} flexWrap="wrap" align="center">
-            <Input
-              placeholder="Min wage"
-              value={wageMinRaw}
-              onChange={(e) => setWageMin(e.target.value)}
-              maxW="110px"
-              size="sm"
-              type="number"
-            />
-            <Input
-              placeholder="Max wage"
-              value={wageMaxRaw}
-              onChange={(e) => setWageMax(e.target.value)}
-              maxW="110px"
-              size="sm"
-              type="number"
-            />
             <HStack gap={1}>
               <Text color="fg.muted" fontSize="sm" whiteSpace="nowrap">Contract before:</Text>
               <Input
@@ -508,6 +691,11 @@ export function ScoutingView() {
                 excluded={excludedLeagues}
                 onToggle={toggleLeague}
               />
+            )}
+            {hasActiveFilters && (
+              <Button size="xs" variant="outline" colorPalette="spicyPaprika" onClick={clearFilters}>
+                Clear filters
+              </Button>
             )}
             <Text color="fg.muted" fontSize="sm" ml="auto">
               {filteredAndSorted.length}/{cohortSize} players
@@ -540,6 +728,7 @@ export function ScoutingView() {
                   sortKey={sortKey}
                   sortDirection={sortDirection}
                   onSortChange={handleSortChange}
+                  filterRow={filterRow}
                 />
 
                 {totalPages > 1 && (
