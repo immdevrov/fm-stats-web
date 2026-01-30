@@ -71,6 +71,7 @@ export const ROLE_CONFIG: RoleConfig[] = [
       "tackles",
       "tackleRatio",
       "pressuresSuccessful",
+      "headersWonRatio",
       "crossRatio",
       "crossesSuccessful",
       "xA",
