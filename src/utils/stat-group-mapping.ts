@@ -6,7 +6,7 @@ export interface StatGroup {
 
 const ROLE_STAT_GROUPS: Record<string, StatGroup[]> = {
   GK: [
-    { key: "goalkeeper", label: "Goalkeeper", statKeys: ["saveRatio", "expectedSaveRatio", "savesHeldRatio", "goalsPrevented", "saveRatioOverExpected", "concededPer90"] },
+    { key: "goalkeeper", label: "Goalkeeper", statKeys: ["saveRatio", "expectedSaveRatio", "savesHeldRatio", "goalsPrevented", "saveRatioOverExpected", "concededPer90", "savesPer90"] },
     { key: "passing", label: "Passing", statKeys: ["passRatio", "progressivePasses"] },
     { key: "error", label: "Error", statKeys: ["mistakes"] },
   ],

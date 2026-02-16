@@ -86,6 +86,8 @@ export interface IGoalkeeperStats {
   savesHeldRatio: number;
   /** goals conceded per 90 */
   concededPer90: number;
+  /** total saves per 90 minutes */
+  savesPer90: number;
 }
 
 export interface IPhysicalStats {
@@ -238,6 +240,9 @@ export function extractGoalkeeperStats(player: Player): IGoalkeeperStats {
     expectedSaveRatio: safeNumber(player.exsvPercentage),
     savesHeldRatio,
     concededPer90: safeNumber(player.ConPer90),
+    savesPer90: player.Mins > 0
+      ? Math.round(((svh + svp + svt) / player.Mins) * 90 * 100) / 100
+      : 0,
   };
 }
 

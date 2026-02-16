@@ -43,6 +43,7 @@ export const ROLE_CONFIG: RoleConfig[] = [
       "goalsPrevented",
       "savesHeldRatio",
       "concededPer90",
+      "savesPer90",
       "passRatio",
       "progressivePasses",
       "mistakes",
@@ -197,6 +198,7 @@ export const STAT_LABELS: Record<string, string> = {
   shots: "Shots",
   ballRetention: "Ball Retention",
   concededPer90: "Conceded",
+  savesPer90: "Saves",
   mistakes: "Mistakes",
   distance: "Distance",
 };

@@ -20,6 +20,8 @@ export interface IGoalkeeper
     IErrorStats {
   /** goals conceded per 90 */
   concededPer90: number;
+  /** total saves per 90 minutes */
+  savesPer90: number;
   /** saveRatio - expectedSaveRatio */
   saveRatioOverExpected: number;
 }
@@ -31,6 +33,7 @@ export class GoalKeeper extends Role implements IGoalkeeper {
   readonly expectedSaveRatio: number;
   readonly savesHeldRatio: number;
   readonly concededPer90: number;
+  readonly savesPer90: number;
 
   // Passing stats
   readonly passRatio: number;
@@ -55,6 +58,7 @@ export class GoalKeeper extends Role implements IGoalkeeper {
     this.expectedSaveRatio = gkStats.expectedSaveRatio;
     this.savesHeldRatio = gkStats.savesHeldRatio;
     this.concededPer90 = gkStats.concededPer90;
+    this.savesPer90 = gkStats.savesPer90;
 
     const passStats = extractPassingStats(player);
     this.passRatio = passStats.passRatio;
