@@ -14,12 +14,12 @@ import { Striker, type IStriker } from "../roles/striker";
 
 export class StrikersProcessor {
   players: Striker[];
-  private ARHETYPE_NAMES = {
+  private ARCHETYPE_NAMES = {
     GOALSCORER: "goalscorer",
     PRESSING_FORWARD: "pressing forward",
     CREATOR: "creator",
     TARGET_FORWARD: "target forward",
-    ADVANCED_FORWARD: "adwanced forward",
+    ADVANCED_FORWARD: "advanced forward",
   };
 
   constructor(players: Player[]) {
@@ -30,15 +30,15 @@ export class StrikersProcessor {
 
   get archetypes(): Record<string, KeyOfType<IStriker, number>[]> {
     return {
-      [this.ARHETYPE_NAMES.GOALSCORER]: ["conversionRatio", "shots", "goals"],
-      [this.ARHETYPE_NAMES.PRESSING_FORWARD]: ["pressuresSuccessful", "tackleRatio"],
-      [this.ARHETYPE_NAMES.CREATOR]: ["xA", "chancesCreated"],
-      [this.ARHETYPE_NAMES.TARGET_FORWARD]: [
+      [this.ARCHETYPE_NAMES.GOALSCORER]: ["conversionRatio", "shots", "goals"],
+      [this.ARCHETYPE_NAMES.PRESSING_FORWARD]: ["pressuresSuccessful", "tackleRatio"],
+      [this.ARCHETYPE_NAMES.CREATOR]: ["xA", "chancesCreated"],
+      [this.ARCHETYPE_NAMES.TARGET_FORWARD]: [
         "headersWonRatio",
         "keyHeaders",
         "ballRetention",
       ],
-      [this.ARHETYPE_NAMES.ADVANCED_FORWARD]: ["dribbles", "keyPasses"],
+      [this.ARCHETYPE_NAMES.ADVANCED_FORWARD]: ["dribbles", "keyPasses"],
     };
   }
 
@@ -52,10 +52,10 @@ export class StrikersProcessor {
     return filtered;
   }
 
-  analize(strikers: Striker[]) {
-    const playersWithArhetype = calculateArchetypes(strikers, this.archetypes);
+  analyze(strikers: Striker[]) {
+    const playersWithArchetype = calculateArchetypes(strikers, this.archetypes);
 
-    return playersWithArhetype;
+    return playersWithArchetype;
   }
 
   print(strikers: Striker[]) {
@@ -100,7 +100,7 @@ export class StrikersProcessor {
         contractExpires: contractExpires ? displayDate(contractExpires) : null,
       };
     });
-    console.log(`There is ${display.length} strikers to watch`);
+    console.log(`There are ${display.length} strikers to watch`);
     printTable(display);
   }
 }

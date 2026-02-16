@@ -8,7 +8,7 @@ export class WingerProcessor {
   playersLeft: LeftWinger[];
   playersRight: RightWinger[];
 
-  private ARHETYPE_NAMES = {
+  private ARCHETYPE_NAMES = {
     WINGER: "winger",
     INSIDE: "inside",
     WIDE_PLAYMAKER: "wide playmaker",
@@ -24,28 +24,28 @@ export class WingerProcessor {
 
   get archetypes(): Record<string, KeyOfType<IWinger, number>[]> {
     return {
-      [this.ARHETYPE_NAMES.WINGER]: [
+      [this.ARCHETYPE_NAMES.WINGER]: [
         "chancesCreated",
         "crossRatio",
         "crossesSuccessful",
         "dribbles",
       ],
-      [this.ARHETYPE_NAMES.INSIDE]: ["chancesCreated", "dribbles", "conversionRatio", "npxG"],
-      [this.ARHETYPE_NAMES.WIDE_PLAYMAKER]: ["keyPasses", "chancesCreated", "xA"],
+      [this.ARCHETYPE_NAMES.INSIDE]: ["chancesCreated", "dribbles", "conversionRatio", "npxG"],
+      [this.ARCHETYPE_NAMES.WIDE_PLAYMAKER]: ["keyPasses", "chancesCreated", "xA"],
     };
   }
 
-  analize(wingers: Array<LeftWinger | RightWinger>) {
-    const playersWithArhetypeLeft = calculateArchetypes(
+  analyze(wingers: Array<LeftWinger | RightWinger>) {
+    const playersWithArchetypeLeft = calculateArchetypes(
       wingers.filter((p) => p.side === "left"),
       this.archetypes
     );
-    const playersWithArhetypeRight = calculateArchetypes(
+    const playersWithArchetypeRight = calculateArchetypes(
       wingers.filter((p) => p.side === "right"),
       this.archetypes
     );
 
-    return [playersWithArhetypeLeft, playersWithArhetypeRight].flat();
+    return [playersWithArchetypeLeft, playersWithArchetypeRight].flat();
   }
 
   filter() {
@@ -112,7 +112,7 @@ export class WingerProcessor {
         contractExpires: contractExpires ? displayDate(contractExpires) : null,
       };
     });
-    console.log(`There is ${display.length} ${side} wingers to watch`);
+    console.log(`There are ${display.length} ${side} wingers to watch`);
     printTable(display);
   }
 }

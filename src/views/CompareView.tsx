@@ -85,7 +85,7 @@ export function CompareView() {
       players.every((p) => rc.RoleClass.isRole(p))
     );
     if (allMatch !== -1) {
-      setSelectedRoleIndex(allMatch);
+      setSelectedRoleIndex(allMatch); // eslint-disable-line react-hooks/set-state-in-effect
       return;
     }
     const anyMatch = ROLE_CONFIG.findIndex((rc) =>
@@ -98,7 +98,7 @@ export function CompareView() {
   const hasSideSelector = roleConfig.key === "FB" || roleConfig.key === "W";
 
   useEffect(() => {
-    setSide("both");
+    setSide("both"); // eslint-disable-line react-hooks/set-state-in-effect
   }, [selectedRoleIndex]);
 
   const cohort = useMemo(() => {

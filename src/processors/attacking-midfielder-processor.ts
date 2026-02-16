@@ -2,11 +2,11 @@ import { getFilters } from "../filters";
 import type { KeyOfType, Player } from "../types";
 import { calculateArchetypes, displayDate, formatWage, printTable } from "../utils";
 import { applyFilters } from "../roles/_filter";
-import { AttackingMidfielder, type IAttackingMidfielder } from "../roles/attacking-midfilder";
+import { AttackingMidfielder, type IAttackingMidfielder } from "../roles/attacking-midfielder";
 
 export class AttackingMidfielderProcessor {
   players: AttackingMidfielder[];
-  private ARHETYPE_NAMES = {
+  private ARCHETYPE_NAMES = {
     ADVANCED_PLAYMAKER: "advanced playmaker",
   };
 
@@ -18,14 +18,14 @@ export class AttackingMidfielderProcessor {
 
   get archetypes(): Record<string, KeyOfType<IAttackingMidfielder, number>[]> {
     return {
-      [this.ARHETYPE_NAMES.ADVANCED_PLAYMAKER]: ["keyPasses", "chancesCreated", "npxG"],
+      [this.ARCHETYPE_NAMES.ADVANCED_PLAYMAKER]: ["keyPasses", "chancesCreated", "npxG"],
     };
   }
 
-  analize(players: AttackingMidfielder[]) {
-    const playersWithArhetype = calculateArchetypes(players, this.archetypes);
+  analyze(players: AttackingMidfielder[]) {
+    const playersWithArchetype = calculateArchetypes(players, this.archetypes);
 
-    return playersWithArhetype;
+    return playersWithArchetype;
   }
 
   filter() {
@@ -70,7 +70,7 @@ export class AttackingMidfielderProcessor {
         contractExpires: contractExpires ? displayDate(contractExpires) : null,
       };
     });
-    console.log(`There is ${display.length} attacking midfielders to watch`);
+    console.log(`There are ${display.length} attacking midfielders to watch`);
     printTable(display);
   }
 }

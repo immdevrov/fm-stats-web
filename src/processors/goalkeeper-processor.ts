@@ -7,7 +7,7 @@ import { GoalKeeper, type IGoalkeeper } from "../roles/goalkeeper";
 export class GoalKeeperProcessor {
   players: GoalKeeper[];
 
-  private ARHETYPE_NAMES = {
+  private ARCHETYPE_NAMES = {
     SHOT_STOPPER: "shot stopper",
     PASSER: "passer",
   };
@@ -20,19 +20,19 @@ export class GoalKeeperProcessor {
 
   get archetypes(): Record<string, KeyOfType<IGoalkeeper, number>[]> {
     return {
-      [this.ARHETYPE_NAMES.SHOT_STOPPER]: [
+      [this.ARCHETYPE_NAMES.SHOT_STOPPER]: [
         "saveRatioOverExpected",
         "savesHeldRatio",
         "goalsPrevented",
       ],
-      [this.ARHETYPE_NAMES.PASSER]: ["passRatio", "progressivePasses"],
+      [this.ARCHETYPE_NAMES.PASSER]: ["passRatio", "progressivePasses"],
     };
   }
 
-  analize(players: GoalKeeper[]) {
-    const playersWithArhetype = calculateArchetypes(players, this.archetypes);
+  analyze(players: GoalKeeper[]) {
+    const playersWithArchetype = calculateArchetypes(players, this.archetypes);
 
-    return playersWithArhetype;
+    return playersWithArchetype;
   }
 
   filter() {
@@ -43,8 +43,8 @@ export class GoalKeeperProcessor {
     return filteredPlayers;
   }
 
-  print(goakeepers: GoalKeeper[]) {
-    const display = goakeepers.map((g) => {
+  print(goalkeepers: GoalKeeper[]) {
+    const display = goalkeepers.map((g) => {
       const {
         uid,
         name,
@@ -74,7 +74,7 @@ export class GoalKeeperProcessor {
         contractExpires: contractExpires ? displayDate(contractExpires) : null,
       };
     });
-    console.log(`There is ${display.length} goalkeepers to watch`);
+    console.log(`There are ${display.length} goalkeepers to watch`);
     printTable(display);
   }
 }

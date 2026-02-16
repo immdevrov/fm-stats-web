@@ -72,7 +72,7 @@ export function SearchableSelect({
   useEffect(() => {
     if (isOpen && listRef.current) {
       listRef.current.scrollTop = 0;
-      setScrollTop(0);
+      setScrollTop(0); // eslint-disable-line react-hooks/set-state-in-effect
     }
   }, [isOpen, search]);
 

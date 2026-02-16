@@ -2,12 +2,12 @@ import { getFilters } from "../filters";
 import type { KeyOfType, Player } from "../types";
 import { calculateArchetypes, displayDate, formatWage, printTable } from "../utils";
 import { applyFilters } from "../roles/_filter";
-import { DefensiveMidfielder, type IDefensiveMidfielder } from "../roles/defensive-midfilder";
+import { DefensiveMidfielder, type IDefensiveMidfielder } from "../roles/defensive-midfielder";
 
 export class DefensiveMidfielderProcessor {
   players: DefensiveMidfielder[];
 
-  private ARHETYPE_NAMES = {
+  private ARCHETYPE_NAMES = {
     DESTROYER: "destroyer",
     DEEP_PLAYMAKER: "deep playmaker",
     ANCHOR: "anchor",
@@ -21,13 +21,13 @@ export class DefensiveMidfielderProcessor {
 
   get archetypes(): Record<string, KeyOfType<IDefensiveMidfielder, number>[]> {
     return {
-      [this.ARHETYPE_NAMES.DESTROYER]: ["pressuresSuccessful", "tackleRatio", "possessionWon"],
-      [this.ARHETYPE_NAMES.DEEP_PLAYMAKER]: [
+      [this.ARCHETYPE_NAMES.DESTROYER]: ["pressuresSuccessful", "tackleRatio", "possessionWon"],
+      [this.ARCHETYPE_NAMES.DEEP_PLAYMAKER]: [
         "ballRetention",
         "progressivePasses",
         "keyPasses",
       ],
-      [this.ARHETYPE_NAMES.ANCHOR]: [
+      [this.ARCHETYPE_NAMES.ANCHOR]: [
         "passRatio",
         "progressivePasses",
         "ballRetention",
@@ -35,10 +35,10 @@ export class DefensiveMidfielderProcessor {
     };
   }
 
-  analize(players: DefensiveMidfielder[]) {
-    const playersWithArhetype = calculateArchetypes(players, this.archetypes);
+  analyze(players: DefensiveMidfielder[]) {
+    const playersWithArchetype = calculateArchetypes(players, this.archetypes);
 
-    return playersWithArhetype;
+    return playersWithArchetype;
   }
 
   filter() {
@@ -85,7 +85,7 @@ export class DefensiveMidfielderProcessor {
         contractExpires: contractExpires ? displayDate(contractExpires) : null,
       };
     });
-    console.log(`There is ${display.length} def midfielders to watch`);
+    console.log(`There are ${display.length} def midfielders to watch`);
     printTable(display);
   }
 }

@@ -27,6 +27,7 @@ export abstract class Role implements IRole {
     this.player = player;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   static isRole(_p: Player): boolean {
     return true;
   }

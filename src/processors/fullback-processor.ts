@@ -13,7 +13,7 @@ export class FullbackProcessor {
   playersLeft: LeftFullback[];
   playersRight: RightFullback[];
 
-  private ARHETYPE_NAMES = {
+  private ARCHETYPE_NAMES = {
     WIDE_DEFENDER: "wide defender",
     WING_BACK: "wing back",
     INVERTED_FB: "inverted fullback",
@@ -29,12 +29,12 @@ export class FullbackProcessor {
 
   get archetypes(): Record<string, KeyOfType<IFullback, number>[]> {
     return {
-      [this.ARHETYPE_NAMES.WIDE_DEFENDER]: [
+      [this.ARCHETYPE_NAMES.WIDE_DEFENDER]: [
         "possessionWon",
         "tackleRatio",
         "headersWonRatio",
       ],
-      [this.ARHETYPE_NAMES.WING_BACK]: [
+      [this.ARCHETYPE_NAMES.WING_BACK]: [
         "keyPasses",
         "crossRatio",
         "crossesSuccessful",
@@ -44,17 +44,17 @@ export class FullbackProcessor {
     };
   }
 
-  analize(fullbacks: Array<LeftFullback | RightFullback>) {
-    const playersWithArhetypeLeft = calculateArchetypes(
+  analyze(fullbacks: Array<LeftFullback | RightFullback>) {
+    const playersWithArchetypeLeft = calculateArchetypes(
       fullbacks.filter((p) => p.side === "left"),
       this.archetypes
     );
-    const playersWithArhetypeRight = calculateArchetypes(
+    const playersWithArchetypeRight = calculateArchetypes(
       fullbacks.filter((p) => p.side === "right"),
       this.archetypes
     );
 
-    return [playersWithArhetypeLeft, playersWithArhetypeRight].flat();
+    return [playersWithArchetypeLeft, playersWithArchetypeRight].flat();
   }
 
   filter() {
@@ -124,7 +124,7 @@ export class FullbackProcessor {
         contractExpires: contractExpires ? displayDate(contractExpires) : null,
       };
     });
-    console.log(`There is ${display.length} ${side} defenders to watch`);
+    console.log(`There are ${display.length} ${side} defenders to watch`);
     printTable(display);
   }
 }

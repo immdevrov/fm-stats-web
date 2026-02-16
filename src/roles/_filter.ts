@@ -4,7 +4,7 @@ export type filterFn<T extends Role> = (_p: T) => boolean;
 export type filterMap<T extends Role> = Record<string, filterFn<T>>;
 
 /**
- * gets list of filter functions and piping them onto one
+ * gets list of filter functions and piping them into one
  * returns true if all are true
  * if one of them returned false - result is false
  */
@@ -15,7 +15,7 @@ export function everyFilter<T extends Role>(
 }
 
 /**
- * its easier to create filters while giving them names as keys of an object
+ * it's easier to create filters while giving them names as keys of an object
  */
 export function applyFilters<T extends Role>(
   players: T[],

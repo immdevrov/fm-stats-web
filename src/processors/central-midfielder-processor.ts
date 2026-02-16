@@ -2,12 +2,12 @@ import { getFilters } from "../filters";
 import type { KeyOfType, Player } from "../types";
 import { calculateArchetypes, displayDate, formatWage, printTable } from "../utils";
 import { applyFilters } from "../roles/_filter";
-import { CentralMidfielder, type ICentralMidfielder } from "../roles/central-midfilder";
+import { CentralMidfielder, type ICentralMidfielder } from "../roles/central-midfielder";
 
 export class CentralMidfielderProcessor {
   players: CentralMidfielder[];
 
-  private ARHETYPE_NAMES = {
+  private ARCHETYPE_NAMES = {
     DESTROYER: "destroyer",
     DEEP_PLAYMAKER: "deep playmaker",
     ADVANCED_PLAYMAKER: "advanced playmaker",
@@ -21,20 +21,20 @@ export class CentralMidfielderProcessor {
 
   get archetypes(): Record<string, KeyOfType<ICentralMidfielder, number>[]> {
     return {
-      [this.ARHETYPE_NAMES.DESTROYER]: ["pressuresSuccessful", "tackleRatio", "possessionWon"],
-      [this.ARHETYPE_NAMES.DEEP_PLAYMAKER]: [
+      [this.ARCHETYPE_NAMES.DESTROYER]: ["pressuresSuccessful", "tackleRatio", "possessionWon"],
+      [this.ARCHETYPE_NAMES.DEEP_PLAYMAKER]: [
         "ballRetention",
         "progressivePasses",
         "keyPasses",
       ],
-      [this.ARHETYPE_NAMES.ADVANCED_PLAYMAKER]: ["keyPasses", "chancesCreated", "npxG"],
+      [this.ARCHETYPE_NAMES.ADVANCED_PLAYMAKER]: ["keyPasses", "chancesCreated", "npxG"],
     };
   }
 
-  analize(players: CentralMidfielder[]) {
-    const playersWithArhetype = calculateArchetypes(players, this.archetypes);
+  analyze(players: CentralMidfielder[]) {
+    const playersWithArchetype = calculateArchetypes(players, this.archetypes);
 
-    return playersWithArhetype;
+    return playersWithArchetype;
   }
 
   filter() {
@@ -87,7 +87,7 @@ export class CentralMidfielderProcessor {
         contractExpires: contractExpires ? displayDate(contractExpires) : null,
       };
     });
-    console.log(`There is ${display.length} central midfielders to watch`);
+    console.log(`There are ${display.length} central midfielders to watch`);
     printTable(display);
   }
 }

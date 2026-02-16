@@ -23,6 +23,7 @@ export function average(arr: number[]) {
   return sum / arr.length;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function getColumn<T extends Record<string, any>, K extends keyof T>(
   t: Table<T>,
   k: K
@@ -30,10 +31,12 @@ export function getColumn<T extends Record<string, any>, K extends keyof T>(
   return t.map((t) => t[k]);
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function omitField<T extends Record<string, any>, K extends keyof T>(
   obj: T,
   field: K
 ) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { [field]: _, ...rest } = obj;
   return rest;
 }
@@ -52,8 +55,10 @@ export function displayDate(date: Date) {
   return date.toLocaleDateString("en-GB", options);
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function printTable<T extends Record<string, any>>(arr: T[]) {
   const transformed = Object.fromEntries(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     [...arr.entries()].map(([_index, d]) => [d.uid, omitField(d, "uid")])
   );
   console.table(transformed);
@@ -100,7 +105,7 @@ export function calculateArchetypes<
           player[prop] as number,
           getColumn(players, prop) as number[]
         );
-        // @ts-expect-error
+        // @ts-expect-error -- dynamic percentile assignment
         result[prop] = percentile;
         rating += percentile;
         if (percentile >= PERCENTILE_TO_ACHIEVE_BADGE) {
@@ -196,6 +201,7 @@ export function getCohort(
   return "Out of range";
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function deduplicateByField<T extends Record<string, any>, K extends keyof T>(
   arr: T[],
   field: K

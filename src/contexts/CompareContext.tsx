@@ -53,6 +53,7 @@ export function CompareProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useCompare() {
   const ctx = useContext(CompareContext);
   if (!ctx) throw new Error("useCompare must be used within CompareProvider");

@@ -7,7 +7,7 @@ import { CentralDefender, type ICentralDefender } from "../roles/central-defende
 export class CentralDefenderProcessor {
   players: CentralDefender[];
 
-  private ARHETYPE_NAMES = {
+  private ARCHETYPE_NAMES = {
     AGGRESSOR: "aggressor",
     SPREADER: "spreader",
   };
@@ -20,15 +20,15 @@ export class CentralDefenderProcessor {
 
   get archetypes(): Record<string, KeyOfType<ICentralDefender, number>[]> {
     return {
-      [this.ARHETYPE_NAMES.AGGRESSOR]: ["tackleRatio", "headersWonRatio"],
-      [this.ARHETYPE_NAMES.SPREADER]: ["progressivePasses"],
+      [this.ARCHETYPE_NAMES.AGGRESSOR]: ["tackleRatio", "headersWonRatio"],
+      [this.ARCHETYPE_NAMES.SPREADER]: ["progressivePasses"],
     };
   }
 
-  analize(players: CentralDefender[]) {
-    const playersWithArhetype = calculateArchetypes(players, this.archetypes);
+  analyze(players: CentralDefender[]) {
+    const playersWithArchetype = calculateArchetypes(players, this.archetypes);
 
-    return playersWithArhetype;
+    return playersWithArchetype;
   }
 
   filter() {
@@ -75,7 +75,7 @@ export class CentralDefenderProcessor {
         contractExpires: contractExpires ? displayDate(contractExpires) : null,
       };
     });
-    console.log(`There is ${display.length} defenders to watch`);
+    console.log(`There are ${display.length} defenders to watch`);
     printTable(display);
   }
 }

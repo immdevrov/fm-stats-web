@@ -56,9 +56,11 @@ export type Player = {
   svPercentage: number;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Table<T extends Record<string, any>> = Array<T>;
 
 export type KeyOfType<T, V> = keyof {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [P in keyof T as T[P] extends V ? P : never]: any;
 };
 

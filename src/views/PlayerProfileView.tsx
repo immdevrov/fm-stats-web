@@ -622,7 +622,7 @@ function ComparisonColumn({ player }: { player: Player }) {
 
   useEffect(() => {
     if (applicableRoles.length > 0 && !selectedRole) {
-      setSelectedRole(applicableRoles[0].key);
+      setSelectedRole(applicableRoles[0].key); // eslint-disable-line react-hooks/set-state-in-effect
     }
   }, [applicableRoles, selectedRole]);
 
@@ -639,7 +639,7 @@ function ComparisonColumn({ player }: { player: Player }) {
       sameLeagueOnly ? player.Division : undefined
     );
 
-    setCohort(newCohort);
+    setCohort(newCohort); // eslint-disable-line react-hooks/set-state-in-effect
     setCohortSize(newCohort.length);
 
     if (newCohort.length === 0) {
@@ -656,6 +656,15 @@ function ComparisonColumn({ player }: { player: Player }) {
     setPercentiles(stats);
   }, [selectedRole, allPlayers, leagueRankings, player, sameLeagueOnly]);
 
+  const currentRoleConfig = ROLE_CONFIG.find((r) => r.key === selectedRole);
+  const targetPercentiles = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const stat of percentiles) {
+      map[stat.statKey] = stat.percentile;
+    }
+    return map;
+  }, [percentiles]);
+
   if (applicableRoles.length === 0) {
     return (
       <Box flex={1} bg="bg.subtle" p={2} borderRadius="md" minH="300px">
@@ -667,15 +676,6 @@ function ComparisonColumn({ player }: { player: Player }) {
   const comparisonText = sameLeagueOnly
     ? `Compared to ${cohortSize} players in ${player.Division} with 5+ starts`
     : `Compared to ${cohortSize} players in ranked leagues with 5+ starts`;
-
-  const currentRoleConfig = ROLE_CONFIG.find((r) => r.key === selectedRole);
-  const targetPercentiles = useMemo(() => {
-    const map: Record<string, number> = {};
-    for (const stat of percentiles) {
-      map[stat.statKey] = stat.percentile;
-    }
-    return map;
-  }, [percentiles]);
 
   return (
     <Box flex={1} bg="bg.subtle" p={2} borderRadius="md" minH="300px">
