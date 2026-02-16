@@ -36,6 +36,7 @@ const STAT_ABBREVIATIONS: Record<string, string> = {
   savesHeldRatio: "SH",
   concededPer90: "Con",
   savesPer90: "Sv",
+  shotStoppingRank: "SSR",
   passRatio: "PR",
   progressivePasses: "PP",
   keyPasses: "KP",
@@ -557,6 +558,20 @@ export function ScoutingView() {
           />
         ),
       });
+    }
+
+    if (roleConfig.derivedPercentileStats) {
+      for (const derived of roleConfig.derivedPercentileStats) {
+        base.push({
+          key: `stat_${derived.key}` as keyof ScoutingRow,
+          header: STAT_ABBREVIATIONS[derived.key] ?? derived.key,
+          headerTooltip: STAT_LABELS[derived.key] ?? derived.key,
+          render: (_v, row) => (
+            <PercentileCell value={row.statPercentiles[derived.key]} />
+          ),
+          highlighted: true,
+        });
+      }
     }
 
     for (const group of statGroups) {

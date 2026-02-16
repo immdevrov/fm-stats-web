@@ -99,11 +99,26 @@ export function computeScoutingData(
       .sort((a, b) => a - b);
   }
 
+  // Compute derived percentile stats
+  const { derivedPercentileStats } = roleConfig;
+  if (derivedPercentileStats) {
+    for (const player of allPercentiles) {
+      for (const derived of derivedPercentileStats) {
+        player[derived.key] = derived.formula(player);
+      }
+    }
+  }
+
   // Build final rows
   return cohort.map((player, i) => {
     const statPercentiles: Record<string, number> = {};
     for (const key of statKeys) {
       statPercentiles[key] = allPercentiles[i][key];
+    }
+    if (derivedPercentileStats) {
+      for (const derived of derivedPercentileStats) {
+        statPercentiles[derived.key] = allPercentiles[i][derived.key];
+      }
     }
 
     const groupRatings: Record<string, number> = {};

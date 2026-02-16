@@ -24,11 +24,17 @@ type RoleConstructor = {
   isRole(player: Player): boolean;
 };
 
+export interface DerivedPercentileStat {
+  key: string;
+  formula: (percentiles: Record<string, number>) => number;
+}
+
 export interface RoleConfig {
   key: string;
   name: string;
   RoleClass: RoleConstructor;
   statKeys: string[];
+  derivedPercentileStats?: DerivedPercentileStat[];
 }
 
 export const ROLE_CONFIG: RoleConfig[] = [
@@ -47,6 +53,13 @@ export const ROLE_CONFIG: RoleConfig[] = [
       "passRatio",
       "progressivePasses",
       "mistakes",
+    ],
+    derivedPercentileStats: [
+      {
+        key: "shotStoppingRank",
+        formula: (p) =>
+          p.saveRatio * 0.35 + p.savesPer90 * 0.35 + (100 - p.concededPer90) * 0.30,
+      },
     ],
   },
   {
@@ -199,6 +212,7 @@ export const STAT_LABELS: Record<string, string> = {
   ballRetention: "Ball Retention",
   concededPer90: "Conceded",
   savesPer90: "Saves",
+  shotStoppingRank: "Shot Stopping Rank",
   mistakes: "Mistakes",
   distance: "Distance",
 };
