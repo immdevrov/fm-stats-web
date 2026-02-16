@@ -18,6 +18,8 @@ export interface IGoalkeeper
     Pick<IPassingStats, "passRatio" | "progressivePasses">,
     IPhysicalStats,
     IErrorStats {
+  /** goals conceded per 90 */
+  concededPer90: number;
   /** saveRatio - expectedSaveRatio */
   saveRatioOverExpected: number;
 }
@@ -28,6 +30,7 @@ export class GoalKeeper extends Role implements IGoalkeeper {
   readonly saveRatio: number;
   readonly expectedSaveRatio: number;
   readonly savesHeldRatio: number;
+  readonly concededPer90: number;
 
   // Passing stats
   readonly passRatio: number;
@@ -51,6 +54,7 @@ export class GoalKeeper extends Role implements IGoalkeeper {
     this.saveRatio = gkStats.saveRatio;
     this.expectedSaveRatio = gkStats.expectedSaveRatio;
     this.savesHeldRatio = gkStats.savesHeldRatio;
+    this.concededPer90 = gkStats.concededPer90;
 
     const passStats = extractPassingStats(player);
     this.passRatio = passStats.passRatio;

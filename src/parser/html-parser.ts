@@ -162,6 +162,7 @@ export function transformPlayerStats(rawRecords: Record<string, string>[]): Play
       exsvPercentage: Number(record["xSv %"].replace("%", "")),
       svPercentage: Number(record["Sv %"].replace("%", "")),
       xGPPer90: processHyphen(record["xGP/90"], parseFloat) ?? 0,
+      ConPer90: processHyphen(record["Con/90"], parseFloat) ?? 0,
     } as Player;
 
     players.push(player);

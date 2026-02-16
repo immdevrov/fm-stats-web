@@ -84,6 +84,8 @@ export interface IGoalkeeperStats {
   expectedSaveRatio: number;
   /** % saves caught (not parried) */
   savesHeldRatio: number;
+  /** goals conceded per 90 */
+  concededPer90: number;
 }
 
 export interface IPhysicalStats {
@@ -144,6 +146,7 @@ export const STAT_MAPPING = {
   goalsPrevented: "xGPPer90",
   saveRatio: "svPercentage",
   expectedSaveRatio: "exsvPercentage",
+  concededPer90: "ConPer90",
   // savesHeldRatio is computed
 
   // Physical
@@ -234,6 +237,7 @@ export function extractGoalkeeperStats(player: Player): IGoalkeeperStats {
     saveRatio: safeNumber(player.svPercentage),
     expectedSaveRatio: safeNumber(player.exsvPercentage),
     savesHeldRatio,
+    concededPer90: safeNumber(player.ConPer90),
   };
 }
 

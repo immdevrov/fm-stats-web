@@ -54,6 +54,7 @@ export type Player = {
   xGPPer90: number;
   exsvPercentage: number;
   svPercentage: number;
+  ConPer90: number;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

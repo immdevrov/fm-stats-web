@@ -34,6 +34,7 @@ const STAT_ABBREVIATIONS: Record<string, string> = {
   saveRatioOverExpected: "SR+",
   goalsPrevented: "GP",
   savesHeldRatio: "SH",
+  concededPer90: "Con",
   passRatio: "PR",
   progressivePasses: "PP",
   keyPasses: "KP",

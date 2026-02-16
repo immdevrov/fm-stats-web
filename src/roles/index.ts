@@ -42,6 +42,7 @@ export const ROLE_CONFIG: RoleConfig[] = [
       "saveRatioOverExpected",
       "goalsPrevented",
       "savesHeldRatio",
+      "concededPer90",
       "passRatio",
       "progressivePasses",
       "mistakes",
@@ -165,6 +166,7 @@ export const ROLE_CONFIG: RoleConfig[] = [
 export const INVERTED_STATS = new Set([
   "mistakes",
   "possessionLost",
+  "concededPer90",
 ]);
 
 export const STAT_LABELS: Record<string, string> = {
@@ -194,6 +196,7 @@ export const STAT_LABELS: Record<string, string> = {
   xGOverperformance: "xG Over",
   shots: "Shots",
   ballRetention: "Ball Retention",
+  concededPer90: "Conceded",
   mistakes: "Mistakes",
   distance: "Distance",
 };
