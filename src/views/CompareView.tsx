@@ -228,7 +228,7 @@ export function CompareView() {
           {playerPercentiles.length > 0 && cohort.length > 0 ? (
             <>
               <Text fontSize="xs" color="fg.muted">
-                Compared to {cohort.length} players in ranked leagues with 5+ starts
+                Compared to {cohort.length} players in ranked leagues with 900+ mins
               </Text>
               <SimpleGrid columns={playerPercentiles.length} gap={3}>
                 {playerPercentiles.map((pp) => (

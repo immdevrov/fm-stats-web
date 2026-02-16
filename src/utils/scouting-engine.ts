@@ -31,7 +31,7 @@ export function buildScoutingCohort(
       (p) =>
         RoleClass.isRole(p) &&
         rankedLeagues.has(p.Division) &&
-        p.Starts >= 5
+        p.Mins >= 900
     )
     .map((p) => new RoleClass(p));
 }

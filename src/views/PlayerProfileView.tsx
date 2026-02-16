@@ -118,10 +118,10 @@ export function PlayerProfileView() {
     <Box minH="100vh" p={3}>
       <Container maxW="container.xl">
         <HStack align="start" gap={3}>
-            <PlayerInfoColumn player={player} onPlayerUpdate={reloadPlayer} />
+          <PlayerInfoColumn player={player} onPlayerUpdate={reloadPlayer} />
 
-            <ComparisonColumn player={player} />
-          </HStack>
+          <ComparisonColumn player={player} />
+        </HStack>
       </Container>
     </Box>
   );
@@ -509,6 +509,44 @@ function OutfieldStatsSection({ player }: { player: Player }) {
 
 function GoalkeeperStatsSection({ player }: { player: Player }) {
   const gkStats = extractGoalkeeperStats(player);
+  const [shotStoppingRank, setShotStoppingRank] = useState<number | null>(null);
+
+  useEffect(() => {
+    const gkConfig = ROLE_CONFIG.find((r) => r.key === "GK");
+    if (!gkConfig) return;
+
+    Promise.all([db.getAllPlayers(), db.getLeagueRankings()]).then(
+      ([allPlayers, leagueRankings]) => {
+        const cohort = getComparisonCohort(gkConfig.RoleClass, allPlayers, leagueRankings);
+        if (cohort.length === 0) return;
+
+        const playerRole = new gkConfig.RoleClass(player) as unknown as Record<string, number>;
+        const keys = ["saveRatio", "savesPer90", "concededPer90"] as const;
+        const percentiles: Record<string, number> = {};
+
+        for (const key of keys) {
+          const col = (getColumn(cohort, key) as number[]).slice().sort((a, b) => a - b);
+          percentiles[key] = getPercentile(playerRole[key], col);
+        }
+
+        const derived = gkConfig.derivedPercentileStats?.find((d) => d.key === "shotStoppingRank");
+        if (!derived) return;
+
+        const rank = derived.formula(percentiles);
+
+        const allRanks = cohort.map((c) => {
+          const p: Record<string, number> = {};
+          for (const key of keys) {
+            const col = (getColumn(cohort, key) as number[]).slice().sort((a, b) => a - b);
+            p[key] = getPercentile(c[key] as number, col);
+          }
+          return derived.formula(p);
+        }).sort((a, b) => a - b);
+
+        setShotStoppingRank(getPercentile(rank, allRanks)); // eslint-disable-line react-hooks/set-state-in-effect
+      }
+    );
+  }, [player]);
 
   return (
     <StatSection
@@ -518,6 +556,9 @@ function GoalkeeperStatsSection({ player }: { player: Player }) {
         { label: "Expected Save %", value: formatPercent(gkStats.expectedSaveRatio) },
         { label: "Goals Prevented", value: gkStats.goalsPrevented.toFixed(2) },
         { label: "Saves Held %", value: formatPercent(gkStats.savesHeldRatio) },
+        { label: "Conceded", value: gkStats.concededPer90.toFixed(2) },
+        { label: "Saves", value: gkStats.savesPer90.toFixed(2) },
+        { label: "Shot Stopping Rank", value: shotStoppingRank !== null ? `${shotStoppingRank.toFixed(0)}th pctl` : "-" },
       ]}
     />
   );
@@ -576,7 +617,7 @@ function getComparisonCohort(
       (p) =>
         RoleClass.isRole(p) &&
         rankedLeagues.has(p.Division) &&
-        p.Starts >= 5 &&
+        p.Mins >= 900 &&
         (!sameLeagueOnly || p.Division === sameLeagueOnly)
     )
     .map((p) => new RoleClass(p) as unknown as Record<string, unknown>);
@@ -674,8 +715,8 @@ function ComparisonColumn({ player }: { player: Player }) {
   }
 
   const comparisonText = sameLeagueOnly
-    ? `Compared to ${cohortSize} players in ${player.Division} with 5+ starts`
-    : `Compared to ${cohortSize} players in ranked leagues with 5+ starts`;
+    ? `Compared to ${cohortSize} players in ${player.Division} with 900+ mins`
+    : `Compared to ${cohortSize} players in ranked leagues with 900+ mins`;
 
   return (
     <Box flex={1} bg="bg.subtle" p={2} borderRadius="md" minH="300px">
