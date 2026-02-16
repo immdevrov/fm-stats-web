@@ -1,7 +1,7 @@
 import { Box, Input, VStack, HStack, Text } from "@chakra-ui/react";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import type { Player } from "../types/types";
-import { formatPositions } from "../utils/utils";
+import { formatPositions, getEffectivePosition } from "../utils/utils";
 
 interface PlayerAutocompleteProps {
   players: Player[];
@@ -150,7 +150,7 @@ export function PlayerAutocomplete({
                       {player.Club}
                     </Text>
                     <Text fontSize="xs" color="fg.muted" flexShrink={0}>
-                      {formatPositions(player.Position)}
+                      {formatPositions(getEffectivePosition(player))}
                     </Text>
                   </HStack>
                 ))}

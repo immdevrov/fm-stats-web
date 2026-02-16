@@ -1,6 +1,7 @@
 import { openDB } from 'idb';
 import type { DBSchema, IDBPDatabase } from 'idb';
 import type { Player, LeagueRanking } from '../types/types';
+import type { PlayerPositions } from '../fields/positions';
 
 /**
  * IndexedDB Database Schema
@@ -300,6 +301,47 @@ class DatabaseService {
       return entry?.uids ?? [];
     } catch {
       return [];
+    }
+  }
+
+  async updatePlayerPosition(uid: number, customPosition: PlayerPositions): Promise<void> {
+    try {
+      const db = await this.getDB();
+      const player = await db.get('players', uid);
+      if (!player) throw new Error(`Player ${uid} not found`);
+      player.CustomPosition = customPosition;
+      await db.put('players', player);
+    } catch (error) {
+      throw new Error(`Failed to update player position: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async clearPlayerCustomPosition(uid: number): Promise<void> {
+    try {
+      const db = await this.getDB();
+      const player = await db.get('players', uid);
+      if (!player) throw new Error(`Player ${uid} not found`);
+      delete player.CustomPosition;
+      await db.put('players', player);
+    } catch (error) {
+      throw new Error(`Failed to clear player custom position: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async clearAllCustomPositions(): Promise<void> {
+    try {
+      const db = await this.getDB();
+      const allPlayers = await db.getAll('players');
+      const playersWithCustom = allPlayers.filter(p => p.CustomPosition);
+      if (playersWithCustom.length === 0) return;
+      const tx = db.transaction('players', 'readwrite');
+      await Promise.all(playersWithCustom.map(p => {
+        delete p.CustomPosition;
+        return tx.store.put(p);
+      }));
+      await tx.done;
+    } catch (error) {
+      throw new Error(`Failed to clear custom positions: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 

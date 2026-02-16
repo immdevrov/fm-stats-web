@@ -134,6 +134,16 @@ Route: `/scouting` — role-based player scouting with percentile analysis.
 - Side selector (FB/W) changes the cohort class (LeftFullback, RightFullback, etc.) and recomputes percentiles.
 - `useTransition` wraps cohort computation for responsive UI during role/side switches.
 
+## Custom Positions
+
+Users can override a player's imported positions from the Player Profile view.
+
+- **Storage**: Optional `CustomPosition?: PlayerPositions` field on the `Player` type (no IDB schema change needed)
+- **Helper**: `getEffectivePosition(player)` returns `CustomPosition ?? Position` — used by all `isRole()` methods and position displays
+- **UI**: Edit button (pencil icon) next to position in PlayerHeader opens a dialog with position type + side checkboxes. "Edited" badge shown when custom position is set. X button clears the override.
+- **Clear options**: Per-player clear in profile view; "Clear All Custom Positions" button in Import view
+- **DB methods**: `updatePlayerPosition()`, `clearPlayerCustomPosition()`, `clearAllCustomPositions()`
+
 ## Type Utilities
 
 - `KeyOfType<T, V>` — extracts keys where value is type V

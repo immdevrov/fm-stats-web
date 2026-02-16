@@ -68,6 +68,10 @@ export function formatWage(number: number) {
   }).format(number);
 }
 
+export function getEffectivePosition(player: { Position: PlayerPositions; CustomPosition?: PlayerPositions }): PlayerPositions {
+  return player.CustomPosition ?? player.Position;
+}
+
 export function formatPositions(positions: PlayerPositions): string {
   return positions
     .map((pos) => {

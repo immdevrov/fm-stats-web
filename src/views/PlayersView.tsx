@@ -15,7 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { db } from "../services/db";
 import type { Player } from "../types/types";
 import { Table, type Column, type SortDirection } from "../components/ui/table";
-import { formatWage, displayDate, formatPositions } from "../utils/utils";
+import { formatWage, displayDate, formatPositions, getEffectivePosition } from "../utils/utils";
 
 const PAGE_SIZE = 20;
 const MIN_SEARCH_LENGTH = 3;
@@ -100,8 +100,8 @@ export function PlayersView() {
       players.map((p) => ({
         name: p.Name,
         age: p.Age,
-        position: formatPositions(p.Position),
-        positionTypes: p.Position.map((pos) => pos.type),
+        position: formatPositions(getEffectivePosition(p)),
+        positionTypes: getEffectivePosition(p).map((pos) => pos.type),
         club: p.Club,
         starts: p.Starts,
         minutes: p.Mins,

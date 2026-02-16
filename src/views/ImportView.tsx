@@ -1,4 +1,4 @@
-import { Container, Heading, VStack, Box, Text, Spinner } from "@chakra-ui/react";
+import { Container, Heading, VStack, Box, Text, Spinner, Button } from "@chakra-ui/react";
 import { useState, useRef } from "react";
 import { FileInput } from "../components/ui/file-input";
 import { parseHtmlTable, transformPlayerStats } from "../parser/html-parser";
@@ -158,6 +158,23 @@ export function ImportView() {
             Select an HTML file exported from Football Manager 24. The player data will be saved to
             your browser's local storage.
           </Text>
+
+          <Button
+            variant="outline"
+            size="sm"
+            colorPalette="red"
+            onClick={async () => {
+              await db.clearAllCustomPositions();
+              toaster.create({
+                title: "Custom Positions Cleared",
+                description: "All custom position overrides have been removed.",
+                type: "success",
+                duration: 5000,
+              });
+            }}
+          >
+            Clear All Custom Positions
+          </Button>
         </VStack>
       </Container>
 

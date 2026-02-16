@@ -22,7 +22,7 @@ import {
   RightWinger,
   type RoleConfig,
 } from "../roles";
-import { formatPositions, formatWage, displayDate } from "../utils/utils";
+import { formatPositions, getEffectivePosition, formatWage, displayDate } from "../utils/utils";
 import {
   extractPassingStats,
   extractDefensiveStats,
@@ -202,7 +202,7 @@ export function CompareView() {
                         </Button>
                       </HStack>
                       <Text fontSize="xs" color="fg.muted">
-                        {player.Club} | {formatPositions(player.Position)} | Age {player.Age}
+                        {player.Club} | {formatPositions(getEffectivePosition(player))} | Age {player.Age}
                       </Text>
                       <Badge
                         colorPalette={COLORS[i]}
@@ -312,7 +312,7 @@ function StatSection({ title, stats }: { title: string; stats: StatItem[] }) {
 }
 
 function PlayerStatsColumn({ player }: { player: Player }) {
-  const isGoalkeeper = player.Position.some((pos) => pos.type === "GK");
+  const isGoalkeeper = getEffectivePosition(player).some((pos) => pos.type === "GK");
 
   return (
     <VStack align="stretch" gap={2}>

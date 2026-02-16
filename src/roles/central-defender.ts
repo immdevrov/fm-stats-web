@@ -13,6 +13,7 @@ import {
   extractPhysicalStats,
   extractErrorStats,
 } from "../types/stat-categories";
+import { getEffectivePosition } from "../utils/utils";
 import { type IRole, Role } from "./_role";
 
 export interface ICentralDefender
@@ -84,6 +85,6 @@ export class CentralDefender extends Role implements ICentralDefender {
   }
 
   static isRole(player: Player): boolean {
-    return player.Position.some((p) => p.type === "D" && p.side?.includes("C"));
+    return getEffectivePosition(player).some((p) => p.type === "D" && p.side?.includes("C"));
   }
 }

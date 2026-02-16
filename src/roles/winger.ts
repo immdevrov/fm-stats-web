@@ -15,6 +15,7 @@ import {
   extractAttackingStats,
   extractMovementStats,
 } from "../types/stat-categories";
+import { getEffectivePosition } from "../utils/utils";
 import { type IRole, Role } from "./_role";
 
 export interface IWinger
@@ -95,7 +96,7 @@ export class Winger extends Role implements IWinger {
   }
 
   static isRole(player: Player): boolean {
-    return player.Position.some(
+    return getEffectivePosition(player).some(
       (p) =>
         (p.type === "AM" || p.type === "M") &&
         (p.side?.includes("L") || p.side?.includes("R"))
@@ -111,7 +112,7 @@ export class LeftWinger extends Winger {
   }
 
   static isRole(player: Player): boolean {
-    return player.Position.some(
+    return getEffectivePosition(player).some(
       (p) => (p.type === "AM" || p.type === "M") && p.side?.includes("L")
     );
   }
@@ -125,7 +126,7 @@ export class RightWinger extends Winger {
   }
 
   static isRole(player: Player): boolean {
-    return player.Position.some(
+    return getEffectivePosition(player).some(
       (p) => (p.type === "AM" || p.type === "M") && p.side?.includes("R")
     );
   }

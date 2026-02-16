@@ -15,6 +15,7 @@ import {
   extractAttackingStats,
   extractMovementStats,
 } from "../types/stat-categories";
+import { getEffectivePosition } from "../utils/utils";
 import { type IRole, Role } from "./_role";
 
 export interface ICentralMidfielder
@@ -98,7 +99,7 @@ export class CentralMidfielder extends Role implements ICentralMidfielder {
   }
 
   static isRole(player: Player): boolean {
-    return player.Position.some(
+    return getEffectivePosition(player).some(
       (p) => (p.type === "M" && p.side?.includes("C")) || p.type === "DM"
     );
   }

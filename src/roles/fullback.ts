@@ -17,6 +17,7 @@ import {
   extractPhysicalStats,
   extractErrorStats,
 } from "../types/stat-categories";
+import { getEffectivePosition } from "../utils/utils";
 import { type IRole, Role } from "./_role";
 
 export interface IFullback
@@ -108,7 +109,7 @@ export class Fullback extends Role implements IFullback {
   }
 
   static isRole(player: Player): boolean {
-    return player.Position.some(
+    return getEffectivePosition(player).some(
       (p) =>
         (p.type === "D" || p.type === "WB") &&
         (p.side?.includes("L") || p.side?.includes("R"))
@@ -124,7 +125,7 @@ export class LeftFullback extends Fullback {
   }
 
   static isRole(player: Player): boolean {
-    return player.Position.some((p) => p.type === "D" && p.side?.includes("L"));
+    return getEffectivePosition(player).some((p) => p.type === "D" && p.side?.includes("L"));
   }
 }
 
@@ -136,6 +137,6 @@ export class RightFullback extends Fullback {
   }
 
   static isRole(player: Player): boolean {
-    return player.Position.some((p) => p.type === "D" && p.side?.includes("R"));
+    return getEffectivePosition(player).some((p) => p.type === "D" && p.side?.includes("R"));
   }
 }

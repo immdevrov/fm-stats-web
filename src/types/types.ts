@@ -13,6 +13,7 @@ export type Player = {
   Wage: number;
   Expires: Date | null;
   Position: PlayerPositions;
+  CustomPosition?: PlayerPositions;
   SecPosition: PlayerPositions | null;
   Starts: number;
   Mins: number;

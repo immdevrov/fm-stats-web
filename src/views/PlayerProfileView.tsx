@@ -14,11 +14,12 @@ import {
   Dialog,
   Portal,
 } from "@chakra-ui/react";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useCompare } from "../contexts/CompareContext";
 import { db } from "../services/db";
 import type { Player, LeagueRanking } from "../types/types";
+import type { PlayerPosition, PlayerPositions } from "../fields/positions";
 import {
   extractPassingStats,
   extractDefensiveStats,
@@ -29,7 +30,7 @@ import {
   extractMovementStats,
   extractGoalkeeperStats,
 } from "../types/stat-categories";
-import { formatWage, displayDate, formatPositions, getPercentile, getColumn } from "../utils/utils";
+import { formatWage, displayDate, formatPositions, getEffectivePosition, getPercentile, getColumn } from "../utils/utils";
 import { ROLE_CONFIG, STAT_LABELS, INVERTED_STATS, type RoleConfig } from "../roles";
 import { PercentileBar } from "../components/PercentileBar";
 import { SimilarPlayers } from "../components/SimilarPlayers";
@@ -40,6 +41,14 @@ export function PlayerProfileView() {
   const [player, setPlayer] = useState<Player | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const reloadPlayer = useCallback(async () => {
+    if (!playerId) return;
+    const uid = parseInt(playerId, 10);
+    if (isNaN(uid)) return;
+    const updated = await db.getPlayer(uid);
+    if (updated) setPlayer(updated);
+  }, [playerId]);
 
   useEffect(() => {
     async function loadPlayer() {
@@ -109,7 +118,7 @@ export function PlayerProfileView() {
     <Box minH="100vh" p={3}>
       <Container maxW="container.xl">
         <HStack align="start" gap={3}>
-            <PlayerInfoColumn player={player} />
+            <PlayerInfoColumn player={player} onPlayerUpdate={reloadPlayer} />
 
             <ComparisonColumn player={player} />
           </HStack>
@@ -118,12 +127,12 @@ export function PlayerProfileView() {
   );
 }
 
-function PlayerInfoColumn({ player }: { player: Player }) {
-  const isGoalkeeper = player.Position.some((pos) => pos.type === "GK");
+function PlayerInfoColumn({ player, onPlayerUpdate }: { player: Player; onPlayerUpdate: () => Promise<void> }) {
+  const isGoalkeeper = getEffectivePosition(player).some((pos) => pos.type === "GK");
 
   return (
     <VStack w="40%" align="stretch" gap={2}>
-      <PlayerHeader player={player} />
+      <PlayerHeader player={player} onPlayerUpdate={onPlayerUpdate} />
       <PlayingTimeSection player={player} />
 
       {isGoalkeeper ? (
@@ -135,10 +144,15 @@ function PlayerInfoColumn({ player }: { player: Player }) {
   );
 }
 
-function PlayerHeader({ player }: { player: Player }) {
+const POSITION_TYPES = ["GK", "D", "WB", "DM", "M", "AM", "ST"] as const;
+const SIDES = ["L", "C", "R"] as const;
+
+function PlayerHeader({ player, onPlayerUpdate }: { player: Player; onPlayerUpdate: () => Promise<void> }) {
   const { compareList, addPlayer } = useCompare();
   const navigate = useNavigate();
   const [showDialog, setShowDialog] = useState(false);
+  const [showPositionEditor, setShowPositionEditor] = useState(false);
+  const [editPositions, setEditPositions] = useState<PlayerPositions>([]);
   const isInCompare = compareList.includes(player.UID);
 
   const handleAddToCompare = () => {
@@ -148,6 +162,60 @@ function PlayerHeader({ player }: { player: Player }) {
       setShowDialog(true);
     }
   };
+
+  const openPositionEditor = () => {
+    setEditPositions(structuredClone(getEffectivePosition(player)));
+    setShowPositionEditor(true);
+  };
+
+  const isTypeChecked = (type: string) => editPositions.some((p) => p.type === type);
+
+  const isSideChecked = (type: string, side: string) =>
+    editPositions.some((p) => p.type === type && p.side?.includes(side as "L" | "C" | "R"));
+
+  const toggleType = (type: string) => {
+    if (isTypeChecked(type)) {
+      setEditPositions((prev) => prev.filter((p) => p.type !== type));
+    } else {
+      const newPos: PlayerPosition = { type: type as PlayerPosition["type"] };
+      if (type !== "GK") {
+        newPos.side = [];
+      }
+      setEditPositions((prev) => [...prev, newPos]);
+    }
+  };
+
+  const toggleSide = (type: string, side: "L" | "C" | "R") => {
+    setEditPositions((prev) =>
+      prev.map((p) => {
+        if (p.type !== type) return p;
+        const sides = p.side ?? [];
+        const newSides = sides.includes(side)
+          ? sides.filter((s) => s !== side)
+          : [...sides, side].sort((a, b) => SIDES.indexOf(a) - SIDES.indexOf(b));
+        return { ...p, side: newSides as PlayerPosition["side"] };
+      })
+    );
+  };
+
+  const handleSavePosition = async () => {
+    const filtered = editPositions.filter(
+      (p) => p.type === "GK" || (p.side && p.side.length > 0)
+    );
+    if (filtered.length === 0) return;
+    await db.updatePlayerPosition(player.UID, filtered);
+    await onPlayerUpdate();
+    setShowPositionEditor(false);
+  };
+
+  const handleClearCustomPosition = async () => {
+    await db.clearPlayerCustomPosition(player.UID);
+    await onPlayerUpdate();
+  };
+
+  const hasValidSelection = editPositions.some(
+    (p) => p.type === "GK" || (p.side && p.side.length > 0)
+  );
 
   return (
     <Box borderWidth="1px" borderRadius="md" p={2}>
@@ -221,9 +289,83 @@ function PlayerHeader({ player }: { player: Player }) {
           </HStack>
           <HStack justify="space-between">
             <Text color="fg.emphasized">Position</Text>
-            <Text fontWeight="medium">{formatPositions(player.Position)}</Text>
+            <HStack gap={1}>
+              <Text fontWeight="medium">{formatPositions(getEffectivePosition(player))}</Text>
+              {player.CustomPosition && (
+                <Badge colorPalette="glaucous" variant="subtle" size="sm">Edited</Badge>
+              )}
+              <Button size="xs" variant="ghost" onClick={openPositionEditor} p={0} minW="auto" h="auto">
+                <Text fontSize="xs">&#9998;</Text>
+              </Button>
+              {player.CustomPosition && (
+                <Button size="xs" variant="ghost" colorPalette="red" onClick={handleClearCustomPosition} p={0} minW="auto" h="auto">
+                  <Text fontSize="xs">&#10005;</Text>
+                </Button>
+              )}
+            </HStack>
           </HStack>
         </VStack>
+
+        <Dialog.Root open={showPositionEditor} onOpenChange={(e) => setShowPositionEditor(e.open)}>
+          <Portal>
+            <Dialog.Backdrop />
+            <Dialog.Positioner>
+              <Dialog.Content>
+                <Dialog.Header>
+                  <Dialog.Title>Edit Position</Dialog.Title>
+                </Dialog.Header>
+                <Dialog.Body>
+                  <VStack align="stretch" gap={2}>
+                    {POSITION_TYPES.map((type) => (
+                      <Box key={type}>
+                        <Checkbox.Root
+                          checked={isTypeChecked(type)}
+                          onCheckedChange={() => toggleType(type)}
+                        >
+                          <Checkbox.HiddenInput />
+                          <Checkbox.Control />
+                          <Checkbox.Label>
+                            <Text fontWeight="medium">{type}</Text>
+                          </Checkbox.Label>
+                        </Checkbox.Root>
+                        {type !== "GK" && isTypeChecked(type) && (
+                          <HStack gap={3} ml={6} mt={1}>
+                            {SIDES.map((side) => (
+                              <Checkbox.Root
+                                key={side}
+                                size="sm"
+                                checked={isSideChecked(type, side)}
+                                onCheckedChange={() => toggleSide(type, side)}
+                              >
+                                <Checkbox.HiddenInput />
+                                <Checkbox.Control />
+                                <Checkbox.Label>
+                                  <Text fontSize="sm">{side}</Text>
+                                </Checkbox.Label>
+                              </Checkbox.Root>
+                            ))}
+                          </HStack>
+                        )}
+                      </Box>
+                    ))}
+                  </VStack>
+                </Dialog.Body>
+                <Dialog.Footer>
+                  <Button variant="outline" onClick={() => setShowPositionEditor(false)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    colorPalette="glaucous"
+                    disabled={!hasValidSelection}
+                    onClick={handleSavePosition}
+                  >
+                    Save
+                  </Button>
+                </Dialog.Footer>
+              </Dialog.Content>
+            </Dialog.Positioner>
+          </Portal>
+        </Dialog.Root>
 
         <HStack gap={4} pt={1} borderTopWidth="1px">
           <VStack gap={0}>

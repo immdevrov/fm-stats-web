@@ -15,6 +15,7 @@ import {
   extractAttackingStats,
   extractMovementStats,
 } from "../types/stat-categories";
+import { getEffectivePosition } from "../utils/utils";
 import { type IRole, Role } from "./_role";
 
 export interface IStriker
@@ -93,6 +94,6 @@ export class Striker extends Role implements IStriker {
   }
 
   static isRole(player: Player): boolean {
-    return player.Position.some((p) => p.type === "ST");
+    return getEffectivePosition(player).some((p) => p.type === "ST");
   }
 }
