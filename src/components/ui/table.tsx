@@ -45,7 +45,7 @@ function isControlled<T>(
   return "onSortChange" in props && props.onSortChange !== undefined;
 }
 
-export function Table<T extends Record<string, unknown>>(props: TableProps<T>) {
+export function Table<T extends object>(props: TableProps<T>) {
   const { data, columns, onRowClick, filterRow } = props;
 
   // Internal state for uncontrolled mode

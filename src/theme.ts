@@ -71,13 +71,14 @@ const customColors = {
 export const customSystem = createSystem(defaultConfig, {
   theme: {
     tokens: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       colors: {
         carbonBlack: customColors.carbonBlack,
         glaucous: customColors.glaucous,
         thistle: customColors.thistle,
         spicyPaprika: customColors.spicyPaprika,
         softBlush: customColors.softBlush,
-      },
+      } as any,
     },
     semanticTokens: {
       colors: {

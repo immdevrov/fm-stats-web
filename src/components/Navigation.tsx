@@ -20,22 +20,21 @@ export function Navigation() {
 
   return (
     <VStack align="stretch" p={6} gap={6}>
-      <Heading 
-        size="lg" 
+      <Heading
+        size="lg"
         colorPalette="glaucous"
         color="fg.emphasized"
       >
         FM Stats
       </Heading>
-      
+
       <VStack align="stretch" gap={2}>
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
             <ChakraLink
               key={item.path}
-              as={Link}
-              to={item.path}
+              asChild
               px={4}
               py={2}
               borderRadius="md"
@@ -46,7 +45,7 @@ export function Navigation() {
               }}
               transition="all 0.2s"
             >
-              {item.label}
+              <Link to={item.path}>{item.label}</Link>
             </ChakraLink>
           );
         })}

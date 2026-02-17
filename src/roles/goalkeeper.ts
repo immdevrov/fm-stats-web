@@ -41,7 +41,6 @@ export class GoalKeeper extends Role implements IGoalkeeper {
 
   // Physical stats
   readonly height: number;
-  readonly age: number;
 
   // Error stats
   readonly mistakes: number;
@@ -66,7 +65,6 @@ export class GoalKeeper extends Role implements IGoalkeeper {
 
     const physicalStats = extractPhysicalStats(player);
     this.height = physicalStats.height;
-    this.age = physicalStats.age;
 
     const errorStats = extractErrorStats(player);
     this.mistakes = errorStats.mistakes;

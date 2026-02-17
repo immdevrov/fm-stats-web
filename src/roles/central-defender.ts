@@ -48,7 +48,6 @@ export class CentralDefender extends Role implements ICentralDefender {
 
   // Physical stats
   readonly height: number;
-  readonly age: number;
 
   // Error stats
   readonly mistakes: number;
@@ -78,7 +77,6 @@ export class CentralDefender extends Role implements ICentralDefender {
 
     const physicalStats = extractPhysicalStats(player);
     this.height = physicalStats.height;
-    this.age = physicalStats.age;
 
     const errorStats = extractErrorStats(player);
     this.mistakes = errorStats.mistakes;
