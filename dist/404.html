@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>fm-stats-web</title>
+    <script>
+      sessionStorage.redirect = location.href;
+      location.replace(
+        location.origin + '/fm-stats-web/' +
+        '?/' + location.pathname.slice(1).replace('/fm-stats-web/', '') +
+        location.search.slice(1).replace(/&/, '~and~') +
+        location.hash
+      );
+    </script>
+  </head>
+  <body></body>
+</html>
