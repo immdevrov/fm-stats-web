@@ -4,7 +4,7 @@ import tsconfigPaths from "vite-tsconfig-paths"
 
 // https://vite.dev/config/
 export default defineConfig(() => ({
-  base: '/',
+  base: process.env.CI ? '/fm-stats-web/' : '/',
   plugins: [
     react({
       babel: {
