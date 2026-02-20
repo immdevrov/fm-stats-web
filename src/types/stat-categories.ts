@@ -125,7 +125,6 @@ export const STAT_MAPPING = {
   // Defensive
   tackles: "TckPer90",
   tackleRatio: "TckR",
-  pressuresSuccessful: "PresCPer90",
 
   // Creative
   xA: "xAPer90",
@@ -193,10 +192,13 @@ export function extractPassingStats(player: Player): IPassingStats {
 }
 
 export function extractDefensiveStats(player: Player): IDefensiveStats {
+  const presCompleted = safeNumber(player.PresCPer90);
+  const presAttempted = safeNumber(player.PresAPer90);
+  const pressuresSuccessful = presAttempted === 0 ? 0 : Math.round((presCompleted / presAttempted + Number.EPSILON) * 100) / 100;
   return {
     tackles: safeNumber(player.TckPer90),
     tackleRatio: safeNumber(player.TckR),
-    pressuresSuccessful: safeNumber(player.PresCPer90),
+    pressuresSuccessful,
   };
 }
 
