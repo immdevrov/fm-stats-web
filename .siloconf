@@ -1,0 +1,19 @@
+passEnv:
+- ENV
+passFiles:
+- .npmrc
+mount:
+  exclude:
+  - node_modules
+overrides:
+  node:
+    network:
+      hostAccess: true
+      proxy:
+        allow:
+          - "*.github.com"
+          - registry.npmjs.org
+    ports:
+      - host: 5173
+        guest: 5173
+
