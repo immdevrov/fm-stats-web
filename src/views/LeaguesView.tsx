@@ -17,6 +17,7 @@ import { Table, type Column, type SortDirection } from "../components/ui/table";
 import { formatWage, average } from "../utils/utils";
 import type { Player, LeagueRanking } from "../types/types";
 import { toaster } from "../components/ui/toaster";
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 
 interface LeagueData {
   league: string;
@@ -27,6 +28,7 @@ interface LeagueData {
 }
 
 export function LeaguesView() {
+  useDocumentTitle("Leagues");
   const [leagues, setLeagues] = useState<LeagueData[]>([]);
   const [badDataPlayers, setBadDataPlayers] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(true);

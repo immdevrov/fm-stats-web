@@ -15,6 +15,7 @@ import { db } from "../services/db";
 import { Table, type Column, type SortDirection } from "../components/ui/table";
 import { SearchableSelect } from "../components/SearchableSelect";
 import { formatWage, average } from "../utils/utils";
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 
 interface TeamData {
   name: string;
@@ -28,6 +29,7 @@ const ITEMS_PER_PAGE = 20;
 const MIN_SEARCH_LENGTH = 3;
 
 export function TeamsView() {
+  useDocumentTitle("Teams");
   const navigate = useNavigate();
   const [teams, setTeams] = useState<TeamData[]>([]);
   const [leagues, setLeagues] = useState<string[]>([]);

@@ -14,6 +14,7 @@ import { db } from "../services/db";
 import type { Player } from "../types/types";
 import { Table, type Column } from "../components/ui/table";
 import { formatWage, displayDate, formatPositions } from "../utils/utils";
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 
 interface TeamProfileRow extends Record<string, unknown> {
   name: string;
@@ -36,6 +37,7 @@ export function TeamProfileView() {
   const [error, setError] = useState<string | null>(null);
 
   const decodedTeamName = teamName ? decodeURIComponent(teamName) : "";
+  useDocumentTitle(decodedTeamName ? `Team: ${decodedTeamName}` : "Teams");
 
   useEffect(() => {
     async function loadData() {

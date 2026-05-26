@@ -16,6 +16,7 @@ import { db } from "../services/db";
 import type { Player } from "../types/types";
 import { Table, type Column, type SortDirection } from "../components/ui/table";
 import { formatWage, displayDate, formatPositions, getEffectivePosition } from "../utils/utils";
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 
 const PAGE_SIZE = 20;
 const MIN_SEARCH_LENGTH = 3;
@@ -58,6 +59,7 @@ const columns: Column<PlayerRow>[] = [
 ];
 
 export function PlayersView() {
+  useDocumentTitle("Players");
   const navigate = useNavigate();
   const [players, setPlayers] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(true);

@@ -34,6 +34,7 @@ import { formatWage, displayDate, formatPositions, getEffectivePosition, getPerc
 import { ROLE_CONFIG, STAT_LABELS, INVERTED_STATS, type RoleConfig } from "../roles";
 import { PercentileBar } from "../components/PercentileBar";
 import { SimilarPlayers } from "../components/SimilarPlayers";
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 
 export function PlayerProfileView() {
   const { playerId } = useParams<{ playerId: string }>();
@@ -41,6 +42,7 @@ export function PlayerProfileView() {
   const [player, setPlayer] = useState<Player | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  useDocumentTitle(player ? `Player: ${player.Name}` : "Player");
 
   const reloadPlayer = useCallback(async () => {
     if (!playerId) return;

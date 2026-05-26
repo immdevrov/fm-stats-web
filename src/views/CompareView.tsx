@@ -37,6 +37,7 @@ import { buildCohort, computePercentiles, type StatPercentile } from "../utils/c
 import { PercentileBar } from "../components/PercentileBar";
 import { PlayerAutocomplete } from "../components/PlayerAutocomplete";
 import { useCompare } from "../contexts/CompareContext";
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 
 type Side = "both" | "left" | "right";
 
@@ -53,6 +54,7 @@ interface PlayerPercentiles {
 }
 
 export function CompareView() {
+  useDocumentTitle("Compare");
   const { compareList, addPlayer, removePlayer } = useCompare();
   const [allPlayers, setAllPlayers] = useState<Player[]>([]);
   const [leagueRankings, setLeagueRankings] = useState<LeagueRanking[]>([]);

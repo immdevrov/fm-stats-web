@@ -1,5 +1,6 @@
 import { Container, Heading, VStack, Box, Text, Spinner, Button } from "@chakra-ui/react";
 import { useState, useRef } from "react";
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { FileInput } from "../components/ui/file-input";
 import { parseHtmlTable, transformPlayerStats } from "../parser/html-parser";
 import { db } from "../services/db";
@@ -8,6 +9,7 @@ import { ConfirmDialog } from "../components/ui/confirm-dialog";
 import type { Player } from "../types/types";
 
 export function ImportView() {
+  useDocumentTitle("Import");
   const [isImporting, setIsImporting] = useState(false);
   const [importStatus, setImportStatus] = useState<{
     success: boolean;

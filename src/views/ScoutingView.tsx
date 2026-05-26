@@ -26,7 +26,8 @@ import {
   RightWinger,
   type RoleConfig,
 } from "../roles";
-import { formatWage, displayDate } from "../utils/utils";
+import { formatWage, displayDate, parseCustomDate } from "../utils/utils";
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 
 const STAT_ABBREVIATIONS: Record<string, string> = {
   saveRatio: "SR",
@@ -309,6 +310,7 @@ export function ScoutingView() {
   const [isPending, startTransition] = useTransition();
 
   const roleConfig = ROLE_CONFIG[selectedRoleIndex];
+  useDocumentTitle(`Scouting: ${roleConfig.name}`);
   const hasSideSelector = roleConfig.key === "FB" || roleConfig.key === "W";
   const statGroups = useMemo(() => getStatGroupsForRole(roleConfig.key), [roleConfig.key]);
 
@@ -370,8 +372,11 @@ export function ScoutingView() {
       result = result.filter((r) => !r.injuries);
     }
     if (contractBefore) {
-      const before = new Date(contractBefore);
-      result = result.filter((r) => r.contractExpires && r.contractExpires <= before);
+      const parts = contractBefore.split("/");
+      const before = parts.length === 3 ? parseCustomDate(contractBefore) : null;
+      if (before && !isNaN(before.getTime())) {
+        result = result.filter((r) => r.contractExpires && r.contractExpires <= before);
+      }
     }
     if (excludedLeagues.size > 0) {
       result = result.filter((r) => !excludedLeagues.has(r.division));
@@ -450,10 +455,6 @@ export function ScoutingView() {
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedRoleIndex, side, columnFilters, contractBefore, excludeInjuries, excludedLeagues, sortKey, sortDirection]);
-
-  useEffect(() => {
-    setSide("both");
-  }, [selectedRoleIndex]);
 
   const handleSortChange = useCallback(
     (key: keyof ScoutingRow, direction: SortDirection) => {
@@ -660,7 +661,7 @@ export function ScoutingView() {
                 size="sm"
                 variant={selectedRoleIndex === i ? "solid" : "outline"}
                 colorPalette={selectedRoleIndex === i ? "glaucous" : undefined}
-                onClick={() => setSelectedRoleIndex(i)}
+                onClick={() => { setSelectedRoleIndex(i); setSide("both"); }}
               >
                 {rc.name}
               </Button>
@@ -687,10 +688,11 @@ export function ScoutingView() {
             <HStack gap={1}>
               <Text color="fg.muted" fontSize="sm" whiteSpace="nowrap">Contract before:</Text>
               <Input
-                type="date"
+                type="text"
+                placeholder="DD/MM/YYYY"
                 value={contractBeforeRaw}
                 onChange={(e) => setContractBefore(e.target.value)}
-                maxW="150px"
+                maxW="130px"
                 size="sm"
               />
             </HStack>
