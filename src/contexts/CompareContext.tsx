@@ -22,9 +22,6 @@ export function CompareProvider({ children }: { children: ReactNode }) {
       const cleaned = uids.filter((uid) => validUids.has(uid));
       setCompareList(cleaned);
       loaded.current = true;
-      if (cleaned.length !== uids.length) {
-        db.saveCompareList(cleaned);
-      }
     });
   }, []);
 
