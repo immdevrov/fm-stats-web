@@ -17,9 +17,14 @@ export function CompareProvider({ children }: { children: ReactNode }) {
   const loaded = useRef(false);
 
   useEffect(() => {
-    db.getCompareList().then((uids) => {
-      setCompareList(uids);
+    Promise.all([db.getCompareList(), db.getAllPlayers()]).then(([uids, players]) => {
+      const validUids = new Set(players.map((p) => p.UID));
+      const cleaned = uids.filter((uid) => validUids.has(uid));
+      setCompareList(cleaned);
       loaded.current = true;
+      if (cleaned.length !== uids.length) {
+        db.saveCompareList(cleaned);
+      }
     });
   }, []);
 
