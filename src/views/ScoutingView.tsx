@@ -43,7 +43,7 @@ const STAT_ABBREVIATIONS: Record<string, string> = {
   keyPasses: "KP",
   tackles: "Tkl",
   tackleRatio: "TR",
-  pressuresSuccessful: "Prs",
+  pressuresSuccessful: "PrR",
   headersWonRatio: "HW",
   aerialAttempts: "AA",
   keyHeaders: "KH",

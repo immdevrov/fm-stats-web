@@ -455,7 +455,7 @@ function OutfieldStatsSection({ player }: { player: Player }) {
         stats={[
           { label: "Tackles", value: defensiveStats.tackles.toFixed(2) },
           { label: "Tackle %", value: formatPercent(defensiveStats.tackleRatio) },
-          { label: "Pressures", value: defensiveStats.pressuresSuccessful.toFixed(2) },
+          { label: "Press Ratio", value: defensiveStats.pressuresSuccessful.toFixed(2) },
         ]}
       />
 

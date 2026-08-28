@@ -194,7 +194,7 @@ export const STAT_LABELS: Record<string, string> = {
   keyPasses: "Key Passes",
   tackles: "Tackles",
   tackleRatio: "Tackle Ratio",
-  pressuresSuccessful: "Pressures",
+  pressuresSuccessful: "Press Ratio",
   headersWonRatio: "Headers Won Ratio",
   aerialAttempts: "Aerial Attempts",
   keyHeaders: "Key Headers",
