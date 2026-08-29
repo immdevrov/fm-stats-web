@@ -38,6 +38,7 @@ function makePlayer(uid: number, name: string) {
     TckPer90: 0,
     TckR: 0,
     ClrPer90: 0,
+    IntPer90: 0,
     KTckPer90: 0,
     KHdrsPer90: 0,
     AerAPer90: 0,

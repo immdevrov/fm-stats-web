@@ -45,6 +45,7 @@ export class CentralDefender extends Role implements ICentralDefender {
   readonly tackles: number;
   readonly tackleRatio: number;
   readonly pressuresSuccessful: number;
+  readonly defensiveContributions: number;
 
   // Physical stats
   readonly height: number;
@@ -74,6 +75,7 @@ export class CentralDefender extends Role implements ICentralDefender {
     this.tackles = defensiveStats.tackles;
     this.tackleRatio = defensiveStats.tackleRatio;
     this.pressuresSuccessful = defensiveStats.pressuresSuccessful;
+    this.defensiveContributions = defensiveStats.defensiveContributions;
 
     const physicalStats = extractPhysicalStats(player);
     this.height = physicalStats.height;

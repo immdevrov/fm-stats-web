@@ -39,6 +39,7 @@ export class DefensiveMidfielder extends Role implements IDefensiveMidfielder {
   readonly tackles: number;
   readonly tackleRatio: number;
   readonly pressuresSuccessful: number;
+  readonly defensiveContributions: number;
 
   constructor(player: Player) {
     super(player);
@@ -62,6 +63,7 @@ export class DefensiveMidfielder extends Role implements IDefensiveMidfielder {
     this.tackles = defensiveStats.tackles;
     this.tackleRatio = defensiveStats.tackleRatio;
     this.pressuresSuccessful = defensiveStats.pressuresSuccessful;
+    this.defensiveContributions = defensiveStats.defensiveContributions;
   }
 
   static isRole(player: Player): boolean {

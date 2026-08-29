@@ -52,6 +52,7 @@ export class Striker extends Role implements IStriker {
   // Defensive stats (partial)
   readonly tackleRatio: number;
   readonly pressuresSuccessful: number;
+  readonly defensiveContributions: number;
 
   // Passing stats (partial)
   readonly keyPasses: number;
@@ -85,6 +86,7 @@ export class Striker extends Role implements IStriker {
     const defensiveStats = extractDefensiveStats(player);
     this.tackleRatio = defensiveStats.tackleRatio;
     this.pressuresSuccessful = defensiveStats.pressuresSuccessful;
+    this.defensiveContributions = defensiveStats.defensiveContributions;
 
     const passStats = extractPassingStats(player);
     this.keyPasses = passStats.keyPasses;

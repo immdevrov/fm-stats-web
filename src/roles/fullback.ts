@@ -51,6 +51,7 @@ export class Fullback extends Role implements IFullback {
   readonly tackles: number;
   readonly tackleRatio: number;
   readonly pressuresSuccessful: number;
+  readonly defensiveContributions: number;
 
   // Creative stats (partial)
   readonly xA: number;
@@ -89,6 +90,7 @@ export class Fullback extends Role implements IFullback {
     this.tackles = defensiveStats.tackles;
     this.tackleRatio = defensiveStats.tackleRatio;
     this.pressuresSuccessful = defensiveStats.pressuresSuccessful;
+    this.defensiveContributions = defensiveStats.defensiveContributions;
 
     const creativeStats = extractCreativeStats(player);
     this.xA = creativeStats.xA;

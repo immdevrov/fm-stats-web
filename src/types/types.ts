@@ -34,6 +34,7 @@ export type Player = {
   GlMst: number;
   TckPer90: number;
   TckR: number;
+  IntPer90: number;
   ClrPer90: number;
   KTckPer90: number;
   KHdrsPer90: number;

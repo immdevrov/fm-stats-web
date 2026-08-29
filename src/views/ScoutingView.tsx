@@ -44,6 +44,7 @@ const STAT_ABBREVIATIONS: Record<string, string> = {
   tackles: "Tkl",
   tackleRatio: "TR",
   pressuresSuccessful: "Pr%",
+  defensiveContributions: "DC",
   headersWonRatio: "HW",
   aerialAttempts: "AA",
   keyHeaders: "KH",

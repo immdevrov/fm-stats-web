@@ -11,7 +11,7 @@ const ROLE_STAT_GROUPS: Record<string, StatGroup[]> = {
     { key: "error", label: "Error", statKeys: ["mistakes"] },
   ],
   CD: [
-    { key: "defensive", label: "Defensive", statKeys: ["tackles", "tackleRatio", "pressuresSuccessful"] },
+    { key: "defensive", label: "Defensive", statKeys: ["tackleRatio", "pressuresSuccessful", "defensiveContributions"] },
     { key: "aerial", label: "Aerial", statKeys: ["headersWonRatio", "aerialAttempts", "keyHeaders"] },
     { key: "passing", label: "Passing", statKeys: ["passRatio", "progressivePasses"] },
     { key: "possession", label: "Possession", statKeys: ["possessionWon", "possessionLost", "ballRetention"] },
@@ -19,7 +19,7 @@ const ROLE_STAT_GROUPS: Record<string, StatGroup[]> = {
     { key: "error", label: "Error", statKeys: ["mistakes"] },
   ],
   FB: [
-    { key: "defensive", label: "Defensive", statKeys: ["tackles", "tackleRatio", "pressuresSuccessful"] },
+    { key: "defensive", label: "Defensive", statKeys: ["tackleRatio", "pressuresSuccessful", "defensiveContributions"] },
     { key: "aerial", label: "Aerial", statKeys: ["headersWonRatio", "aerialAttempts", "keyHeaders"] },
     { key: "passing", label: "Passing", statKeys: ["passRatio", "progressivePasses"] },
     { key: "possession", label: "Possession", statKeys: ["possessionWon", "possessionLost", "ballRetention"] },
@@ -29,14 +29,14 @@ const ROLE_STAT_GROUPS: Record<string, StatGroup[]> = {
     { key: "error", label: "Error", statKeys: ["mistakes"] },
   ],
   DM: [
-    { key: "defensive", label: "Defensive", statKeys: ["tackles", "tackleRatio", "pressuresSuccessful"] },
+    { key: "defensive", label: "Defensive", statKeys: ["tackleRatio", "pressuresSuccessful", "defensiveContributions"] },
     { key: "aerial", label: "Aerial", statKeys: ["headersWonRatio", "aerialAttempts", "keyHeaders"] },
     { key: "passing", label: "Passing", statKeys: ["passRatio", "progressivePasses"] },
     { key: "possession", label: "Possession", statKeys: ["possessionWon", "possessionLost", "ballRetention"] },
   ],
   CM: [
     { key: "passing", label: "Passing", statKeys: ["passRatio", "progressivePasses", "keyPasses"] },
-    { key: "defensive", label: "Defensive", statKeys: ["tackles", "tackleRatio", "pressuresSuccessful"] },
+    { key: "defensive", label: "Defensive", statKeys: ["tackleRatio", "pressuresSuccessful", "defensiveContributions"] },
     { key: "creative", label: "Creative", statKeys: ["chancesCreated"] },
     { key: "attacking", label: "Attacking", statKeys: ["npxG"] },
     { key: "movement", label: "Movement", statKeys: ["dribbles", "sprints"] },

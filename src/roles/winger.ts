@@ -45,6 +45,7 @@ export class Winger extends Role implements IWinger {
 
   // Defensive stats (partial)
   readonly pressuresSuccessful: number;
+  readonly defensiveContributions: number;
 
   // Creative stats
   readonly xA: number;
@@ -79,6 +80,7 @@ export class Winger extends Role implements IWinger {
 
     const defensiveStats = extractDefensiveStats(player);
     this.pressuresSuccessful = defensiveStats.pressuresSuccessful;
+    this.defensiveContributions = defensiveStats.defensiveContributions;
 
     const creativeStats = extractCreativeStats(player);
     this.xA = creativeStats.xA;

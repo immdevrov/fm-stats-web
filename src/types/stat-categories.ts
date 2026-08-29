@@ -42,6 +42,8 @@ export interface IDefensiveStats {
   tackleRatio: number;
   /** successful pressing actions */
   pressuresSuccessful: number;
+  /** blocks + interceptions + clearances + tackles per 90 */
+  defensiveContributions: number;
 }
 
 export interface ICreativeStats {
@@ -195,10 +197,12 @@ export function extractDefensiveStats(player: Player): IDefensiveStats {
   const presCompleted = safeNumber(player.PresCPer90);
   const presAttempted = safeNumber(player.PresAPer90);
   const pressuresSuccessful = presAttempted === 0 ? 0 : Math.round((presCompleted / presAttempted + Number.EPSILON) * 100) / 100;
+  const defensiveContributions = Math.round((safeNumber(player.BlkPer90) + safeNumber(player.IntPer90) + safeNumber(player.ClrPer90) + safeNumber(player.TckPer90) + Number.EPSILON) * 100) / 100;
   return {
     tackles: safeNumber(player.TckPer90),
     tackleRatio: safeNumber(player.TckR),
     pressuresSuccessful,
+    defensiveContributions,
   };
 }
 

@@ -142,6 +142,7 @@ export function transformPlayerStats(rawRecords: Record<string, string>[]): Play
       GlMst: processHyphen(record["Gl Mst"], parseInt) ?? 0,
       TckPer90: processHyphen(record["Tck/90"], parseFloat),
       TckR: processHyphen(record["Tck R"], parseFloat) ?? 0,
+      IntPer90: processHyphen(record["Int/90"], parseFloat) ?? 0,
       ClrPer90: processHyphen(record["Clr/90"], parseFloat) ?? 0,
       KTckPer90: processHyphen(record["K Tck/90"], parseFloat) ?? 0,
       KHdrsPer90: processHyphen(record["K Hdrs/90"], parseFloat) ?? 0,
