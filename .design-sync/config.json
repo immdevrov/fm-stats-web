@@ -1,0 +1,58 @@
+{
+  "projectId": "5e0d1ffd-5b3e-48af-88f5-b4290b2762f1",
+  "shape": "package",
+  "pkg": "fm-stats-web",
+  "globalName": "FMJotter",
+  "srcDir": "src",
+  "tsconfig": "tsconfig.app.json",
+  "provider": {
+    "component": "Provider"
+  },
+  "overrides": {
+    "PercentileBar": {
+      "cardMode": "column"
+    },
+    "DarkMode": {
+      "cardMode": "column"
+    },
+    "LightMode": {
+      "cardMode": "column"
+    },
+    "ConfirmDialog": {
+      "cardMode": "single",
+      "primaryStory": "Default",
+      "viewport": "720x560"
+    },
+    "Toaster": {
+      "cardMode": "single",
+      "primaryStory": "Success",
+      "viewport": "560x420"
+    },
+    "Layout": {
+      "cardMode": "single",
+      "primaryStory": "Default",
+      "viewport": "1000x640"
+    }
+  },
+  "componentSrcMap": {
+    "Table": "src/components/ui/table.tsx",
+    "Tooltip": "src/components/ui/tooltip.tsx",
+    "ConfirmDialog": "src/components/ui/confirm-dialog.tsx",
+    "FileInput": "src/components/ui/file-input.tsx",
+    "Toaster": "src/components/ui/toaster.tsx",
+    "ColorModeButton": "src/components/ui/color-mode.tsx",
+    "ColorModeIcon": "src/components/ui/color-mode.tsx",
+    "LightMode": "src/components/ui/color-mode.tsx",
+    "DarkMode": "src/components/ui/color-mode.tsx",
+    "PercentileBar": "src/components/PercentileBar.tsx",
+    "SearchableSelect": "src/components/SearchableSelect.tsx",
+    "PlayerAutocomplete": "src/components/PlayerAutocomplete.tsx",
+    "Navigation": "src/components/Navigation.tsx",
+    "Layout": "src/components/Layout.tsx",
+    "Provider": null,
+    "ColorModeProvider": null,
+    "MemoryRouter": null,
+    "SimilarPlayers": null
+  },
+  "readmeHeader": ".design-sync/conventions.md"
+}
