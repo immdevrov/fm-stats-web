@@ -177,10 +177,28 @@ players store.
 
 ### New components
 
-- `<PlayerStatusControl uid />` — star icon opening a menu with a checkbox per
-  list, "New list…", and "Mark as unwanted". Serves every add flow.
-- `<PlayerStatusBadge uid />` — unwanted badge and list-count chip.
+Shortlisted and unwanted are mutually exclusive, so they share **one**
+indicator rather than two. A single narrow status column carries all three
+states; there is no badge beside the name.
+
+| State | Glyph | Tooltip |
+|---|---|---|
+| Neither | hollow star, muted | "Not on any list" |
+| Shortlisted | filled star, glaucous, with list count | names the lists he is on |
+| Unwanted | circled slash, spicyPaprika | shows the note, e.g. "Wage demand impossible" |
+
+Detail lives in the tooltip, so the column stays about 46px wide and the Name
+column keeps its width — the reason a spelled-out badge was rejected.
+
+- `<PlayerStatusControl uid />` — the interactive indicator. Clicking opens a
+  menu with a checkbox per list, "New list…", and "Mark as unwanted" (or
+  "Clear unwanted" when he already is). Serves every add flow.
+- `<PlayerStatusBadge uid />` — the same three-state glyph, read-only, for
+  `CompareView`.
 - `<PricingFields uid />` — price, wage demand and note editor.
+
+Unwanted rows are dimmed at the row level in addition to the glyph. The status
+column is exempt from that dimming, so the flag stays legible on a faded row.
 
 ### New view
 
@@ -188,8 +206,8 @@ players store.
 plus a virtual **Unwanted** tab, since unwanted players belong to no list and would
 otherwise only surface dimmed inside Scouting.
 
-Columns: Name, Age, Position, Club, Division, Wage, Price, Wage Demand, Contract
-Expires, Note. Supports removing players and bulk removal.
+Columns: Status, Name, Age, Position, Club, Division, Wage, Price, Wage Demand,
+Contract Expires, Note. Supports removing players and bulk removal.
 
 ### Integrations
 
