@@ -19,6 +19,7 @@ interface TablePropsBase<T> {
   columns: Column<T>[];
   onRowClick?: (row: T) => void;
   filterRow?: React.ReactNode;
+  rowProps?: (row: T) => React.ComponentProps<typeof ChakraTable.Row>;
 }
 
 interface UncontrolledTableProps<T> extends TablePropsBase<T> {
@@ -46,7 +47,7 @@ function isControlled<T>(
 }
 
 export function Table<T extends object>(props: TableProps<T>) {
-  const { data, columns, onRowClick, filterRow } = props;
+  const { data, columns, onRowClick, filterRow, rowProps } = props;
 
   // Internal state for uncontrolled mode
   const [internalSortKey, setInternalSortKey] = useState<keyof T | undefined>(
@@ -166,6 +167,7 @@ export function Table<T extends object>(props: TableProps<T>) {
               cursor={onRowClick ? "pointer" : "default"}
               _hover={{ bg: "glaucous.900/20" }}
               onClick={() => onRowClick?.(row)}
+              {...rowProps?.(row)}
             >
               {columns.map((column) => (
                 <ChakraTable.Cell
