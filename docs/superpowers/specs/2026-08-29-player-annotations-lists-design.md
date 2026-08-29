@@ -10,7 +10,7 @@ FM Jotter can analyse players but cannot record judgements about them. Three
 things are missing:
 
 1. **Shortlists** — named lists of players to keep an eye on, with prices.
-2. **No-go marking** — a player ruled out (not good enough, or a transfer that
+2. **Unwanted marking** — a player ruled out (not good enough, or a transfer that
    proved impossible) who must stay visible and keep counting in every
    statistical cohort, but be clearly flagged wherever he appears.
 3. **Durability across imports** — user judgements must survive a re-import the
@@ -27,7 +27,7 @@ This design fixes that defect and builds shortlists on the corrected foundation.
 
 ## Scope
 
-In scope: named lists, no-go status, price and wage demand, notes, the `/lists`
+In scope: named lists, unwanted status, price and wage demand, notes, the `/lists`
 view, quick actions and badges across existing views, the import preserve
 dialog, and moving `CustomPosition` into durable storage.
 
@@ -42,14 +42,14 @@ during implementation.
 | Decision | Choice | Consequence |
 |---|---|---|
 | List model | Multiple named lists | Needs list CRUD and a list picker |
-| "Shortlisted" | Derived from membership, not stored | Only `rejected` is a stored status; no ghost "shortlisted but listed nowhere" state |
-| No-go vs shortlist | One mutually exclusive status | Marking no-go removes the player from every list |
+| "Shortlisted" | Derived from membership, not stored | Only `unwanted` is a stored status; no ghost "shortlisted but listed nowhere" state |
+| Unwanted vs shortlist | One mutually exclusive status | Marking a player unwanted removes him from every list |
 | List typing | Untyped — name only | Lists may span positions; no role binding |
 | List columns | Plain roster table | No percentile columns; click through to the profile for stats |
 | Prices | Price + wage demand | Wage demand is often the real blocker in FM |
-| No-go display | Visible, dimmed, with a "Hide no-go" filter | The player stays on the board so you remember he was ruled out |
+| Unwanted display | Visible, dimmed, with a "Hide unwanted" filter | The player stays on the board so you remember he was ruled out |
 | Orphans | Kept, not pruned | Requires display fallbacks and uid-first rendering (see Orphan handling) |
-| Add flows | Per-row quick action, bulk select in Scouting, Player Profile, and no-go from anywhere | One shared control component serves all four |
+| Add flows | Per-row quick action, bulk select in Scouting, Player Profile, and mark-unwanted from anywhere | One shared control component serves all four |
 
 ## Data model
 
@@ -60,7 +60,7 @@ Two new object stores, database version **4**.
 interface PlayerAnnotation {
   uid: number;
   customPosition?: PlayerPositions;
-  rejected?: boolean;
+  unwanted?: boolean;
   price?: number;
   wageDemand?: number;
   note?: string;
@@ -83,7 +83,7 @@ tens of players, so a whole-list `put` is cheap, and manual ordering stays
 trivial.
 
 Shortlist status is derived: a player is shortlisted if any list's `uids`
-contains him. The only stored status is `rejected`. Marking a player rejected
+contains him. The only stored status is `unwanted`. Marking a player unwanted
 removes his uid from every list; the annotation write and the list writes share
 one transaction spanning both stores, so the two can never disagree.
 
@@ -105,7 +105,7 @@ Only `customPosition` crosses back into the `Player` object. It is the one
 annotation domain code depends on: `getEffectivePosition()`
 (`src/utils/utils.ts:76`) reads it, and every role's `isRole()` calls that.
 
-`rejected`, `price`, `wageDemand` and `note` are consumed exclusively by views
+`unwanted`, `price`, `wageDemand` and `note` are consumed exclusively by views
 and the context layer and **must never be merged onto `Player`**. Widening the
 seam beyond one field is a design violation.
 
@@ -165,7 +165,7 @@ Exposed by `usePlayerNotes()`:
 
 - `annotations: Map<number, PlayerAnnotation>`
 - `lists: PlayerList[]`
-- `isRejected(uid)`, `toggleRejected(uid)`
+- `isUnwanted(uid)`, `toggleUnwanted(uid)`
 - `listsFor(uid)`, `addToList(listId, uid)`, `removeFromList(listId, uid)`
 - `createList(name)`, `renameList(id, name)`, `deleteList(id)`
 - `setPricing(uid, { price, wageDemand, note })`
@@ -178,14 +178,14 @@ players store.
 ### New components
 
 - `<PlayerStatusControl uid />` — star icon opening a menu with a checkbox per
-  list, "New list…", and "Mark as no-go". Serves every add flow.
-- `<PlayerStatusBadge uid />` — no-go badge and list-count chip.
+  list, "New list…", and "Mark as unwanted". Serves every add flow.
+- `<PlayerStatusBadge uid />` — unwanted badge and list-count chip.
 - `<PricingFields uid />` — price, wage demand and note editor.
 
 ### New view
 
 `/lists` → `ListsView`, with a "Lists" entry in `Navigation`. Tabs for each list
-plus a virtual **No-go** tab, since rejected players belong to no list and would
+plus a virtual **Unwanted** tab, since unwanted players belong to no list and would
 otherwise only surface dimmed inside Scouting.
 
 Columns: Name, Age, Position, Club, Division, Wage, Price, Wage Demand, Contract
@@ -195,10 +195,10 @@ Expires, Note. Supports removing players and bulk removal.
 
 | View | Change |
 |---|---|
-| `ScoutingView` | Quick-action column, bulk checkboxes with "Add N to list…", dimmed rejected rows, "Hide no-go" added to the existing filter bar |
-| `PlayersView` | Quick-action column, dimmed rejected rows, "Hide no-go" filter |
+| `ScoutingView` | Quick-action column, bulk checkboxes with "Add N to list…", dimmed unwanted rows, "Hide unwanted" added to the existing filter bar |
+| `PlayersView` | Quick-action column, dimmed unwanted rows, "Hide unwanted" filter |
 | `PlayerProfileView` | Status control and inline `PricingFields`, beside the existing position editor |
-| `TeamProfileView` | Quick-action column, dimmed rejected rows |
+| `TeamProfileView` | Quick-action column, dimmed unwanted rows |
 | `CompareView` | Badge only |
 
 ### Shared component change
@@ -218,7 +218,7 @@ The single-choice rankings `ConfirmDialog` is replaced by a multi-select
 
 - League rankings
 - Custom positions
-- Lists, prices and no-go flags
+- Lists, prices and unwanted flags
 
 Every category defaults to **kept**. This gives custom positions and lists the
 same behaviour league rankings already have, which is the requirement that
