@@ -1797,22 +1797,31 @@ rowProps={(row) => (isUnwanted(row.uid) ? { color: "fg.muted", bg: "bg.subtle" }
 
 Fade the row with an inherited text colour, **not** `opacity`. The spec requires the status glyph to stay legible on a faded row, and CSS opacity applies to the whole subtree so a child cannot opt back out. Muted inherited colour fades every cell, while `PlayerStatusBadge` sets `spicyPaprika.500` explicitly and keeps full strength.
 
-- [ ] **Step 2: Add the "Hide unwanted" filter to `PlayersView`**
+- [ ] **Step 2: Add the “Hide unwanted” filter to `PlayersView`**
 
-Add the state beside the existing filters and apply it where `data` is built (`src/views/PlayersView.tsx:100`):
+The filter must fold into the existing filter memo, **before** pagination. `PlayersView` renders `paginatedData`, sliced from `filteredAndSortedData` at `src/views/PlayersView.tsx:173-177`; filtering the table’s data after that slice would bypass pagination and break the “Showing N of M players” count at line 303.
+
+Add the state beside the existing filters:
 
 ```tsx
 const [hideUnwanted, setHideUnwanted] = useState(false);
 ```
 
+Inside the `filteredAndSortedData` memo (`src/views/PlayersView.tsx:119`), after the search, position and club filters and before the sort:
+
 ```tsx
-const visibleRows = useMemo(
-  () => (hideUnwanted ? data.filter((row) => !isUnwanted(row.uid)) : data),
-  [data, hideUnwanted, isUnwanted]
-);
+if (hideUnwanted) {
+  result = result.filter((player) => !isUnwanted(player.uid));
+}
 ```
 
-Render a checkbox alongside the existing filter controls and pass `visibleRows` to `<Table>` in place of `data`.
+Add `hideUnwanted` and `isUnwanted` to that memo’s dependency array, and add `hideUnwanted` to the page-reset effect at `src/views/PlayersView.tsx:180` so toggling the filter returns to page 1, exactly as every other filter does:
+
+```tsx
+}, [searchQuery, selectedPositions, selectedClub, sortKey, sortDirection, hideUnwanted]);
+```
+
+Render the checkbox alongside the existing filter controls. `<Table data={paginatedData}>` stays untouched:
 
 ```tsx
 <Checkbox.Root
@@ -1847,16 +1856,21 @@ Add the filter state beside the existing wage, contract, injury and league filte
 const [hideUnwanted, setHideUnwanted] = useState(false);
 ```
 
-Apply it after every existing filter, where the displayed rows are computed:
+Fold it into the existing `filteredAndSorted` memo (`src/views/ScoutingView.tsx:450` slices `paginatedRows` from it), after every existing filter and before the sort — filtering after the slice would bypass pagination:
 
 ```tsx
-const visibleRows = useMemo(
-  () => (hideUnwanted ? filteredRows.filter((row) => !isUnwanted(row.uid)) : filteredRows),
-  [filteredRows, hideUnwanted, isUnwanted]
-);
+if (hideUnwanted) {
+  result = result.filter((row) => !isUnwanted(row.uid));
+}
 ```
 
-Render the checkbox in the existing filter bar and pass `visibleRows` to the table in place of the current filtered rows:
+Add `hideUnwanted` and `isUnwanted` to that memo’s dependency array, and add `hideUnwanted` to the page-reset effect at `src/views/ScoutingView.tsx:457`:
+
+```tsx
+}, [selectedRoleIndex, side, columnFilters, contractBefore, excludeInjuries, excludedLeagues, sortKey, sortDirection, hideUnwanted]);
+```
+
+Render the checkbox in the existing filter bar. The table keeps receiving its paginated rows:
 
 ```tsx
 <Checkbox.Root
@@ -1873,7 +1887,7 @@ Render the checkbox in the existing filter bar and pass `visibleRows` to the tab
 rowProps={(row) => (isUnwanted(row.uid) ? { color: "fg.muted", bg: "bg.subtle" } : {})}
 ```
 
-Filtering removes rows only. Percentiles are computed over the full cohort before any filter runs, so hiding an unwanted player never moves anyone else’s numbers — which is exactly the guarantee the spec makes about unwanted players still counting.
+Filtering removes rows only. Percentiles are computed over the full cohort by `computeScoutingData` before any filter runs, so hiding an unwanted player never moves anyone else’s numbers — exactly the guarantee the spec makes about unwanted players still counting.
 
 - [ ] **Step 4: Add the status column to `TeamProfileView`**
 
@@ -2058,14 +2072,22 @@ const performImport = async (players: Player[], clear: PreserveCategory[]) => {
 
     if (clear.includes("rankings")) await db.clearLeagueRankings();
     if (clear.includes("positions")) await db.clearAllCustomPositions();
+
     if (clear.includes("lists")) {
+      const keptPositions = clear.includes("positions")
+        ? []
+        : (await db.getAnnotations()).filter((a) => a.customPosition);
       await db.clearAllLists();
       await db.clearAllAnnotations();
+      for (const annotation of keptPositions) {
+        await db.setAnnotation(annotation.uid, { customPosition: annotation.customPosition });
+      }
     }
 
     await db.clearAllPlayers();
     await db.savePlayers(players);
-    // …unchanged success handling…
+
+    // success toast and setImportStatus: unchanged from the current implementation
   } catch (error) {
     handleImportError(error);
   } finally {
@@ -2075,20 +2097,9 @@ const performImport = async (players: Player[], clear: PreserveCategory[]) => {
 };
 ```
 
-Clearing `lists` also clears annotations, which would wipe custom positions too — so when `positions` is kept but `lists` is cleared, re-save the custom positions afterwards:
+The `lists` branch is subtle and must not be simplified: custom positions and list data now share the `playerAnnotations` store, so `clearAllAnnotations()` would destroy custom positions the user chose to keep. Reading them first and re-saving them after is what keeps the two categories independent, which is the entire point of the dialog.
 
-```tsx
-if (clear.includes("lists")) {
-  const keptPositions = clear.includes("positions")
-    ? []
-    : (await db.getAnnotations()).filter((a) => a.customPosition);
-  await db.clearAllLists();
-  await db.clearAllAnnotations();
-  for (const annotation of keptPositions) {
-    await db.setAnnotation(annotation.uid, { customPosition: annotation.customPosition });
-  }
-}
-```
+Keep the existing success-toast and `setImportStatus` block exactly as it is today — only the clearing logic above it changes.
 
 Render the new dialog in place of the old one:
 
