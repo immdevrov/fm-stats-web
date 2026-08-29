@@ -197,6 +197,10 @@ column keeps its width — the reason a spelled-out badge was rejected.
   `CompareView`.
 - `<PricingFields uid />` — price, wage demand and note editor.
 
+Absent values render as – in numeric and date columns only. **An empty note
+renders as nothing** — no dash in its column, and no dangling separator in the
+tooltip: an unwanted player with no note shows just "Unwanted".
+
 Unwanted rows are dimmed at the row level in addition to the glyph. The status
 column is exempt from that dimming, so the flag stays legible on a faded row.
 
