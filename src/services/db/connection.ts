@@ -62,7 +62,7 @@ export function getDB(): Promise<IDBPDatabase<FmStatsDB>> {
           db.createObjectStore('playerAnnotations', { keyPath: 'uid' });
           db.createObjectStore('playerLists', { keyPath: 'id' });
           if (oldVersion > 0) {
-            migrateCustomPositions(tx as UpgradeTx);
+            migrateCustomPositions(tx).catch(() => tx.abort());
           }
         }
       },
