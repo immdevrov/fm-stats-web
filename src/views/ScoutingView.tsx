@@ -589,7 +589,7 @@ export function ScoutingView() {
     }
 
     return base;
-  }, [roleConfig.statKeys, statGroups, compareSet, addPlayer, removePlayer]);
+  }, [roleConfig.statKeys, roleConfig.derivedPercentileStats, statGroups, compareSet, addPlayer, removePlayer]);
 
   const filterRow = useMemo(() => {
     const filterableKeys = new Set(["age", "wage"]);

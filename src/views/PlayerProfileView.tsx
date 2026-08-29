@@ -546,7 +546,7 @@ function GoalkeeperStatsSection({ player }: { player: Player }) {
           return derived.formula(p);
         }).sort((a, b) => a - b);
 
-        setShotStoppingRank(getPercentile(rank, allRanks)); // eslint-disable-line react-hooks/set-state-in-effect
+        setShotStoppingRank(getPercentile(rank, allRanks));
       }
     );
   }, [player]);
