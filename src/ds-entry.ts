@@ -27,3 +27,45 @@ export { Layout } from "./components/Layout";
 
 export { customSystem } from "./theme";
 export { MemoryRouter, Routes, Route, Link, NavLink, Outlet } from "react-router-dom";
+
+/* Chakra primitives — layout glue for screens built with this DS. */
+export {
+  Box,
+  Flex,
+  Stack,
+  HStack,
+  VStack,
+  Grid,
+  GridItem,
+  SimpleGrid,
+  Container,
+  Center,
+  Spacer,
+  Separator,
+  Heading,
+  Text,
+  Badge,
+  Button,
+  IconButton,
+  Input,
+  Textarea,
+  Checkbox,
+  Spinner,
+  Card,
+  Tabs,
+  Progress,
+  Alert,
+  Portal,
+} from "@chakra-ui/react";
+
+/* Views — the app's existing screens, so designs can start from a real panel. */
+export { db } from "./services/db";
+export { CompareProvider } from "./contexts/CompareContext";
+export { ImportView } from "./views/ImportView";
+export { LeaguesView } from "./views/LeaguesView";
+export { TeamsView } from "./views/TeamsView";
+export { TeamProfileView } from "./views/TeamProfileView";
+export { PlayersView } from "./views/PlayersView";
+export { PlayerProfileView } from "./views/PlayerProfileView";
+export { ScoutingView } from "./views/ScoutingView";
+export { CompareView } from "./views/CompareView";

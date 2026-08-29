@@ -79,3 +79,38 @@
 - The app was renamed **FM Stats → FM Jotter** in this run. The IndexedDB name (`fm-stats-db`), the
   GitHub Pages base path (`/fm-stats-web/`) and the package name were deliberately left alone —
   changing them orphans user data and breaks the deployed site.
+
+## Views and fixtures (added in the second pass)
+
+The app's eight views are synced as components so designs can start from an existing panel.
+
+- **Views take no props** — each loads from IndexedDB itself. `.design-sync/previews/_seed.tsx` is a
+  shared harness that seeds the DB from `_fixtures.ts`, then mounts the view inside `Layout` + a
+  `MemoryRouter` at the right path. It is **not** a component preview; `buildPreviews` only looks for
+  `<ComponentName>.tsx`, so `_seed.tsx` and `_fixtures.ts` are import-only and safely ignored.
+- **`_fixtures.ts` is generated, not hand-written.** Regenerate with:
+  ```sh
+  node .design-sync/gen-fixtures.mjs     # run from the repo root; writes .design-sync/previews/_fixtures.ts
+  ```
+  It uses a fixed LCG seed (`20260829`) deliberately — a non-deterministic fixture would clear every
+  grade on every re-sync. **Do not change the seed casually.**
+- 118 players across 6 ranked leagues, all with 5+ starts, spread over 10 position groups so each
+  role has a real cohort for percentile maths.
+- **Previews reference specific fixture UIDs**: `PlayerProfileView` uses `1105` (a striker),
+  `CompareView` seeds compare list `[1001, 1002, 1003]` (goalkeepers, so they land on the default
+  Goalkeeper tab), `TeamProfileView` uses club `Fiorentina` (the busiest club in the fixture set).
+  **Regenerating with a different seed invalidates all three.** If you change the seed, re-derive
+  those values before rebuilding.
+- `Layout` supplies `CompareProvider`, so any view using `useCompare()` (ScoutingView, CompareView,
+  PlayerProfileView) must be mounted through the harness, never bare.
+- `SimilarPlayers` is still excluded as a standalone card, but it now renders for real inside
+  `PlayerProfileView` — which is the honest way to show a component that needs its parent's data.
+
+## Re-sync risks (second pass additions)
+
+- The fixture squad is synthetic. Stat distributions are plausible but not drawn from real FM data,
+  so percentile colours in the view cards are illustrative, not representative.
+- `_seed.tsx` calls `db.clearAllPlayers()` before seeding. That is scoped to the headless preview
+  browser, never a real user's data — but do not import that harness into app code.
+- Adding a view means the same two-step rule as components: export it from `src/ds-entry.ts` **and**
+  pin it in `componentSrcMap`.

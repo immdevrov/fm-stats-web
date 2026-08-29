@@ -32,6 +32,46 @@
       "cardMode": "single",
       "primaryStory": "Default",
       "viewport": "1000x640"
+    },
+    "ImportView": {
+      "cardMode": "single",
+      "primaryStory": "Default",
+      "viewport": "1280x800"
+    },
+    "LeaguesView": {
+      "cardMode": "single",
+      "primaryStory": "Default",
+      "viewport": "1280x800"
+    },
+    "TeamsView": {
+      "cardMode": "single",
+      "primaryStory": "Default",
+      "viewport": "1280x800"
+    },
+    "TeamProfileView": {
+      "cardMode": "single",
+      "primaryStory": "Default",
+      "viewport": "1280x800"
+    },
+    "PlayersView": {
+      "cardMode": "single",
+      "primaryStory": "Default",
+      "viewport": "1280x800"
+    },
+    "PlayerProfileView": {
+      "cardMode": "single",
+      "primaryStory": "Default",
+      "viewport": "1280x800"
+    },
+    "ScoutingView": {
+      "cardMode": "single",
+      "primaryStory": "Default",
+      "viewport": "1280x800"
+    },
+    "CompareView": {
+      "cardMode": "single",
+      "primaryStory": "Default",
+      "viewport": "1280x800"
     }
   },
   "componentSrcMap": {
@@ -52,7 +92,16 @@
     "Provider": null,
     "ColorModeProvider": null,
     "MemoryRouter": null,
-    "SimilarPlayers": null
+    "SimilarPlayers": null,
+    "ImportView": "src/views/ImportView.tsx",
+    "LeaguesView": "src/views/LeaguesView.tsx",
+    "TeamsView": "src/views/TeamsView.tsx",
+    "TeamProfileView": "src/views/TeamProfileView.tsx",
+    "PlayersView": "src/views/PlayersView.tsx",
+    "PlayerProfileView": "src/views/PlayerProfileView.tsx",
+    "ScoutingView": "src/views/ScoutingView.tsx",
+    "CompareView": "src/views/CompareView.tsx",
+    "CompareProvider": null
   },
   "readmeHeader": ".design-sync/conventions.md"
 }
