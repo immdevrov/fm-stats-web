@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 
 const DB_NAME = 'fm-stats-db';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 function makePlayer(uid: number, name: string) {
   return {

@@ -2,11 +2,34 @@ import { getDB, wrapError } from './connection';
 import type { Player } from '../../types/types';
 import type { PlayerPositions } from '../../fields/positions';
 
+async function withCustomPositions(players: Player[]): Promise<Player[]> {
+  if (players.length === 0) return players;
+  const db = await getDB();
+  const annotations = await db.getAll('playerAnnotations');
+  const byUid = new Map(
+    annotations
+      .filter((a) => a.customPosition)
+      .map((a) => [a.uid, a.customPosition as PlayerPositions])
+  );
+  if (byUid.size === 0) return players;
+  return players.map((player) => {
+    const customPosition = byUid.get(player.UID);
+    return customPosition ? { ...player, CustomPosition: customPosition } : player;
+  });
+}
+
+function withoutCustomPosition(player: Player): Player {
+  if (player.CustomPosition === undefined) return player;
+  const stripped = { ...player };
+  delete stripped.CustomPosition;
+  return stripped;
+}
+
 export async function savePlayer(player: Player): Promise<void> {
   try {
     const db = await getDB();
     const tx = db.transaction('players', 'readwrite');
-    await tx.store.put(player);
+    await tx.store.put(withoutCustomPosition(player));
     await tx.done;
   } catch (error) {
     throw wrapError('save player', error);
@@ -17,7 +40,7 @@ export async function savePlayers(players: Player[]): Promise<void> {
   try {
     const db = await getDB();
     const tx = db.transaction('players', 'readwrite');
-    await Promise.all(players.map((player) => tx.store.put(player)));
+    await Promise.all(players.map((player) => tx.store.put(withoutCustomPosition(player))));
     await tx.done;
   } catch (error) {
     throw wrapError('save players', error);
@@ -27,7 +50,10 @@ export async function savePlayers(players: Player[]): Promise<void> {
 export async function getPlayer(uid: number): Promise<Player | undefined> {
   try {
     const db = await getDB();
-    return await db.get('players', uid);
+    const player = await db.get('players', uid);
+    if (!player) return undefined;
+    const [merged] = await withCustomPositions([player]);
+    return merged;
   } catch (error) {
     throw wrapError('get player', error);
   }
@@ -36,7 +62,7 @@ export async function getPlayer(uid: number): Promise<Player | undefined> {
 export async function getAllPlayers(): Promise<Player[]> {
   try {
     const db = await getDB();
-    return await db.getAll('players');
+    return await withCustomPositions(await db.getAll('players'));
   } catch (error) {
     throw wrapError('get players', error);
   }
@@ -45,7 +71,7 @@ export async function getAllPlayers(): Promise<Player[]> {
 export async function getPlayersByClub(club: string): Promise<Player[]> {
   try {
     const db = await getDB();
-    return await db.getAllFromIndex('players', 'by-club', club);
+    return await withCustomPositions(await db.getAllFromIndex('players', 'by-club', club));
   } catch (error) {
     throw wrapError('get players by club', error);
   }
@@ -54,7 +80,9 @@ export async function getPlayersByClub(club: string): Promise<Player[]> {
 export async function getPlayersByPosition(position: string): Promise<Player[]> {
   try {
     const db = await getDB();
-    return await db.getAllFromIndex('players', 'by-position', position);
+    return await withCustomPositions(
+      await db.getAllFromIndex('players', 'by-position', position)
+    );
   } catch (error) {
     throw wrapError('get players by position', error);
   }
@@ -65,7 +93,9 @@ export async function searchPlayersByName(searchTerm: string): Promise<Player[]>
     const db = await getDB();
     const allPlayers = await db.getAll('players');
     const lowerSearch = searchTerm.toLowerCase();
-    return allPlayers.filter((player) => player.Name.toLowerCase().includes(lowerSearch));
+    return await withCustomPositions(
+      allPlayers.filter((player) => player.Name.toLowerCase().includes(lowerSearch))
+    );
   } catch (error) {
     throw wrapError('search players', error);
   }
@@ -107,9 +137,14 @@ export async function updatePlayerPosition(
   try {
     const db = await getDB();
     const player = await db.get('players', uid);
-    if (!player) throw new Error(`Player ${uid} not found`);
-    player.CustomPosition = customPosition;
-    await db.put('players', player);
+    const existing = await db.get('playerAnnotations', uid);
+    await db.put('playerAnnotations', {
+      ...existing,
+      uid,
+      customPosition,
+      lastKnownName: player?.Name ?? existing?.lastKnownName,
+      lastKnownClub: player?.Club ?? existing?.lastKnownClub,
+    });
   } catch (error) {
     throw wrapError('update player position', error);
   }
@@ -118,10 +153,11 @@ export async function updatePlayerPosition(
 export async function clearPlayerCustomPosition(uid: number): Promise<void> {
   try {
     const db = await getDB();
-    const player = await db.get('players', uid);
-    if (!player) throw new Error(`Player ${uid} not found`);
-    delete player.CustomPosition;
-    await db.put('players', player);
+    const existing = await db.get('playerAnnotations', uid);
+    if (!existing) return;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { customPosition: _removed, ...rest } = existing;
+    await db.put('playerAnnotations', rest);
   } catch (error) {
     throw wrapError('clear player custom position', error);
   }
@@ -130,15 +166,13 @@ export async function clearPlayerCustomPosition(uid: number): Promise<void> {
 export async function clearAllCustomPositions(): Promise<void> {
   try {
     const db = await getDB();
-    const allPlayers = await db.getAll('players');
-    const withCustom = allPlayers.filter((p) => p.CustomPosition);
+    const annotations = await db.getAll('playerAnnotations');
+    const withCustom = annotations.filter((a) => a.customPosition);
     if (withCustom.length === 0) return;
-    const tx = db.transaction('players', 'readwrite');
+    const tx = db.transaction('playerAnnotations', 'readwrite');
     await Promise.all(
-      withCustom.map((p) => {
-        delete p.CustomPosition;
-        return tx.store.put(p);
-      })
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      withCustom.map(({ customPosition: _removed, ...rest }) => tx.store.put(rest))
     );
     await tx.done;
   } catch (error) {
