@@ -25,7 +25,7 @@ export function Navigation() {
         colorPalette="glaucous"
         color="fg.emphasized"
       >
-        FM Stats
+        FM Jotter
       </Heading>
 
       <VStack align="stretch" gap={2}>

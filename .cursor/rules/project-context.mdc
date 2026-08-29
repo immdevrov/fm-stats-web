@@ -1,13 +1,13 @@
 ---
-description: Project context and purpose for Fm-Stats application
+description: Project context and purpose for the FM Jotter application
 alwaysApply: true
 ---
 
-# Fm-Stats Application Context
+# FM Jotter Application Context
 
 ## Overview
 
-**Fm-Stats** is a web application designed to analyze game data from Football Manager 24, with a primary focus on comparing player statistics to help make informed transfer decisions.
+**FM Jotter** is a web application designed to analyze game data from Football Manager 24, with a primary focus on comparing player statistics to help make informed transfer decisions.
 
 ## Purpose
 
