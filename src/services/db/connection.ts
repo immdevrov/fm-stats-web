@@ -17,7 +17,7 @@ export interface FmStatsDB extends DBSchema {
 }
 
 const DB_NAME = 'fm-stats-db';
-const DB_VERSION = 5;
+export const DB_VERSION = 5;
 
 type UpgradeTx = IDBPTransaction<FmStatsDB, StoreNames<FmStatsDB>[], 'versionchange'>;
 

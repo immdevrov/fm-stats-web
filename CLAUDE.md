@@ -153,9 +153,10 @@ Users can override a player's imported positions from the Player Profile view.
 The user nominates one club as their own. Route: `/my-team`.
 
 - **Storage**: the club name in the `settings` store under key `myClub`, reached only through `db.getMyClub()` / `db.setMyClub()`. Living outside `players` means `clearAllPlayers()` cannot touch it, so the choice survives a re-import.
-- **State**: `MyTeamProvider` (`src/contexts/MyTeamContext.tsx`), mounted in `Layout`. `useMyTeam()` returns `myClub`, `isLoaded`, `setMyClub`, `clearMyClub`. Consumers must gate on `isLoaded` before rendering an empty state.
+- **State**: `MyTeamProvider` (`src/contexts/MyTeamContext.tsx`), mounted in `Layout`. `useMyTeam()` returns `myClub`, `isLoaded`, `setMyClub`, `clearMyClub`. Every consumer that renders based on `myClub` (the "Set as My Team" control on a team profile, the `/my-team` squad branch) gates on `isLoaded` first, so it never shows a default "no club" state before the initial read resolves. A club the user sets or clears while that read is still in flight is never overwritten by it landing late.
 - **Set from**: the `/my-team` picker, or "Set as My Team" on a team profile.
-- **Squad table**: `SquadTable` (`src/components/SquadTable.tsx`) is shared by `/my-team` and `/teams/:teamName`.
+- **Squad table**: `SquadTable` (`src/components/SquadTable.tsx`) is shared by `/my-team` and `/teams/:teamName`; it takes only `players` and reads each row's own club from `Player.Club`.
+- `/my-team`'s club picker also loads the full club list (`db.getAllPlayers()`) to populate its `SearchableSelect`. That load is independent of `MyTeamProvider`'s `isLoaded` and only blocks the picker branch, not a returning user's squad view.
 - A club missing from the current import is kept, not cleared; the view says so.
 
 ## Type Utilities

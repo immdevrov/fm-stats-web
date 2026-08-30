@@ -24,7 +24,7 @@ export function TeamProfileView() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { myClub, setMyClub } = useMyTeam();
+  const { myClub, isLoaded: isMyTeamLoaded, setMyClub } = useMyTeam();
 
   const decodedTeamName = teamName ? decodeURIComponent(teamName) : "";
   useDocumentTitle(decodedTeamName ? `Team: ${decodedTeamName}` : "Teams");
@@ -97,27 +97,28 @@ export function TeamProfileView() {
                 {decodedTeamName}
               </Heading>
             </VStack>
-            {myClub === decodedTeamName ? (
-              <Badge colorPalette="glaucous" size="lg">
-                My Team
-              </Badge>
-            ) : (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setMyClub(decodedTeamName);
-                  toaster.create({
-                    title: "My Team Set",
-                    description: `${decodedTeamName} is now your team.`,
-                    type: "success",
-                    duration: 3000,
-                  });
-                }}
-              >
-                Set as My Team
-              </Button>
-            )}
+            {isMyTeamLoaded &&
+              (myClub === decodedTeamName ? (
+                <Badge colorPalette="glaucous" size="lg">
+                  My Team
+                </Badge>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setMyClub(decodedTeamName);
+                    toaster.create({
+                      title: "My Team Set",
+                      description: `${decodedTeamName} is now your team.`,
+                      type: "success",
+                      duration: 3000,
+                    });
+                  }}
+                >
+                  Set as My Team
+                </Button>
+              ))}
           </HStack>
 
           {players.length === 0 ? (
@@ -125,7 +126,7 @@ export function TeamProfileView() {
               No players found for this team.
             </Text>
           ) : (
-            <SquadTable players={players} club={decodedTeamName} />
+            <SquadTable players={players} />
           )}
         </VStack>
       </Container>

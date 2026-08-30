@@ -6,7 +6,7 @@ export async function getMyClub(): Promise<string | null> {
   try {
     const db = await getDB();
     const entry = await db.get('settings', MY_CLUB);
-    return (entry?.value as string) ?? null;
+    return typeof entry?.value === 'string' ? entry.value : null;
   } catch {
     return null;
   }

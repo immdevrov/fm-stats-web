@@ -39,7 +39,7 @@ export function MyTeamView() {
     setIsPicking(false);
   };
 
-  if (!isLoaded || clubs === null) {
+  if (!isLoaded) {
     return (
       <Box minH="100vh" p={8}>
         <Container maxW="container.lg">
@@ -61,7 +61,9 @@ export function MyTeamView() {
               {myClub ? "Change your club" : "Which club is yours?"}
             </Heading>
 
-            {clubs.length === 0 ? (
+            {clubs === null ? (
+              <Spinner size="md" colorPalette="glaucous" alignSelf="start" />
+            ) : clubs.length === 0 ? (
               <VStack align="start" gap={4}>
                 <Text color="fg.muted">No players imported yet.</Text>
                 <Button size="sm" variant="outline" asChild>
@@ -69,21 +71,20 @@ export function MyTeamView() {
                 </Button>
               </VStack>
             ) : (
-              <HStack gap={4}>
-                <SearchableSelect
-                  options={clubs}
-                  value={myClub ?? ""}
-                  onChange={handlePick}
-                  placeholder="Search clubs..."
-                  allLabel="No club selected"
-                  width="320px"
-                />
-                {isPicking && (
-                  <Button size="sm" variant="ghost" onClick={() => setIsPicking(false)}>
-                    Cancel
-                  </Button>
-                )}
-              </HStack>
+              <SearchableSelect
+                options={clubs}
+                value={myClub ?? ""}
+                onChange={handlePick}
+                placeholder="Search clubs..."
+                allLabel="No club selected"
+                width="320px"
+              />
+            )}
+
+            {isPicking && (
+              <Button size="sm" variant="ghost" alignSelf="start" onClick={() => setIsPicking(false)}>
+                Cancel
+              </Button>
             )}
           </VStack>
         </Container>
@@ -111,7 +112,7 @@ export function MyTeamView() {
           ) : players.length === 0 ? (
             <Text color="fg.muted">{myClub} is not in the current data.</Text>
           ) : (
-            <SquadTable players={players} club={myClub} />
+            <SquadTable players={players} />
           )}
         </VStack>
       </Container>

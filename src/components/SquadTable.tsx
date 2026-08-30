@@ -17,9 +17,10 @@ interface SquadRow extends Record<string, unknown> {
   injuries: boolean;
   contractExpires: Date | null;
   uid: number;
+  club: string;
 }
 
-export function SquadTable({ players, club }: { players: Player[]; club: string }) {
+export function SquadTable({ players }: { players: Player[] }) {
   const { isUnwanted } = usePlayerNotes();
 
   const data: SquadRow[] = players.map((p) => ({
@@ -33,6 +34,7 @@ export function SquadTable({ players, club }: { players: Player[]; club: string 
     injuries: p.RcInjury,
     contractExpires: p.Expires,
     uid: p.UID,
+    club: p.Club,
   }));
 
   const columns: Column<SquadRow>[] = [
@@ -43,7 +45,7 @@ export function SquadTable({ players, club }: { players: Player[]; club: string 
       sortable: false,
       width: "56px",
       render: (_value, row) => (
-        <PlayerStatusControl uid={row.uid} player={{ Name: row.name, Club: club }} />
+        <PlayerStatusControl uid={row.uid} player={{ Name: row.name, Club: row.club }} />
       ),
     },
     {

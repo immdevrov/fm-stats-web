@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from "react";
 import { db } from "../services/db";
+import { toaster } from "../components/ui/toaster";
 
 interface MyTeamContextValue {
   myClub: string | null;
@@ -13,23 +14,35 @@ const MyTeamContext = createContext<MyTeamContextValue | null>(null);
 export function MyTeamProvider({ children }: { children: ReactNode }) {
   const [myClub, setMyClubState] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
-  const loaded = useRef(false);
+  const userChanged = useRef(false);
 
   useEffect(() => {
     db.getMyClub().then((club) => {
-      setMyClubState(club);
-      loaded.current = true;
+      setMyClubState((current) => (userChanged.current ? current : club));
       setIsLoaded(true);
     });
   }, []);
 
   useEffect(() => {
-    if (!loaded.current) return;
-    db.setMyClub(myClub);
-  }, [myClub]);
+    if (!isLoaded) return;
+    db.setMyClub(myClub).catch(() => {
+      toaster.create({
+        title: "My Team Not Saved",
+        description: "Your club selection could not be saved.",
+        type: "error",
+        duration: 3000,
+      });
+    });
+  }, [isLoaded, myClub]);
 
-  const setMyClub = useCallback((club: string) => setMyClubState(club), []);
-  const clearMyClub = useCallback(() => setMyClubState(null), []);
+  const setMyClub = useCallback((club: string) => {
+    userChanged.current = true;
+    setMyClubState(club);
+  }, []);
+  const clearMyClub = useCallback(() => {
+    userChanged.current = true;
+    setMyClubState(null);
+  }, []);
 
   return (
     <MyTeamContext.Provider value={{ myClub, isLoaded, setMyClub, clearMyClub }}>
