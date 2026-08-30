@@ -7,6 +7,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
+  { path: "/my-team", label: "My Team" },
   { path: "/import", label: "Import" },
   { path: "/leagues", label: "Leagues" },
   { path: "/teams", label: "Teams" },

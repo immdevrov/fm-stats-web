@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Layout } from "./components/Layout";
+import { MyTeamView } from "./views/MyTeamView";
 import { ImportView } from "./views/ImportView";
 import { LeaguesView } from "./views/LeaguesView";
 import { TeamsView } from "./views/TeamsView";
@@ -15,6 +16,7 @@ function App() {
     <Routes>
       <Route path="/" element={<Layout />}>
         <Route index element={<Navigate to="/import" replace />} />
+        <Route path="my-team" element={<MyTeamView />} />
         <Route path="import" element={<ImportView />} />
         <Route path="leagues" element={<LeaguesView />} />
         <Route path="teams" element={<TeamsView />} />

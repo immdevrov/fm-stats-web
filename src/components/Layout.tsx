@@ -4,30 +4,33 @@ import { Navigation } from "./Navigation";
 import { Toaster } from "./ui/toaster";
 import { CompareProvider } from "../contexts/CompareContext";
 import { PlayerNotesProvider } from "../contexts/PlayerNotesContext";
+import { MyTeamProvider } from "../contexts/MyTeamContext";
 
 export function Layout() {
   return (
     <CompareProvider>
       <PlayerNotesProvider>
-        <Box minH="100vh" bg="bg.canvas" color="fg.default">
-          <HStack align="stretch" gap={0} h="100vh">
-            <Box
-              w="12%"
-              minW="140px"
-              bg="bg.subtle"
-              borderRightWidth="1px"
-              borderColor="border.emphasized"
-              overflowY="auto"
-            >
-              <Navigation />
-            </Box>
+        <MyTeamProvider>
+          <Box minH="100vh" bg="bg.canvas" color="fg.default">
+            <HStack align="stretch" gap={0} h="100vh">
+              <Box
+                w="12%"
+                minW="140px"
+                bg="bg.subtle"
+                borderRightWidth="1px"
+                borderColor="border.emphasized"
+                overflowY="auto"
+              >
+                <Navigation />
+              </Box>
 
-            <Box flex={1} overflowY="auto">
-              <Outlet />
-            </Box>
-          </HStack>
-          <Toaster />
-        </Box>
+              <Box flex={1} overflowY="auto">
+                <Outlet />
+              </Box>
+            </HStack>
+            <Toaster />
+          </Box>
+        </MyTeamProvider>
       </PlayerNotesProvider>
     </CompareProvider>
   );
