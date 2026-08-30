@@ -1,0 +1,134 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; color: #0f0f0f; -webkit-font-smoothing: antialiased; }
+    a { color: #6a7fdb; } a:hover { color: #5566b0; }
+    .card { display: flex; align-items: center; gap: 8px; border: 1px solid #d4d4d8; border-radius: 6px; padding: 7px 8px; background: #ffffff; width: 300px; box-sizing: border-box; }
+    .pip { width: 17px; height: 17px; border-radius: 9px; background: #f4f4f5; color: #52525b; font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .body { flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .nm { font-size: 12.5px; font-weight: 600; color: #0f0f0f; letter-spacing: -0.01em; }
+    .meta { font-size: 10.5px; color: #947572; }
+    .flags { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+    .cap { font-size: 11px; color: #947572; line-height: 1.45; flex: 1 1 0; min-width: 0; }
+    .rowline { display: flex; gap: 16px; align-items: center; }
+  </style>
+</helmet>
+
+<div style="width: 560px; background: #f5f5f5; padding: 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 22px;">
+
+  <div style="display: flex; flex-direction: column; gap: 8px;">
+    <div style="font-size: 20px; font-weight: 700; color: #050505; letter-spacing: -0.02em;">System C &mdash; one heat scale</div>
+    <div style="font-size: 12.5px; color: #947572; line-height: 1.5; text-wrap: pretty;">The fill is not <em>what</em> is wrong but <em>how much</em>: no concerns, one, or more than one. A glyph names the loudest reason.</div>
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 10px;">
+    <div style="display: flex; align-items: center; gap: 0;">
+      <div style="width: 46px; height: 22px; background: #ffffff; border: 1px solid #d4d4d8; border-right: none; border-radius: 6px 0 0 6px;"></div>
+      <div style="width: 46px; height: 22px; background: #fef5f2; border: 1px solid #fbcbba; border-right: none;"></div>
+      <div style="width: 46px; height: 22px; background: #fde0d6; border: 1px solid #f9b69e; border-radius: 0 6px 6px 0;"></div>
+    </div>
+    <div style="font-size: 11px; color: #947572;">fine &middot; one concern &middot; several</div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px;">
+
+    <div class="rowline">
+      <div class="card">
+        <div class="pip">1</div>
+        <div class="body">
+          <div style="display: flex; align-items: baseline; gap: 5px;"><span class="nm">Stefan Ferran</span><span class="meta">22</span></div>
+          <div class="meta">D (C) &middot; Jun 2028</div>
+        </div>
+      </div>
+      <div class="cap">Clean, so untouched.</div>
+    </div>
+
+    <div class="rowline">
+      <div class="card" style="background: #fef5f2; border-color: #fbcbba;">
+        <div class="pip" style="background: #fde0d6; color: #943c1e;">2</div>
+        <div class="body">
+          <div style="display: flex; align-items: baseline; gap: 5px;"><span class="nm">Andrej Toure</span><span class="meta">27</span></div>
+          <div class="meta" style="color: #943c1e;">M (C) &middot; not an AM (C)</div>
+        </div>
+        <div class="flags">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#dc602e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 21.5 20H2.5z"></path><path d="M12 10v4"></path><path d="M12 17h0"></path></svg>
+        </div>
+      </div>
+      <div class="cap">Out of position: one concern.</div>
+    </div>
+
+    <div class="rowline">
+      <div class="card">
+        <div class="pip">1</div>
+        <div class="body">
+          <div style="display: flex; align-items: baseline; gap: 5px;"><span class="nm">Nico Serra</span><span class="meta">25</span></div>
+          <div class="meta">AM (C) &middot; Sporting CP</div>
+        </div>
+        <div class="flags">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="#6a7fdb"><path d="M12 2.8l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.4l6.2-.9z"></path></svg>
+        </div>
+      </div>
+      <div class="cap">A target off a list is not a worry, so the scale has nothing to say about him &mdash; he looks like your own players.</div>
+    </div>
+
+    <div class="rowline">
+      <div class="card" style="background: #fef5f2; border-color: #fbcbba;">
+        <div class="pip" style="background: #fde0d6; color: #943c1e;">2</div>
+        <div class="body">
+          <div style="display: flex; align-items: baseline; gap: 5px;"><span class="nm">Milos Petrovic</span><span class="meta">33</span></div>
+          <div class="meta">D (C) &middot; Jun 2027</div>
+        </div>
+        <div class="flags">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#dc602e" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"></circle><line x1="6" y1="18" x2="18" y2="6"></line></svg>
+        </div>
+      </div>
+      <div class="cap">Unwanted reads the same colour as out of position. Only the glyph separates them.</div>
+    </div>
+
+    <div class="rowline">
+      <div class="card" style="background: #fde0d6; border-color: #f9b69e; border-left: 3px solid #dc602e; padding-left: 6px;">
+        <div class="pip" style="background: #fbcbba; color: #702a16;">2</div>
+        <div class="body">
+          <div style="display: flex; align-items: baseline; gap: 5px;"><span class="nm">Andrej Diallo</span><span class="meta">35</span></div>
+          <div class="meta" style="color: #702a16;">D (R), WB (R) &middot; Jun 2027</div>
+        </div>
+        <div class="flags">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#943c1e" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg>
+        </div>
+      </div>
+      <div class="cap">Expiring and injury-prone: two concerns, so the fill deepens and an edge appears.</div>
+    </div>
+
+    <div class="rowline">
+      <div class="card" style="background: #fde0d6; border-color: #f9b69e; border-left: 3px solid #dc602e; padding-left: 6px;">
+        <div class="pip" style="background: #fbcbba; color: #702a16;">1</div>
+        <div class="body">
+          <div style="display: flex; align-items: baseline; gap: 5px;"><span class="nm">Kasper Holm</span><span class="meta">24</span></div>
+          <div class="meta" style="color: #702a16;">D (L), WB (L) &middot; left side only</div>
+        </div>
+        <div class="flags">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#943c1e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 21.5 20H2.5z"></path><path d="M12 10v4"></path><path d="M12 17h0"></path></svg>
+        </div>
+      </div>
+      <div class="cap">At D (R): wrong side and first choice twice. The deepest fill on the board is where to look first.</div>
+    </div>
+
+  </div>
+
+  <div style="border-top: 1px solid #e4e4e7; padding-top: 16px; display: flex; flex-direction: column; gap: 6px;">
+    <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.06em; color: #b49794;">THE TRADE</div>
+    <div style="font-size: 11.5px; color: #947572; line-height: 1.55; text-wrap: pretty;">Triage at a glance: the board tells you where to look before you have read a single name, and severity adds up on its own. But the colour stops meaning one thing &mdash; a man you are selling and a man in the wrong slot are the same shade &mdash; and a plan full of thirty-five-year-olds on short deals turns pink all over, which is when you stop seeing it.</div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

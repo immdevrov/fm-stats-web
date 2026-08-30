@@ -12,3 +12,6 @@ ds-bundle/
 .design-sync/node_modules
 
 .superpowers/
+
+# design canvas (seeded output; re-seed from the .dc.html sources)
+design/**/squad-planner-board.html

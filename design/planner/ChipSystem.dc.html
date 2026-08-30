@@ -1,0 +1,240 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; color: #0f0f0f; -webkit-font-smoothing: antialiased; }
+    a { color: #6a7fdb; } a:hover { color: #5566b0; }
+    .card { display: flex; align-items: center; gap: 8px; border: 1px solid #d4d4d8; border-radius: 6px; padding: 7px 8px; background: #ffffff; }
+    .pip { width: 17px; height: 17px; border-radius: 9px; background: #f4f4f5; color: #52525b; font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .body { flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .nm { font-size: 12.5px; font-weight: 600; color: #0f0f0f; letter-spacing: -0.01em; }
+    .meta { font-size: 10.5px; color: #947572; }
+    .flags { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+    .cap { font-size: 11px; color: #947572; line-height: 1.45; }
+    .capstrong { font-size: 11px; color: #0f0f0f; font-weight: 600; }
+    .sect { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; color: #b49794; }
+    .cell { display: flex; flex-direction: column; gap: 7px; }
+    .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+    .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+  </style>
+</helmet>
+
+<div style="width: 900px; background: #f5f5f5; padding: 32px; box-sizing: border-box; display: flex; flex-direction: column; gap: 30px;">
+
+  <div style="display: flex; flex-direction: column; gap: 8px;">
+    <div style="font-size: 22px; font-weight: 700; color: #050505; letter-spacing: -0.02em;">System A &mdash; one channel per question</div>
+    <div style="font-size: 13px; color: #947572; line-height: 1.5; max-width: 640px; text-wrap: pretty;">Seven things can be true of a card at once. Rather than seven colours, each visual channel answers exactly one question, so they never compete: the fill is about the <em>placement</em>, the edge is about <em>where he came from</em>, the glyphs are about the <em>player</em>.</div>
+  </div>
+
+  <div class="grid3">
+    <div class="cell">
+      <div style="height: 4px; border-radius: 2px; background: #fbcbba;"></div>
+      <div class="capstrong">Fill &mdash; this placement</div>
+      <div class="cap">Only one thing tints a card: he does not play this position. Everything else leaves the fill alone, so a tinted card always means the same thing.</div>
+    </div>
+    <div class="cell">
+      <div style="height: 4px; border-radius: 2px; background: #6a7fdb;"></div>
+      <div class="capstrong">Left edge &mdash; where he came from</div>
+      <div class="cap">A blue edge marks someone off a list rather than out of your squad. Scan the board and the incoming players stand apart without reading a word.</div>
+    </div>
+    <div class="cell">
+      <div style="height: 4px; border-radius: 2px; background: #d4d4d8;"></div>
+      <div class="capstrong">Glyphs &mdash; the player</div>
+      <div class="cap">Unwanted, shortlisted, injury-prone. These follow the man, so they look identical in every slot he occupies.</div>
+    </div>
+  </div>
+
+  <div style="height: 1px; background: #e4e4e7;"></div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px;">
+    <div class="sect">PLACEMENT</div>
+    <div class="grid3">
+      <div class="cell">
+        <div class="card">
+          <div class="pip">1</div>
+          <div class="body">
+            <div style="display: flex; align-items: baseline; gap: 5px;"><span class="nm">Stefan Ferran</span><span class="meta">22</span></div>
+            <div class="meta">D (C) &middot; Jun 2028</div>
+          </div>
+        </div>
+        <div class="cap"><span class="capstrong">Plays here.</span> The default, and most of the board. White, quiet, nothing to say.</div>
+      </div>
+      <div class="cell">
+        <div class="card" style="background: #fef5f2; border-color: #fbcbba;">
+          <div class="pip" style="background: #fde0d6; color: #943c1e;">2</div>
+          <div class="body">
+            <div style="display: flex; align-items: baseline; gap: 5px;"><span class="nm">Andrej Toure</span><span class="meta">27</span></div>
+            <div class="meta" style="color: #943c1e;">M (C) &middot; not an AM (C)</div>
+          </div>
+          <div class="flags">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#dc602e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 21.5 20H2.5z"></path><path d="M12 10v4"></path><path d="M12 17h0"></path></svg>
+          </div>
+        </div>
+        <div class="cap"><span class="capstrong">Out of position.</span> Light paprika fill, and the second line names the mismatch instead of the contract date.</div>
+      </div>
+      <div class="cell">
+        <div style="display: flex; align-items: center; justify-content: center; gap: 6px; border: 1px dashed #d4d4d8; border-radius: 6px; padding: 11px; font-size: 10.5px; color: #b49794;">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#b49794" stroke-width="2.4" stroke-linecap="round"><path d="M12 6v12M6 12h12"></path></svg>
+          <span>No cover</span>
+        </div>
+        <div class="cap"><span class="capstrong">Nobody.</span> The hole. Dashed, unfilled, and deliberately the emptiest thing on the board.</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px;">
+    <div class="sect">THE PLAYER</div>
+    <div class="grid3">
+      <div class="cell">
+        <div class="card" style="border-left: 3px solid #6a7fdb; padding-left: 6px;">
+          <div class="pip">1</div>
+          <div class="body">
+            <div style="display: flex; align-items: baseline; gap: 5px;"><span class="nm">Nico Serra</span><span class="meta">25</span></div>
+            <div class="meta">AM (C) &middot; Sporting CP</div>
+          </div>
+          <div class="flags">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="#6a7fdb"><path d="M12 2.8l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.4l6.2-.9z"></path></svg>
+          </div>
+        </div>
+        <div class="cap"><span class="capstrong">A target off a list.</span> Blue edge, A&rsquo;s star, and his current club where your players show a contract date.</div>
+      </div>
+      <div class="cell">
+        <div class="card" style="background: #fafafa;">
+          <div class="pip" style="opacity: 0.5;">2</div>
+          <div class="body" style="opacity: 0.5;">
+            <div style="display: flex; align-items: baseline; gap: 5px;"><span class="nm" style="text-decoration: line-through;">Milos Petrovic</span><span class="meta">33</span></div>
+            <div class="meta">D (C) &middot; Jun 2027</div>
+          </div>
+          <div class="flags">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#dc602e" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"></circle><line x1="6" y1="18" x2="18" y2="6"></line></svg>
+          </div>
+        </div>
+        <div class="cap"><span class="capstrong">Unwanted.</span> Dimmed and struck through, exactly as A dims a table row &mdash; and as in A, the glyph stays at full strength.</div>
+      </div>
+      <div class="cell">
+        <div class="card">
+          <div class="pip">2</div>
+          <div class="body">
+            <div style="display: flex; align-items: baseline; gap: 5px;"><span class="nm">Andrej Diallo</span><span class="meta">35</span></div>
+            <div class="meta">D (R), WB (R) &middot; <span style="color: #dc602e; font-weight: 600;">Jun 2027</span></div>
+          </div>
+          <div class="flags">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#947572" stroke-width="2"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 8.5v7M8.5 12h7" stroke-linecap="round"></path></svg>
+          </div>
+        </div>
+        <div class="cap"><span class="capstrong">Running out, and injury-prone.</span> The contract needs no channel of its own &mdash; the date is already on the card, so it simply turns paprika.</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px;">
+    <div class="sect">COUNTED SOMEWHERE ELSE</div>
+    <div class="grid2">
+      <div class="cell">
+        <div class="card">
+          <div class="pip">2</div>
+          <div class="body">
+            <div style="display: flex; align-items: baseline; gap: 5px;"><span class="nm">Youssef Benali</span><span class="meta">26</span></div>
+            <div class="meta">AM (LR) &middot; Jun 2027</div>
+          </div>
+          <div class="flags">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#947572" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h15l-3.5-3.5"></path><path d="M20 15H5l3.5 3.5"></path></svg>
+          </div>
+        </div>
+        <div class="cap"><span class="capstrong">Cover in more than one slot.</span> Quiet grey: useful, not a problem. Hovering names the other slots.</div>
+      </div>
+      <div class="cell">
+        <div class="card">
+          <div class="pip">1</div>
+          <div class="body">
+            <div style="display: flex; align-items: baseline; gap: 5px;"><span class="nm">Kasper Holm</span><span class="meta">24</span></div>
+            <div class="meta">D (L), WB (L) &middot; Jun 2028</div>
+          </div>
+          <div class="flags">
+            <span style="display: flex; align-items: center; gap: 2px; background: #fde0d6; border-radius: 8px; padding: 2px 5px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#dc602e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h15l-3.5-3.5"></path><path d="M20 15H5l3.5 3.5"></path></svg>
+              <span style="font-size: 9.5px; font-weight: 700; color: #943c1e;">1st &times;2</span>
+            </span>
+          </div>
+        </div>
+        <div class="cap"><span class="capstrong">First choice twice.</span> The same grey mark, filled and labelled: he cannot start in both slots, so one of them is really empty.</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="height: 1px; background: #e4e4e7;"></div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px;">
+    <div class="sect">WHY THE CHANNELS ARE SPLIT</div>
+    <div style="display: flex; gap: 24px; align-items: flex-start;">
+      <div style="width: 260px; display: flex; flex-direction: column; gap: 7px;">
+        <div class="card">
+          <div class="pip">1</div>
+          <div class="body">
+            <div style="display: flex; align-items: baseline; gap: 5px;"><span class="nm">Kasper Holm</span><span class="meta">24</span></div>
+            <div class="meta">D (L), WB (L) &middot; Jun 2028</div>
+          </div>
+          <div class="flags">
+            <span style="display: flex; align-items: center; gap: 2px; background: #fde0d6; border-radius: 8px; padding: 2px 5px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#dc602e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h15l-3.5-3.5"></path><path d="M20 15H5l3.5 3.5"></path></svg>
+              <span style="font-size: 9.5px; font-weight: 700; color: #943c1e;">1st &times;2</span>
+            </span>
+          </div>
+        </div>
+        <div class="cap">at D (L)</div>
+      </div>
+      <div style="width: 260px; display: flex; flex-direction: column; gap: 7px;">
+        <div class="card" style="background: #fef5f2; border-color: #fbcbba;">
+          <div class="pip" style="background: #fde0d6; color: #943c1e;">1</div>
+          <div class="body">
+            <div style="display: flex; align-items: baseline; gap: 5px;"><span class="nm">Kasper Holm</span><span class="meta">24</span></div>
+            <div class="meta" style="color: #943c1e;">D (L), WB (L) &middot; left side only</div>
+          </div>
+          <div class="flags">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#dc602e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 21.5 20H2.5z"></path><path d="M12 10v4"></path><path d="M12 17h0"></path></svg>
+            <span style="display: flex; align-items: center; gap: 2px; background: #fde0d6; border-radius: 8px; padding: 2px 5px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#dc602e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h15l-3.5-3.5"></path><path d="M20 15H5l3.5 3.5"></path></svg>
+              <span style="font-size: 9.5px; font-weight: 700; color: #943c1e;">1st &times;2</span>
+            </span>
+          </div>
+        </div>
+        <div class="cap">at D (R)</div>
+      </div>
+      <div style="flex: 1 1 0; min-width: 0;">
+        <div class="cap" style="line-height: 1.55;">One man, two cards. The badge is identical in both because it is a fact about <em>him</em>; the fill differs because it is a fact about <em>this slot</em>. Split the channels this way and the reading is always the same: <span class="capstrong">tinted means wrong place, marked means think about the man.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px;">
+    <div class="sect">CLICKING AN OUT-OF-POSITION CARD</div>
+    <div style="display: flex; gap: 24px; align-items: flex-start;">
+      <div style="width: 292px; border: 1px solid #d4d4d8; border-radius: 6px; background: #ffffff; padding: 12px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; align-items: flex-start; gap: 8px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#dc602e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-top: 1px; flex-shrink: 0;"><path d="M12 3.5 21.5 20H2.5z"></path><path d="M12 10v4"></path><path d="M12 17h0"></path></svg>
+          <div style="font-size: 12px; color: #0f0f0f; line-height: 1.45;">Andrej Toure plays <strong>M (C)</strong>. This slot is <strong>AM (C)</strong>.</div>
+        </div>
+        <div style="height: 1px; background: #e4e4e7;"></div>
+        <div style="display: flex; flex-direction: column; gap: 2px;">
+          <div style="font-size: 12.5px; color: #0f0f0f; padding: 7px 8px; border-radius: 6px; background: #f4f4f5;">Add AM (C) to his positions</div>
+          <div style="font-size: 12.5px; color: #0f0f0f; padding: 7px 8px; border-radius: 6px;">Move him to another slot</div>
+          <div style="font-size: 12.5px; color: #0f0f0f; padding: 7px 8px; border-radius: 6px;">Leave it &mdash; he plays out of position</div>
+        </div>
+      </div>
+      <div style="flex: 1 1 0; min-width: 0;">
+        <div class="cap" style="line-height: 1.55;">The first option writes a custom position through A&rsquo;s existing <em>updatePlayerPosition</em>, so the card goes white everywhere he appears &mdash; and so does every role cohort he now belongs to, since <em>getEffectivePosition</em> already feeds all of them. The third leaves the tint in place on purpose: you have seen it and decided.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

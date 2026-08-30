@@ -1,0 +1,139 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; color: #0f0f0f; -webkit-font-smoothing: antialiased; }
+    a { color: #6a7fdb; } a:hover { color: #5566b0; }
+    .card { display: flex; align-items: center; gap: 8px; border: 1px solid #d4d4d8; border-radius: 6px; padding: 7px 8px; background: #ffffff; width: 300px; box-sizing: border-box; }
+    .pip { width: 17px; height: 17px; border-radius: 9px; background: #f4f4f5; color: #52525b; font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .body { flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .nm { font-size: 12.5px; font-weight: 600; color: #0f0f0f; letter-spacing: -0.01em; }
+    .meta { font-size: 10.5px; color: #947572; }
+    .flags { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+    .cap { font-size: 11px; color: #947572; line-height: 1.45; flex: 1 1 0; min-width: 0; }
+    .rowline { display: flex; gap: 16px; align-items: center; }
+    .pill { font-size: 11px; color: #52525b; border: 1px solid #d4d4d8; border-radius: 12px; padding: 4px 10px; background: #ffffff; }
+  </style>
+</helmet>
+
+<div style="width: 560px; background: #f5f5f5; padding: 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 22px;">
+
+  <div style="display: flex; flex-direction: column; gap: 8px;">
+    <div style="font-size: 20px; font-weight: 700; color: #050505; letter-spacing: -0.02em;">System B &mdash; quiet board, ask it questions</div>
+    <div style="font-size: 12.5px; color: #947572; line-height: 1.5; text-wrap: pretty;">Nothing tints. Every status is a small grey mark, and you find things by filtering rather than by scanning for colour.</div>
+  </div>
+
+  <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+    <span style="font-size: 11px; color: #b49794; font-weight: 700; letter-spacing: 0.06em;">SHOW</span>
+    <span class="pill" style="background: #6a7fdb; color: #fefbfb; border-color: #6a7fdb;">Out of position</span>
+    <span class="pill">No cover</span>
+    <span class="pill">Expiring</span>
+    <span class="pill">Unwanted</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px;">
+
+    <div class="rowline">
+      <div class="card">
+        <div class="pip">1</div>
+        <div class="body">
+          <div style="display: flex; align-items: baseline; gap: 5px;"><span class="nm">Stefan Ferran</span><span class="meta">22</span></div>
+          <div class="meta">D (C) &middot; Jun 2028</div>
+        </div>
+      </div>
+      <div class="cap">Plays here, nothing to say.</div>
+    </div>
+
+    <div class="rowline">
+      <div class="card">
+        <div class="pip">2</div>
+        <div class="body">
+          <div style="display: flex; align-items: baseline; gap: 5px;"><span class="nm">Andrej Toure</span><span class="meta">27</span></div>
+          <div class="meta">M (C) &middot; Jun 2028</div>
+        </div>
+        <div class="flags">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#947572" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 21.5 20H2.5z"></path><path d="M12 10v4"></path><path d="M12 17h0"></path></svg>
+        </div>
+      </div>
+      <div class="cap">Out of position &mdash; one small triangle, easy to miss across thirty cards.</div>
+    </div>
+
+    <div class="rowline">
+      <div class="card">
+        <div class="pip">1</div>
+        <div class="body">
+          <div style="display: flex; align-items: baseline; gap: 5px;"><span class="nm">Nico Serra</span><span class="meta">25</span></div>
+          <div class="meta">AM (C) &middot; Sporting CP</div>
+        </div>
+        <div class="flags">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#947572" stroke-width="2" stroke-linejoin="round"><path d="M12 3.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.6 9.7l5.8-.8z"></path></svg>
+        </div>
+      </div>
+      <div class="cap">A target off a list. No edge, so incoming players sit level with your own.</div>
+    </div>
+
+    <div class="rowline">
+      <div class="card">
+        <div class="pip">2</div>
+        <div class="body">
+          <div style="display: flex; align-items: baseline; gap: 5px;"><span class="nm">Milos Petrovic</span><span class="meta">33</span></div>
+          <div class="meta">D (C) &middot; Jun 2027</div>
+        </div>
+        <div class="flags">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#dc602e" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"></circle><line x1="6" y1="18" x2="18" y2="6"></line></svg>
+        </div>
+      </div>
+      <div class="cap">Unwanted keeps its paprika glyph from A &mdash; the one exception to the grey rule.</div>
+    </div>
+
+    <div class="rowline">
+      <div class="card">
+        <div class="pip">2</div>
+        <div class="body">
+          <div style="display: flex; align-items: baseline; gap: 5px;"><span class="nm">Andrej Diallo</span><span class="meta">35</span></div>
+          <div class="meta">D (R), WB (R) &middot; Jun 2027</div>
+        </div>
+        <div class="flags">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#947572" stroke-width="2"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 8.5v7M8.5 12h7" stroke-linecap="round"></path></svg>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#947572" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg>
+        </div>
+      </div>
+      <div class="cap">Injury-prone and running out. The date stays grey; a clock glyph carries it instead.</div>
+    </div>
+
+    <div class="rowline">
+      <div class="card">
+        <div class="pip">1</div>
+        <div class="body">
+          <div style="display: flex; align-items: baseline; gap: 5px;"><span class="nm">Kasper Holm</span><span class="meta">24</span></div>
+          <div class="meta">D (L), WB (L) &middot; Jun 2028</div>
+        </div>
+        <div class="flags">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#947572" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 21.5 20H2.5z"></path><path d="M12 10v4"></path><path d="M12 17h0"></path></svg>
+          <span style="display: flex; align-items: center; gap: 2px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#947572" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h15l-3.5-3.5"></path><path d="M20 15H5l3.5 3.5"></path></svg>
+            <span style="font-size: 9.5px; font-weight: 700; color: #947572;">&times;2</span>
+          </span>
+        </div>
+      </div>
+      <div class="cap">At D (R): out of position and first choice twice. Both problems now look like the third card&rsquo;s star.</div>
+    </div>
+
+  </div>
+
+  <div style="border-top: 1px solid #e4e4e7; padding-top: 16px; display: flex; flex-direction: column; gap: 6px;">
+    <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.06em; color: #b49794;">THE TRADE</div>
+    <div style="font-size: 11.5px; color: #947572; line-height: 1.55; text-wrap: pretty;">A board of thirty cards stays calm and the names stay the loudest thing on it. But nothing announces itself: a problem you did not think to filter for is a problem you do not see, and &ldquo;switch tactic and look at the squad in it&rdquo; is exactly the moment you do not yet know what to ask.</div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

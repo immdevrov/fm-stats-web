@@ -1,0 +1,19 @@
+{
+  "pages": [
+    { "id": "page-1", "name": "Planner" },
+    { "id": "page-2", "name": "Parked" }
+  ],
+  "artboards": [
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 1440, "h": 1040, "title": "The board", "page": "page-1" },
+    { "file": "ChipSystem.dc.html", "x": 1560, "y": 0, "w": 900, "h": 1400, "title": "System A — one channel per question", "page": "page-1" },
+    { "file": "DepthGrid.dc.html", "x": 0, "y": 0, "w": 1140, "h": 880, "title": "Depth grid — a later second view", "page": "page-2" },
+    { "file": "ChipAltC.dc.html", "x": 1260, "y": 0, "w": 560, "h": 820, "title": "System C — heat", "page": "page-2" }
+  ],
+  "annotations": [
+    { "id": "board-note", "x": 0, "y": -140, "w": 430, "page": "page-1", "text": "THE BOARD — building this.\nFormation shape, one stack per slot, first choice on top. Squad and lists in the panel on the right; unwanted players stay visible there." },
+    { "id": "system-a", "x": 1560, "y": -140, "w": 430, "page": "page-1", "text": "SYSTEM A — the card rules.\nFill says WHERE (he does not play here), the left edge says he is a target off a list, glyphs say WHO. One tint, one meaning." },
+    { "id": "depth-note", "x": 0, "y": -160, "w": 500, "page": "page-2", "text": "DEPTH GRID — parked as a second view.\nSame slots, same stacks, same cards: rows are slots, columns are first / second / third choice. A tab over the board's data rather than a separate feature, so it can be added without re-modelling anything." },
+    { "id": "system-c", "x": 1260, "y": -160, "w": 560, "page": "page-2", "text": "SYSTEM C — parked as a second look.\nTint by how much is wrong rather than what. The card data does not change, only the rule that colours it." }
+  ],
+  "launch": { "view": "canvas", "page": "page-1" }
+}
