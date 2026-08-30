@@ -137,7 +137,7 @@ function PlayerInfoColumn({ player, onPlayerUpdate }: { player: Player; onPlayer
   return (
     <VStack w="40%" align="stretch" gap={2}>
       <PlayerHeader player={player} onPlayerUpdate={onPlayerUpdate} />
-      <PricingSection player={player} />
+      <PricingSection key={player.UID} player={player} />
       <PlayingTimeSection player={player} />
 
       {isGoalkeeper ? (

@@ -17,15 +17,15 @@ export function PricingFields({ uid, player }: { uid: number; player: PlayerIden
 
   useEffect(() => {
     setPrice(annotation?.price !== undefined ? String(annotation.price) : ""); // eslint-disable-line react-hooks/set-state-in-effect
-  }, [annotation?.price]);
+  }, [uid, annotation?.price]);
 
   useEffect(() => {
     setWageDemand(annotation?.wageDemand !== undefined ? String(annotation.wageDemand) : ""); // eslint-disable-line react-hooks/set-state-in-effect
-  }, [annotation?.wageDemand]);
+  }, [uid, annotation?.wageDemand]);
 
   useEffect(() => {
     setNote(annotation?.note ?? ""); // eslint-disable-line react-hooks/set-state-in-effect
-  }, [annotation?.note]);
+  }, [uid, annotation?.note]);
 
   const commit = () =>
     setPricing(
