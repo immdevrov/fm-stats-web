@@ -13,10 +13,11 @@ export interface FmStatsDB extends DBSchema {
   compareList: { key: string; value: { id: string; uids: number[] } };
   playerAnnotations: { key: number; value: PlayerAnnotation };
   playerLists: { key: string; value: PlayerList };
+  settings: { key: string; value: { key: string; value: unknown } };
 }
 
 const DB_NAME = 'fm-stats-db';
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 
 type UpgradeTx = IDBPTransaction<FmStatsDB, StoreNames<FmStatsDB>[], 'versionchange'>;
 
@@ -66,6 +67,9 @@ export function getDB(): Promise<IDBPDatabase<FmStatsDB>> {
           if (oldVersion > 0) {
             migrateCustomPositions(tx).catch(() => tx.abort());
           }
+        }
+        if (oldVersion < 5) {
+          db.createObjectStore('settings', { keyPath: 'key' });
         }
       },
     });
