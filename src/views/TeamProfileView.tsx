@@ -7,6 +7,7 @@ import {
   Spinner,
   HStack,
   Button,
+  Badge,
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -14,6 +15,8 @@ import { db } from "../services/db";
 import type { Player } from "../types/types";
 import { SquadTable } from "../components/SquadTable";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import { useMyTeam } from "../contexts/MyTeamContext";
+import { toaster } from "../components/ui/toaster";
 
 export function TeamProfileView() {
   const { teamName } = useParams<{ teamName: string }>();
@@ -21,6 +24,7 @@ export function TeamProfileView() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { myClub, setMyClub } = useMyTeam();
 
   const decodedTeamName = teamName ? decodeURIComponent(teamName) : "";
   useDocumentTitle(decodedTeamName ? `Team: ${decodedTeamName}` : "Teams");
@@ -93,6 +97,27 @@ export function TeamProfileView() {
                 {decodedTeamName}
               </Heading>
             </VStack>
+            {myClub === decodedTeamName ? (
+              <Badge colorPalette="glaucous" size="lg">
+                My Team
+              </Badge>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setMyClub(decodedTeamName);
+                  toaster.create({
+                    title: "My Team Set",
+                    description: `${decodedTeamName} is now your team.`,
+                    type: "success",
+                    duration: 3000,
+                  });
+                }}
+              >
+                Set as My Team
+              </Button>
+            )}
           </HStack>
 
           {players.length === 0 ? (
