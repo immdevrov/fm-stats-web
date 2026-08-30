@@ -704,18 +704,24 @@ export function SquadPlanProvider({ children }: { children: ReactNode }) {
 
   const refreshSnapshots = useCallback(
     (byUid: Map<number, { name: string; club: string }>) =>
-      update((current) => ({
-        ...current,
-        slots: current.slots.map((slot) => ({
-          ...slot,
-          players: slot.players.map((player) => {
+      update((current) => {
+        let changed = false;
+        const slots = current.slots.map((slot) => {
+          let slotChanged = false;
+          const players = slot.players.map((player) => {
             const fresh = byUid.get(player.uid);
-            return fresh && (fresh.name !== player.name || fresh.club !== player.club)
-              ? { ...player, ...fresh }
-              : player;
-          }),
-        })),
-      })),
+            if (fresh && (fresh.name !== player.name || fresh.club !== player.club)) {
+              slotChanged = true;
+              return { ...player, ...fresh };
+            }
+            return player;
+          });
+          if (!slotChanged) return slot;
+          changed = true;
+          return { ...slot, players };
+        });
+        return changed ? { ...current, slots } : current;
+      }),
     [update]
   );
 
@@ -771,7 +777,7 @@ Five things here are load-bearing:
 
 **`place` is where the two invariants live**: at most `MAX_DEPTH` in a stack, and no slot holds the same player twice. Both are enforced by returning the array unchanged, so a caller that has not disabled its own control cannot corrupt the plan.
 
-**`refreshSnapshots` is what keeps `name`/`club` a live snapshot** rather than a fossil. Task 6 calls it once per squad load. It rewrites nothing when nothing changed, so it cannot loop.
+**`refreshSnapshots` is what keeps `name`/`club` a live snapshot** rather than a fossil. Task 8 calls it once per squad load. It must return the *same* `current` reference when no name or club differs, and leave unchanged slots at their own reference — hence the per-slot flag rather than one shared flag, which would rebuild every slot after the first real change. This is not a micro-optimisation: Task 8's effect lists `plan` in its dependencies, so a version that always allocated would re-fire itself forever.
 
 The exposed surface adds three functions to the seven the spec names — `refreshSnapshots`, `removeMissing` and the `PlacementIndex` type export. `removeMissing` is required by the spec's "Remove missing" action, `refreshSnapshots` by its "refreshed on every write" snapshot policy; the spec's list simply did not restate them.
 
