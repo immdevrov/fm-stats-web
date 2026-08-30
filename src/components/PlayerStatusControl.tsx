@@ -35,7 +35,7 @@ export function PlayerStatusControl({
       </Popover.Trigger>
       <Portal>
         <Popover.Positioner>
-          <Popover.Content width="240px">
+          <Popover.Content width="240px" onClick={(e) => e.stopPropagation()}>
             <Popover.Body>
               <VStack align="stretch" gap={2}>
                 <Text fontSize="xs" fontWeight="bold" color="fg.muted">

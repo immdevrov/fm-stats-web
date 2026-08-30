@@ -75,23 +75,25 @@ export function PlayerNotesProvider({ children }: { children: ReactNode }) {
 
   const addToList = useCallback(
     async (listId: string, uid: number, player?: PlayerIdentity) => {
-      const list = lists.find((l) => l.id === listId);
+      const stored = await db.getLists();
+      const list = stored.find((l) => l.id === listId);
       if (!list || list.uids.includes(uid)) return;
       await db.saveList({ ...list, uids: [...list.uids, uid] });
       await db.setAnnotation(uid, {}, player);
       await Promise.all([refreshLists(), refreshAnnotations()]);
     },
-    [lists, refreshLists, refreshAnnotations]
+    [refreshLists, refreshAnnotations]
   );
 
   const removeFromList = useCallback(
     async (listId: string, uid: number) => {
-      const list = lists.find((l) => l.id === listId);
+      const stored = await db.getLists();
+      const list = stored.find((l) => l.id === listId);
       if (!list) return;
       await db.saveList({ ...list, uids: list.uids.filter((id) => id !== uid) });
       await refreshLists();
     },
-    [lists, refreshLists]
+    [refreshLists]
   );
 
   const createList = useCallback(
@@ -112,12 +114,13 @@ export function PlayerNotesProvider({ children }: { children: ReactNode }) {
 
   const renameList = useCallback(
     async (id: string, name: string) => {
-      const list = lists.find((l) => l.id === id);
+      const stored = await db.getLists();
+      const list = stored.find((l) => l.id === id);
       if (!list) return;
       await db.saveList({ ...list, name });
       await refreshLists();
     },
-    [lists, refreshLists]
+    [refreshLists]
   );
 
   const removeList = useCallback(
