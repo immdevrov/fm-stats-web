@@ -1,26 +1,52 @@
 import { getDB, wrapError } from './connection';
+import type { SquadPlan } from '../../types/planner';
 
 const MY_CLUB = 'myClub';
+const SQUAD_PLAN = 'squadPlan';
 
-export async function getMyClub(): Promise<string | null> {
+async function _get(key: string): Promise<unknown> {
   try {
     const db = await getDB();
-    const entry = await db.get('settings', MY_CLUB);
-    return typeof entry?.value === 'string' ? entry.value : null;
+    const entry = await db.get('settings', key);
+    return entry?.value ?? null;
   } catch {
     return null;
   }
 }
 
-export async function setMyClub(club: string | null): Promise<void> {
+async function _set(key: string, value: unknown, action: string): Promise<void> {
   try {
     const db = await getDB();
-    if (club === null) {
-      await db.delete('settings', MY_CLUB);
+    if (value === null) {
+      await db.delete('settings', key);
       return;
     }
-    await db.put('settings', { key: MY_CLUB, value: club });
+    await db.put('settings', { key, value });
   } catch (error) {
-    throw wrapError('save my team', error);
+    throw wrapError(action, error);
   }
+}
+
+export async function getMyClub(): Promise<string | null> {
+  const value = await _get(MY_CLUB);
+  return typeof value === 'string' ? value : null;
+}
+
+export function setMyClub(club: string | null): Promise<void> {
+  return _set(MY_CLUB, club, 'save my team');
+}
+
+function isSquadPlan(value: unknown): value is SquadPlan {
+  if (typeof value !== 'object' || value === null) return false;
+  const plan = value as Partial<SquadPlan>;
+  return typeof plan.formationId === 'string' && Array.isArray(plan.slots);
+}
+
+export async function getSquadPlan(): Promise<SquadPlan | null> {
+  const value = await _get(SQUAD_PLAN);
+  return isSquadPlan(value) ? value : null;
+}
+
+export function setSquadPlan(plan: SquadPlan | null): Promise<void> {
+  return _set(SQUAD_PLAN, plan, 'save squad plan');
 }
