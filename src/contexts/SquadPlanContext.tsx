@@ -115,18 +115,24 @@ export function SquadPlanProvider({ children }: { children: ReactNode }) {
 
   const refreshSnapshots = useCallback(
     (byUid: Map<number, { name: string; club: string }>) =>
-      update((current) => ({
-        ...current,
-        slots: current.slots.map((slot) => ({
-          ...slot,
-          players: slot.players.map((player) => {
+      update((current) => {
+        let changed = false;
+        const slots = current.slots.map((slot) => {
+          let slotChanged = false;
+          const players = slot.players.map((player) => {
             const fresh = byUid.get(player.uid);
-            return fresh && (fresh.name !== player.name || fresh.club !== player.club)
-              ? { ...player, ...fresh }
-              : player;
-          }),
-        })),
-      })),
+            if (fresh && (fresh.name !== player.name || fresh.club !== player.club)) {
+              slotChanged = true;
+              return { ...player, ...fresh };
+            }
+            return player;
+          });
+          if (!slotChanged) return slot;
+          changed = true;
+          return { ...slot, players };
+        });
+        return changed ? { ...current, slots } : current;
+      }),
     [update]
   );
 
