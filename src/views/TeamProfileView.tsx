@@ -15,6 +15,8 @@ import type { Player } from "../types/types";
 import { Table, type Column } from "../components/ui/table";
 import { formatWage, displayDate, formatPositions } from "../utils/utils";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import { PlayerStatusControl } from "../components/PlayerStatusControl";
+import { usePlayerNotes } from "../contexts/PlayerNotesContext";
 
 interface TeamProfileRow extends Record<string, unknown> {
   name: string;
@@ -114,7 +116,7 @@ export function TeamProfileView() {
               No players found for this team.
             </Text>
           ) : (
-            <TeamProfileTable players={players} />
+            <TeamProfileTable players={players} teamName={decodedTeamName} />
           )}
         </VStack>
       </Container>
@@ -122,38 +124,9 @@ export function TeamProfileView() {
   );
 }
 
-const columns: Column<TeamProfileRow>[] = [
-  {
-    key: "name",
-    header: "Name",
-    render: (value, row) => (
-      <Link to={`/players/${row.uid}`}>
-        <Text color="glaucous.400" _hover={{ textDecoration: "underline" }}>
-          {value as string}
-        </Text>
-      </Link>
-    ),
-  },
-  { key: "age", header: "Age" },
-  { key: "position", header: "Position" },
-  { key: "starts", header: "Starts" },
-  { key: "minutes", header: "Minutes" },
-  { key: "nat", header: "Nat" },
-  { key: "wage", header: "Wage", render: (v) => formatWage(v as number) },
-  {
-    key: "injuries",
-    header: "Rc. Injuries",
-    render: (v) => (v ? String(v) : "-"),
-  },
-  {
-    key: "contractExpires",
-    header: "Contract Expires",
-    render: (v) => (v ? displayDate(v as Date) : "-"),
-  },
-  { key: "uid", header: "UID", sortable: false },
-];
+function TeamProfileTable({ players, teamName }: { players: Player[]; teamName: string }) {
+  const { isUnwanted } = usePlayerNotes();
 
-function TeamProfileTable({ players }: { players: Player[] }) {
   const data: TeamProfileRow[] = players.map((p) => ({
     name: p.Name,
     age: p.Age,
@@ -167,12 +140,53 @@ function TeamProfileTable({ players }: { players: Player[] }) {
     uid: p.UID,
   }));
 
+  const columns: Column<TeamProfileRow>[] = [
+    {
+      key: "uid",
+      header: "",
+      sortable: false,
+      width: "56px",
+      render: (_value, row) => (
+        <PlayerStatusControl uid={row.uid} player={{ Name: row.name, Club: teamName }} />
+      ),
+    },
+    {
+      key: "name",
+      header: "Name",
+      render: (value, row) => (
+        <Link to={`/players/${row.uid}`}>
+          <Text color="glaucous.400" _hover={{ textDecoration: "underline" }}>
+            {value as string}
+          </Text>
+        </Link>
+      ),
+    },
+    { key: "age", header: "Age" },
+    { key: "position", header: "Position" },
+    { key: "starts", header: "Starts" },
+    { key: "minutes", header: "Minutes" },
+    { key: "nat", header: "Nat" },
+    { key: "wage", header: "Wage", render: (v) => formatWage(v as number) },
+    {
+      key: "injuries",
+      header: "Rc. Injuries",
+      render: (v) => (v ? String(v) : "-"),
+    },
+    {
+      key: "contractExpires",
+      header: "Contract Expires",
+      render: (v) => (v ? displayDate(v as Date) : "-"),
+    },
+    { key: "uid", header: "UID", sortable: false },
+  ];
+
   return (
     <Table<TeamProfileRow>
       data={data}
       columns={columns}
       defaultSortKey="starts"
       defaultSortDirection="desc"
+      rowProps={(row) => (isUnwanted(row.uid) ? { color: "fg.muted", bg: "bg.subtle" } : {})}
     />
   );
 }

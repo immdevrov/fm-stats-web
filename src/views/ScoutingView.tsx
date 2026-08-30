@@ -9,6 +9,7 @@ import {
   Input,
   Table as CTable,
   Popover as ChakraPopover,
+  Checkbox,
 } from "@chakra-ui/react";
 import { useState, useEffect, useMemo, useCallback, useTransition, useRef } from "react";
 import { Link } from "react-router-dom";
@@ -16,6 +17,8 @@ import { db } from "../services/db";
 import { useCompare } from "../contexts/CompareContext";
 import type { Player, LeagueRanking } from "../types/types";
 import { Table, type Column, type SortDirection } from "../components/ui/table";
+import { PlayerStatusControl } from "../components/PlayerStatusControl";
+import { usePlayerNotes } from "../contexts/PlayerNotesContext";
 import {
   ROLE_CONFIG,
   STAT_LABELS,
@@ -289,6 +292,7 @@ export function ScoutingView() {
 
   const { compareList, addPlayer, removePlayer } = useCompare();
   const compareSet = useMemo(() => new Set(compareList), [compareList]);
+  const { isUnwanted } = usePlayerNotes();
 
   const [saved] = useState(loadFilters);
 
@@ -301,6 +305,7 @@ export function ScoutingView() {
   const columnFilters = useDebouncedValue(columnFiltersRaw, DEBOUNCE_MS);
   const [excludeInjuries, setExcludeInjuries] = useState(saved.excludeInjuries ?? true);
   const [excludedLeagues, setExcludedLeagues] = useState<Set<string>>(new Set(saved.excludedLeagues));
+  const [hideUnwanted, setHideUnwanted] = useState(false);
 
   const [sortKey, setSortKey] = useState<keyof ScoutingRow>((saved.sortKey as keyof ScoutingRow) ?? "name");
   const [sortDirection, setSortDirection] = useState<SortDirection>(saved.sortDirection ?? "asc");
@@ -383,6 +388,10 @@ export function ScoutingView() {
       result = result.filter((r) => !excludedLeagues.has(r.division));
     }
 
+    if (hideUnwanted) {
+      result = result.filter((r) => !isUnwanted(r.uid));
+    }
+
     for (const [key, bounds] of Object.entries(columnFilters)) {
       const min = bounds.min ? Number(bounds.min) : undefined;
       const max = bounds.max ? Number(bounds.max) : undefined;
@@ -445,7 +454,7 @@ export function ScoutingView() {
       }
       return 0;
     });
-  }, [scoutingData, excludeInjuries, columnFilters, contractBefore, excludedLeagues, sortKey, sortDirection]);
+  }, [scoutingData, excludeInjuries, columnFilters, contractBefore, excludedLeagues, sortKey, sortDirection, hideUnwanted, isUnwanted]);
 
   const totalPages = Math.ceil(filteredAndSorted.length / PAGE_SIZE);
   const paginatedData = useMemo(() => {
@@ -455,7 +464,7 @@ export function ScoutingView() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedRoleIndex, side, columnFilters, contractBefore, excludeInjuries, excludedLeagues, sortKey, sortDirection]);
+  }, [selectedRoleIndex, side, columnFilters, contractBefore, excludeInjuries, excludedLeagues, sortKey, sortDirection, hideUnwanted]);
 
   const handleSortChange = useCallback(
     (key: keyof ScoutingRow, direction: SortDirection) => {
@@ -504,6 +513,15 @@ export function ScoutingView() {
 
   const columns: Column<ScoutingRow>[] = useMemo(() => {
     const base: Column<ScoutingRow>[] = [
+      {
+        key: "uid",
+        header: "",
+        sortable: false,
+        width: "56px",
+        render: (_value, row) => (
+          <PlayerStatusControl uid={row.uid} player={{ Name: row.name, Club: row.club }} />
+        ),
+      },
       {
         key: "name",
         header: "Name",
@@ -705,6 +723,14 @@ export function ScoutingView() {
               />
               <Text fontSize="sm">Exclude injuries</Text>
             </HStack>
+            <Checkbox.Root
+              checked={hideUnwanted}
+              onCheckedChange={(e) => setHideUnwanted(e.checked === true)}
+            >
+              <Checkbox.HiddenInput />
+              <Checkbox.Control />
+              <Checkbox.Label>Hide unwanted</Checkbox.Label>
+            </Checkbox.Root>
             {availableLeagues.length > 0 && (
               <LeagueMultiSelect
                 leagues={availableLeagues}
@@ -749,6 +775,7 @@ export function ScoutingView() {
                   sortDirection={sortDirection}
                   onSortChange={handleSortChange}
                   filterRow={filterRow}
+                  rowProps={(row) => (isUnwanted(row.uid) ? { color: "fg.muted", bg: "bg.subtle" } : {})}
                 />
 
                 {totalPages > 1 && (

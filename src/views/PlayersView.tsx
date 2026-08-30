@@ -9,6 +9,7 @@ import {
   Button,
   Input,
   NativeSelect,
+  Checkbox,
 } from "@chakra-ui/react";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
@@ -17,6 +18,8 @@ import type { Player } from "../types/types";
 import { Table, type Column, type SortDirection } from "../components/ui/table";
 import { formatWage, displayDate, formatPositions, getEffectivePosition } from "../utils/utils";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import { PlayerStatusControl } from "../components/PlayerStatusControl";
+import { usePlayerNotes } from "../contexts/PlayerNotesContext";
 
 const PAGE_SIZE = 20;
 const MIN_SEARCH_LENGTH = 3;
@@ -37,27 +40,6 @@ interface PlayerRow extends Record<string, unknown> {
   uid: number;
 }
 
-const columns: Column<PlayerRow>[] = [
-  { key: "name", header: "Name" },
-  { key: "age", header: "Age" },
-  { key: "position", header: "Position" },
-  { key: "club", header: "Club" },
-  { key: "starts", header: "Starts" },
-  { key: "minutes", header: "Minutes" },
-  { key: "nat", header: "Nat" },
-  { key: "wage", header: "Wage", render: (v) => formatWage(v as number) },
-  {
-    key: "injuries",
-    header: "Rc. Injuries",
-    render: (v) => (v ? String(v) : "-"),
-  },
-  {
-    key: "contractExpires",
-    header: "Contract Expires",
-    render: (v) => (v ? displayDate(v as Date) : "-"),
-  },
-];
-
 export function PlayersView() {
   useDocumentTitle("Players");
   const navigate = useNavigate();
@@ -71,6 +53,9 @@ export function PlayersView() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPositions, setSelectedPositions] = useState<Set<string>>(new Set());
   const [selectedClub, setSelectedClub] = useState("");
+  const [hideUnwanted, setHideUnwanted] = useState(false);
+
+  const { isUnwanted } = usePlayerNotes();
 
   useEffect(() => {
     async function loadData() {
@@ -136,6 +121,10 @@ export function PlayersView() {
       result = result.filter((player) => player.club === selectedClub);
     }
 
+    if (hideUnwanted) {
+      result = result.filter((player) => !isUnwanted(player.uid));
+    }
+
     return [...result].sort((a, b) => {
       const aVal = a[sortKey];
       const bVal = b[sortKey];
@@ -168,7 +157,7 @@ export function PlayersView() {
 
       return 0;
     });
-  }, [data, searchQuery, selectedPositions, selectedClub, sortKey, sortDirection]);
+  }, [data, searchQuery, selectedPositions, selectedClub, sortKey, sortDirection, hideUnwanted, isUnwanted]);
 
   const totalPages = Math.ceil(filteredAndSortedData.length / PAGE_SIZE);
   const paginatedData = useMemo(() => {
@@ -178,7 +167,7 @@ export function PlayersView() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedPositions, selectedClub, sortKey, sortDirection]);
+  }, [searchQuery, selectedPositions, selectedClub, sortKey, sortDirection, hideUnwanted]);
 
   const handleSortChange = useCallback(
     (key: keyof PlayerRow, direction: SortDirection) => {
@@ -296,6 +285,14 @@ export function PlayersView() {
                   Clear
                 </Button>
               )}
+              <Checkbox.Root
+                checked={hideUnwanted}
+                onCheckedChange={(e) => setHideUnwanted(e.checked === true)}
+              >
+                <Checkbox.HiddenInput />
+                <Checkbox.Control />
+                <Checkbox.Label>Hide unwanted</Checkbox.Label>
+              </Checkbox.Root>
             </HStack>
           </VStack>
 
@@ -397,6 +394,38 @@ function PlayersTable({
   onSortChange,
   onRowClick,
 }: PlayersTableProps) {
+  const { isUnwanted } = usePlayerNotes();
+
+  const columns: Column<PlayerRow>[] = [
+    {
+      key: "uid",
+      header: "",
+      sortable: false,
+      width: "56px",
+      render: (_value, row) => (
+        <PlayerStatusControl uid={row.uid} player={{ Name: row.name, Club: row.club }} />
+      ),
+    },
+    { key: "name", header: "Name" },
+    { key: "age", header: "Age" },
+    { key: "position", header: "Position" },
+    { key: "club", header: "Club" },
+    { key: "starts", header: "Starts" },
+    { key: "minutes", header: "Minutes" },
+    { key: "nat", header: "Nat" },
+    { key: "wage", header: "Wage", render: (v) => formatWage(v as number) },
+    {
+      key: "injuries",
+      header: "Rc. Injuries",
+      render: (v) => (v ? String(v) : "-"),
+    },
+    {
+      key: "contractExpires",
+      header: "Contract Expires",
+      render: (v) => (v ? displayDate(v as Date) : "-"),
+    },
+  ];
+
   return (
     <Table<PlayerRow>
       data={data}
@@ -405,6 +434,7 @@ function PlayersTable({
       sortDirection={sortDirection}
       onSortChange={onSortChange}
       onRowClick={onRowClick}
+      rowProps={(row) => (isUnwanted(row.uid) ? { color: "fg.muted", bg: "bg.subtle" } : {})}
     />
   );
 }

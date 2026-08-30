@@ -36,6 +36,7 @@ import {
 import { buildCohort, computePercentiles, type StatPercentile } from "../utils/comparison-utils";
 import { PercentileBar } from "../components/PercentileBar";
 import { PlayerAutocomplete } from "../components/PlayerAutocomplete";
+import { PlayerStatusBadge } from "../components/PlayerStatusBadge";
 import { useCompare } from "../contexts/CompareContext";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 
@@ -193,7 +194,10 @@ export function CompareView() {
                   {player ? (
                     <VStack align="stretch" gap={1}>
                       <HStack justify="space-between">
-                        <Heading size="sm">{player.Name}</Heading>
+                        <HStack gap={2}>
+                          <Heading size="sm">{player.Name}</Heading>
+                          <PlayerStatusBadge uid={player.UID} />
+                        </HStack>
                         <Button
                           size="xs"
                           variant="ghost"
