@@ -1,11 +1,11 @@
-import { Container, Heading, VStack, Box, Text, Spinner, Button } from "@chakra-ui/react";
+import { Container, Heading, VStack, Box, Text, Spinner, Button, HStack } from "@chakra-ui/react";
 import { useState, useRef } from "react";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { FileInput } from "../components/ui/file-input";
 import { parseHtmlTable, transformPlayerStats } from "../parser/html-parser";
 import { db } from "../services/db";
 import { toaster } from "../components/ui/toaster";
-import { ConfirmDialog } from "../components/ui/confirm-dialog";
+import { ImportPreserveDialog, type PreserveCategory } from "../components/ui/import-preserve-dialog";
 import type { Player } from "../types/types";
 
 export function ImportView() {
@@ -16,7 +16,7 @@ export function ImportView() {
     count: number;
     message: string;
   } | null>(null);
-  const [showRankingsDialog, setShowRankingsDialog] = useState(false);
+  const [preserveOptions, setPreserveOptions] = useState<PreserveCategory[] | null>(null);
 
   // Store pending import data while dialog is open
   const pendingPlayers = useRef<Player[] | null>(null);
@@ -41,31 +41,50 @@ export function ImportView() {
         throw new Error("No player data found in the file.");
       }
 
-      // Step 3: Check if league rankings exist
-      const existingRankings = await db.getLeagueRankings();
+      // Step 3: Check which categories of preserved data actually exist
+      const [rankings, annotations, lists] = await Promise.all([
+        db.getLeagueRankings(),
+        db.getAnnotations(),
+        db.getLists(),
+      ]);
 
-      if (existingRankings.length > 0) {
-        // Store players and show dialog
+      const available: PreserveCategory[] = [];
+      if (rankings.length > 0) available.push("rankings");
+      if (annotations.some((a) => a.customPosition)) available.push("positions");
+      if (lists.length > 0 || annotations.some((a) => a.unwanted || a.price || a.note)) {
+        available.push("lists");
+      }
+
+      if (available.length === 0) {
+        await performImport(players, []);
+      } else {
         pendingPlayers.current = players;
         setIsImporting(false);
-        setShowRankingsDialog(true);
-      } else {
-        // No rankings exist, proceed with import
-        await performImport(players);
+        setPreserveOptions(available);
       }
     } catch (error) {
       handleImportError(error);
     }
   };
 
-  const performImport = async (players: Player[], clearRankings = false) => {
+  const performImport = async (players: Player[], clear: PreserveCategory[]) => {
     try {
       setIsImporting(true);
 
-      // Clear data as needed
-      if (clearRankings) {
-        await db.clearLeagueRankings();
+      if (clear.includes("rankings")) await db.clearLeagueRankings();
+      if (clear.includes("positions")) await db.clearAllCustomPositions();
+
+      if (clear.includes("lists")) {
+        const keptPositions = clear.includes("positions")
+          ? []
+          : (await db.getAnnotations()).filter((a) => a.customPosition);
+        await db.clearAllLists();
+        await db.clearAllAnnotations();
+        for (const annotation of keptPositions) {
+          await db.setAnnotation(annotation.uid, { customPosition: annotation.customPosition });
+        }
       }
+
       await db.clearAllPlayers();
       await db.savePlayers(players);
 
@@ -114,20 +133,6 @@ export function ImportView() {
     setIsImporting(false);
   };
 
-  const handleRankingsDialogConfirm = async (value: string) => {
-    setShowRankingsDialog(false);
-
-    if (pendingPlayers.current) {
-      await performImport(pendingPlayers.current, value === "reset");
-    }
-  };
-
-  const handleRankingsDialogClose = () => {
-    setShowRankingsDialog(false);
-    pendingPlayers.current = null;
-    setImportStatus(null);
-  };
-
   return (
     <Box minH="100vh" p={8}>
       <Container maxW="container.md">
@@ -161,43 +166,57 @@ export function ImportView() {
             your browser's local storage.
           </Text>
 
-          <Button
-            variant="outline"
-            size="sm"
-            colorPalette="red"
-            onClick={async () => {
-              await db.clearAllCustomPositions();
-              toaster.create({
-                title: "Custom Positions Cleared",
-                description: "All custom position overrides have been removed.",
-                type: "success",
-                duration: 5000,
-              });
-            }}
-          >
-            Clear All Custom Positions
-          </Button>
+          <HStack gap={2} justify="center">
+            <Button
+              variant="outline"
+              size="sm"
+              colorPalette="red"
+              onClick={async () => {
+                await db.clearAllCustomPositions();
+                toaster.create({
+                  title: "Custom Positions Cleared",
+                  description: "All custom position overrides have been removed.",
+                  type: "success",
+                  duration: 5000,
+                });
+              }}
+            >
+              Clear All Custom Positions
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              colorPalette="red"
+              onClick={async () => {
+                await db.clearAllLists();
+                await db.clearAllAnnotations();
+                toaster.create({
+                  title: "Lists Cleared",
+                  description: "All lists, prices, notes and unwanted flags have been removed.",
+                  type: "success",
+                  duration: 5000,
+                });
+              }}
+            >
+              Clear All Lists & Notes
+            </Button>
+          </HStack>
         </VStack>
       </Container>
 
-      <ConfirmDialog
-        isOpen={showRankingsDialog}
-        onClose={handleRankingsDialogClose}
-        onConfirm={handleRankingsDialogConfirm}
-        title="League Rankings Found"
-        message="You have existing league rankings. Would you like to keep them or reset for the new data?"
-        options={[
-          {
-            label: "Keep Rankings",
-            value: "keep",
-            description: "Preserve your current league rankings",
-          },
-          {
-            label: "Reset Rankings",
-            value: "reset",
-            description: "Clear rankings and start fresh with new data",
-          },
-        ]}
+      <ImportPreserveDialog
+        isOpen={preserveOptions !== null}
+        available={preserveOptions ?? []}
+        onClose={() => {
+          setPreserveOptions(null);
+          pendingPlayers.current = null;
+          setImportStatus(null);
+        }}
+        onConfirm={async (clear) => {
+          setPreserveOptions(null);
+          if (pendingPlayers.current) await performImport(pendingPlayers.current, clear);
+        }}
       />
     </Box>
   );
