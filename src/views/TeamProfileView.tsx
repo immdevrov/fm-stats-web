@@ -13,7 +13,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { db } from "../services/db";
 import type { Player } from "../types/types";
 import { Table, type Column } from "../components/ui/table";
-import { formatWage, displayDate, formatPositions } from "../utils/utils";
+import { formatWage, displayDate, formatPositions, getEffectivePosition } from "../utils/utils";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { PlayerStatusControl } from "../components/PlayerStatusControl";
 import { usePlayerNotes } from "../contexts/PlayerNotesContext";
@@ -130,7 +130,7 @@ function TeamProfileTable({ players, teamName }: { players: Player[]; teamName: 
   const data: TeamProfileRow[] = players.map((p) => ({
     name: p.Name,
     age: p.Age,
-    position: formatPositions(p.Position),
+    position: formatPositions(getEffectivePosition(p)),
     starts: p.Starts,
     minutes: p.Mins,
     nat: p.Nat,

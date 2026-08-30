@@ -93,12 +93,19 @@ export async function clearAllLists(): Promise<void> {
   }
 }
 
-export async function clearListsAndAnnotations(): Promise<void> {
-  const positions = (await getAnnotations()).filter((a) => a.customPosition);
+export async function clearListsAndAnnotations(alsoDropPositions = false): Promise<void> {
+  const preserved = alsoDropPositions
+    ? []
+    : (await getAnnotations()).filter((a) => a.customPosition);
+
   await clearAllLists();
   await clearAllAnnotations();
-  for (const annotation of positions) {
-    await setAnnotation(annotation.uid, { customPosition: annotation.customPosition });
+
+  for (const annotation of preserved) {
+    const player = annotation.lastKnownName
+      ? { Name: annotation.lastKnownName, Club: annotation.lastKnownClub ?? '' }
+      : undefined;
+    await setAnnotation(annotation.uid, { customPosition: annotation.customPosition }, player);
   }
 }
 

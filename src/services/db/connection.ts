@@ -43,6 +43,8 @@ async function migrateCustomPositions(tx: UpgradeTx): Promise<void> {
 let dbPromise: Promise<IDBPDatabase<FmStatsDB>> | null = null;
 
 export function getDB(): Promise<IDBPDatabase<FmStatsDB>> {
+  // A rejection here (e.g. an aborted upgrade) is deliberately cached: a half-migrated
+  // schema can't be trusted, so every call fails until the page reloads rather than retrying.
   if (!dbPromise) {
     dbPromise = openDB<FmStatsDB>(DB_NAME, DB_VERSION, {
       upgrade(db, oldVersion, _newVersion, tx) {

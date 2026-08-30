@@ -61,6 +61,7 @@ export {
 /* Views — the app's existing screens, so designs can start from a real panel. */
 export { db } from "./services/db";
 export { CompareProvider } from "./contexts/CompareContext";
+export { PlayerNotesProvider } from "./contexts/PlayerNotesContext";
 export { ImportView } from "./views/ImportView";
 export { LeaguesView } from "./views/LeaguesView";
 export { TeamsView } from "./views/TeamsView";
@@ -69,3 +70,4 @@ export { PlayersView } from "./views/PlayersView";
 export { PlayerProfileView } from "./views/PlayerProfileView";
 export { ScoutingView } from "./views/ScoutingView";
 export { CompareView } from "./views/CompareView";
+export { ListsView } from "./views/ListsView";

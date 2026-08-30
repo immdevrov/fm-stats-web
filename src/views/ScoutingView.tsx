@@ -403,6 +403,8 @@ export function ScoutingView() {
           const statKey = key.slice(5);
           val = r.statPercentiles[statKey];
           if (val !== undefined && INVERTED_STATS.has(statKey)) val = 100 - val;
+        } else if (key.startsWith("derived_")) {
+          val = r.statPercentiles[key.slice(8)];
         } else if (key.startsWith("group_")) {
           val = r.groupRatings[key.slice(6)];
         } else if (key === "age") {
@@ -426,6 +428,10 @@ export function ScoutingView() {
         const statKey = key.slice(5);
         aVal = a.statPercentiles[statKey];
         bVal = b.statPercentiles[statKey];
+      } else if (key.startsWith("derived_")) {
+        const derivedKey = key.slice(8);
+        aVal = a.statPercentiles[derivedKey];
+        bVal = b.statPercentiles[derivedKey];
       } else if (key.startsWith("group_")) {
         const groupKey = key.slice(6);
         aVal = a.groupRatings[groupKey];
@@ -583,7 +589,7 @@ export function ScoutingView() {
     if (roleConfig.derivedPercentileStats) {
       for (const derived of roleConfig.derivedPercentileStats) {
         base.push({
-          key: `stat_${derived.key}` as keyof ScoutingRow,
+          key: `derived_${derived.key}` as keyof ScoutingRow,
           header: STAT_ABBREVIATIONS[derived.key] ?? derived.key,
           headerTooltip: STAT_LABELS[derived.key] ?? derived.key,
           render: (_v, row) => (
@@ -615,10 +621,11 @@ export function ScoutingView() {
     return (
       <CTable.Row bg="bg.subtle">
         {columns.map((col) => {
-          const key = String(col.key);
+          const key = col.id ?? String(col.key);
           const isFilterable =
             filterableKeys.has(key) ||
             key.startsWith("stat_") ||
+            key.startsWith("derived_") ||
             key.startsWith("group_");
 
           return (

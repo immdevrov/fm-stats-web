@@ -12,10 +12,19 @@ import type { PlayerAnnotation, PlayerList } from "../types/annotations";
 
 export type PlayerIdentity = Pick<Player, "Name" | "Club">;
 
+function generateListId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `list-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 interface PlayerNotesContextValue {
   annotations: Map<number, PlayerAnnotation>;
   lists: PlayerList[];
   isLoaded: boolean;
+  loadError: string | null;
+  refresh: () => Promise<void>;
   isUnwanted: (uid: number) => boolean;
   toggleUnwanted: (uid: number, player?: PlayerIdentity) => Promise<void>;
   listsFor: (uid: number) => PlayerList[];
@@ -37,13 +46,25 @@ export function PlayerNotesProvider({ children }: { children: ReactNode }) {
   const [annotations, setAnnotations] = useState<Map<number, PlayerAnnotation>>(new Map());
   const [lists, setLists] = useState<PlayerList[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([db.getAnnotations(), db.getLists()]).then(([loadedAnnotations, loadedLists]) => {
-      setAnnotations(new Map(loadedAnnotations.map((a) => [a.uid, a])));
-      setLists(loadedLists);
-      setIsLoaded(true);
-    });
+    async function loadNotes() {
+      try {
+        const [loadedAnnotations, loadedLists] = await Promise.all([
+          db.getAnnotations(),
+          db.getLists(),
+        ]);
+        setAnnotations(new Map(loadedAnnotations.map((a) => [a.uid, a])));
+        setLists(loadedLists);
+      } catch (err) {
+        setLoadError(err instanceof Error ? err.message : "Failed to load player notes");
+      } finally {
+        setIsLoaded(true);
+      }
+    }
+
+    loadNotes();
   }, []);
 
   const refreshAnnotations = useCallback(async () => {
@@ -54,6 +75,10 @@ export function PlayerNotesProvider({ children }: { children: ReactNode }) {
   const refreshLists = useCallback(async () => {
     setLists(await db.getLists());
   }, []);
+
+  const refresh = useCallback(async () => {
+    await Promise.all([refreshAnnotations(), refreshLists()]);
+  }, [refreshAnnotations, refreshLists]);
 
   const isUnwanted = useCallback(
     (uid: number) => annotations.get(uid)?.unwanted === true,
@@ -99,7 +124,7 @@ export function PlayerNotesProvider({ children }: { children: ReactNode }) {
   const createList = useCallback(
     async (name: string) => {
       const list: PlayerList = {
-        id: crypto.randomUUID(),
+        id: generateListId(),
         name,
         order: lists.length,
         uids: [],
@@ -149,6 +174,8 @@ export function PlayerNotesProvider({ children }: { children: ReactNode }) {
         annotations,
         lists,
         isLoaded,
+        loadError,
+        refresh,
         isUnwanted,
         toggleUnwanted,
         listsFor,

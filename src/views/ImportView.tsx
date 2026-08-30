@@ -6,6 +6,7 @@ import { parseHtmlTable, transformPlayerStats } from "../parser/html-parser";
 import { db } from "../services/db";
 import { toaster } from "../components/ui/toaster";
 import { ImportPreserveDialog, type PreserveCategory } from "../components/ui/import-preserve-dialog";
+import { usePlayerNotes } from "../contexts/PlayerNotesContext";
 import type { Player } from "../types/types";
 
 export function ImportView() {
@@ -17,6 +18,7 @@ export function ImportView() {
     message: string;
   } | null>(null);
   const [preserveOptions, setPreserveOptions] = useState<PreserveCategory[] | null>(null);
+  const { refresh } = usePlayerNotes();
 
   // Store pending import data while dialog is open
   const pendingPlayers = useRef<Player[] | null>(null);
@@ -79,10 +81,13 @@ export function ImportView() {
       if (clear.includes("rankings")) await db.clearLeagueRankings();
       if (clear.includes("positions")) await db.clearAllCustomPositions();
 
-      if (clear.includes("lists")) await db.clearListsAndAnnotations();
+      if (clear.includes("lists")) {
+        await db.clearListsAndAnnotations(clear.includes("positions"));
+      }
 
       await db.clearAllPlayers();
       await db.savePlayers(players);
+      await refresh();
 
       // Show success feedback
       const successMessage = `Successfully imported ${players.length} player${players.length !== 1 ? "s" : ""}`;
@@ -168,13 +173,24 @@ export function ImportView() {
               size="sm"
               colorPalette="red"
               onClick={async () => {
-                await db.clearAllCustomPositions();
-                toaster.create({
-                  title: "Custom Positions Cleared",
-                  description: "All custom position overrides have been removed.",
-                  type: "success",
-                  duration: 5000,
-                });
+                try {
+                  await db.clearAllCustomPositions();
+                  await refresh();
+                  toaster.create({
+                    title: "Custom Positions Cleared",
+                    description: "All custom position overrides have been removed.",
+                    type: "success",
+                    duration: 5000,
+                  });
+                } catch (error) {
+                  toaster.create({
+                    title: "Failed to Clear Custom Positions",
+                    description:
+                      error instanceof Error ? error.message : "An unknown error occurred.",
+                    type: "error",
+                    duration: 7000,
+                  });
+                }
               }}
             >
               Clear All Custom Positions
@@ -185,13 +201,24 @@ export function ImportView() {
               size="sm"
               colorPalette="red"
               onClick={async () => {
-                await db.clearListsAndAnnotations();
-                toaster.create({
-                  title: "Lists Cleared",
-                  description: "All lists, prices, notes and unwanted flags have been removed.",
-                  type: "success",
-                  duration: 5000,
-                });
+                try {
+                  await db.clearListsAndAnnotations(false);
+                  await refresh();
+                  toaster.create({
+                    title: "Lists Cleared",
+                    description: "All lists, prices, notes and unwanted flags have been removed.",
+                    type: "success",
+                    duration: 5000,
+                  });
+                } catch (error) {
+                  toaster.create({
+                    title: "Failed to Clear Lists",
+                    description:
+                      error instanceof Error ? error.message : "An unknown error occurred.",
+                    type: "error",
+                    duration: 7000,
+                  });
+                }
               }}
             >
               Clear All Lists & Notes

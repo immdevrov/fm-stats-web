@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Box, Button, Container, HStack, Heading, Spinner, Text, VStack } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
 import { db } from "../services/db";
-import { usePlayerNotes } from "../contexts/PlayerNotesContext";
+import { usePlayerNotes, type PlayerIdentity } from "../contexts/PlayerNotesContext";
 import { PlayerStatusControl } from "../components/PlayerStatusControl";
 import { Table, type Column } from "../components/ui/table";
 import { formatWage, displayDate, formatPositions, getEffectivePosition } from "../utils/utils";
@@ -24,21 +24,39 @@ interface ListRow extends Record<string, unknown> {
   wageDemand: number | null;
   expires: Date | null;
   note: string;
+  identity?: PlayerIdentity;
 }
 
 export function ListsView() {
   useDocumentTitle("Lists");
-  const { lists, annotations, isLoaded, createList, renameList, deleteList, removeFromList } =
-    usePlayerNotes();
+  const {
+    lists,
+    annotations,
+    isLoaded,
+    loadError,
+    createList,
+    renameList,
+    deleteList,
+    removeFromList,
+  } = usePlayerNotes();
   const [players, setPlayers] = useState<Player[]>([]);
   const [playersLoaded, setPlayersLoaded] = useState(false);
+  const [playersError, setPlayersError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string | null>(null);
 
   useEffect(() => {
-    db.getAllPlayers().then((loaded) => {
-      setPlayers(loaded);
-      setPlayersLoaded(true);
-    });
+    async function loadPlayers() {
+      try {
+        const loaded = await db.getAllPlayers();
+        setPlayers(loaded);
+      } catch (err) {
+        setPlayersError(err instanceof Error ? err.message : "Failed to load players");
+      } finally {
+        setPlayersLoaded(true);
+      }
+    }
+
+    loadPlayers();
   }, []);
 
   const playersByUid = useMemo(
@@ -62,6 +80,11 @@ export function ListsView() {
       uids.map((uid) => {
         const player = playersByUid.get(uid);
         const annotation = annotations.get(uid);
+        const identity: PlayerIdentity | undefined = player
+          ? { Name: player.Name, Club: player.Club }
+          : annotation?.lastKnownName
+            ? { Name: annotation.lastKnownName, Club: annotation.lastKnownClub ?? "" }
+            : undefined;
         return {
           uid,
           name: player?.Name ?? annotation?.lastKnownName ?? `UID ${uid}`,
@@ -75,6 +98,7 @@ export function ListsView() {
           wageDemand: annotation?.wageDemand ?? null,
           expires: player?.Expires ?? null,
           note: annotation?.note ?? "",
+          identity,
         };
       }),
     [uids, playersByUid, annotations]
@@ -93,6 +117,20 @@ export function ListsView() {
     );
   }
 
+  if (loadError || playersError) {
+    return (
+      <Box minH="100vh" p={8}>
+        <Container maxW="container.xl">
+          <VStack gap={4}>
+            <Box p={4} borderRadius="md" bg="red.500" color="white">
+              <Text fontWeight="medium">{loadError ?? playersError}</Text>
+            </Box>
+          </VStack>
+        </Container>
+      </Box>
+    );
+  }
+
   const missingCount = rows.filter((row) => row.missing).length;
 
   const columns: Column<ListRow>[] = [
@@ -101,12 +139,7 @@ export function ListsView() {
       header: "",
       sortable: false,
       width: "56px",
-      render: (_value, row) => (
-        <PlayerStatusControl
-          uid={row.uid}
-          player={{ Name: row.name, Club: row.club }}
-        />
-      ),
+      render: (_value, row) => <PlayerStatusControl uid={row.uid} player={row.identity} />,
     },
     {
       key: "name",
