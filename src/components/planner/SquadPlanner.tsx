@@ -3,6 +3,7 @@ import type { Player } from "../../types/types";
 import { FORMATIONS, getFormation } from "../../formations";
 import { useSquadPlan } from "../../contexts/SquadPlanContext";
 import { PlannerBoard } from "./PlannerBoard";
+import { PlannerToolbar } from "./PlannerToolbar";
 
 export function SquadPlanner({ club }: { club: string; players: Player[] }) {
   const { plan, isLoaded, setFormation } = useSquadPlan();
@@ -38,5 +39,10 @@ export function SquadPlanner({ club }: { club: string; players: Player[] }) {
     );
   }
 
-  return <PlannerBoard formation={formation} />;
+  return (
+    <VStack align="stretch" gap={4}>
+      <PlannerToolbar formation={formation} />
+      <PlannerBoard formation={formation} />
+    </VStack>
+  );
 }
