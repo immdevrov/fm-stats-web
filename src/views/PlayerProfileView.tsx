@@ -34,6 +34,8 @@ import { formatWage, displayDate, formatPositions, getEffectivePosition, getPerc
 import { ROLE_CONFIG, STAT_LABELS, INVERTED_STATS, type RoleConfig } from "../roles";
 import { PercentileBar } from "../components/PercentileBar";
 import { SimilarPlayers } from "../components/SimilarPlayers";
+import { PlayerStatusControl } from "../components/PlayerStatusControl";
+import { PricingFields } from "../components/PricingFields";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 
 export function PlayerProfileView() {
@@ -135,6 +137,7 @@ function PlayerInfoColumn({ player, onPlayerUpdate }: { player: Player; onPlayer
   return (
     <VStack w="40%" align="stretch" gap={2}>
       <PlayerHeader player={player} onPlayerUpdate={onPlayerUpdate} />
+      <PricingSection player={player} />
       <PlayingTimeSection player={player} />
 
       {isGoalkeeper ? (
@@ -143,6 +146,17 @@ function PlayerInfoColumn({ player, onPlayerUpdate }: { player: Player; onPlayer
         <OutfieldStatsSection player={player} />
       )}
     </VStack>
+  );
+}
+
+function PricingSection({ player }: { player: Player }) {
+  return (
+    <Box borderWidth="1px" borderRadius="md" p={2}>
+      <Heading size="sm" mb={1}>
+        Pricing
+      </Heading>
+      <PricingFields uid={player.UID} player={{ Name: player.Name, Club: player.Club }} />
+    </Box>
   );
 }
 
@@ -293,6 +307,7 @@ function PlayerHeader({ player, onPlayerUpdate }: { player: Player; onPlayerUpda
             <Text color="fg.emphasized">Position</Text>
             <HStack gap={1}>
               <Text fontWeight="medium">{formatPositions(getEffectivePosition(player))}</Text>
+              <PlayerStatusControl uid={player.UID} player={{ Name: player.Name, Club: player.Club }} />
               {player.CustomPosition && (
                 <Badge colorPalette="glaucous" variant="subtle" size="sm">Edited</Badge>
               )}
