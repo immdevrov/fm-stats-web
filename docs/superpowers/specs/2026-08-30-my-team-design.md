@@ -166,3 +166,29 @@ Deliberately deferred, recorded so they are not rediscovered as bugs:
   this iteration does not justify.
 - **Team statistics** — the rest of sub-project B. `/my-team` is the screen it
   lands on.
+
+Raised by the final review of this sub-project and deliberately not fixed in it:
+
+- **`openDB` has no `blocked` / `blocking` handler**
+  (`src/services/db/connection.ts`). Deploy while a user holds a tab open, and
+  that tab keeps the old version's connection; the next tab's `openDB` at the
+  new version fires `blocked`, never settles, and — because `dbPromise` caches
+  the pending promise — every view in it spins forever with no error. Present
+  since v2 and hit at every version bump. The fix is a `blocking()` that closes
+  the connection plus a `blocked()` that surfaces a "close your other tabs"
+  message instead of hanging.
+- **`settings.ts` inlines its store access** rather than keeping a private
+  untyped get/set behind the typed pair, as the Data model section above
+  describes. Fine for one setting; the second preference will copy two
+  `try`/`catch` blocks instead of composing.
+- **`/my-team` and `/teams` disagree on what counts as a club.** `MyTeamView`
+  filters falsy club names out; `TeamsView` maps them to `"Unknown"`. For a
+  malformed export, `/teams` therefore offers an "Unknown" club whose page can
+  be claimed as My Team, after which `getPlayersByClub` never resolves it.
+  Recoverable in-view via "Change club".
+- **`compare-list.spec.ts` failed once, unreproducibly**, immediately after the
+  merge, then passed seven consecutive runs including the identical command
+  chain. The failure artifacts were overwritten before they could be read, so
+  the cause is unknown. The only recent change to that test's surface is the
+  seed helper now importing `DB_VERSION` from `connection.ts`, which pulls app
+  code through Playwright's transform for the first time.
