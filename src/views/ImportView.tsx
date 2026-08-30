@@ -51,7 +51,12 @@ export function ImportView() {
       const available: PreserveCategory[] = [];
       if (rankings.length > 0) available.push("rankings");
       if (annotations.some((a) => a.customPosition)) available.push("positions");
-      if (lists.length > 0 || annotations.some((a) => a.unwanted || a.price || a.note)) {
+      if (
+        lists.length > 0 ||
+        annotations.some(
+          (a) => a.unwanted || a.price !== undefined || a.wageDemand !== undefined || a.note
+        )
+      ) {
         available.push("lists");
       }
 
@@ -74,16 +79,7 @@ export function ImportView() {
       if (clear.includes("rankings")) await db.clearLeagueRankings();
       if (clear.includes("positions")) await db.clearAllCustomPositions();
 
-      if (clear.includes("lists")) {
-        const keptPositions = clear.includes("positions")
-          ? []
-          : (await db.getAnnotations()).filter((a) => a.customPosition);
-        await db.clearAllLists();
-        await db.clearAllAnnotations();
-        for (const annotation of keptPositions) {
-          await db.setAnnotation(annotation.uid, { customPosition: annotation.customPosition });
-        }
-      }
+      if (clear.includes("lists")) await db.clearListsAndAnnotations();
 
       await db.clearAllPlayers();
       await db.savePlayers(players);
@@ -189,8 +185,7 @@ export function ImportView() {
               size="sm"
               colorPalette="red"
               onClick={async () => {
-                await db.clearAllLists();
-                await db.clearAllAnnotations();
+                await db.clearListsAndAnnotations();
                 toaster.create({
                   title: "Lists Cleared",
                   description: "All lists, prices, notes and unwanted flags have been removed.",

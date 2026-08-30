@@ -93,6 +93,15 @@ export async function clearAllLists(): Promise<void> {
   }
 }
 
+export async function clearListsAndAnnotations(): Promise<void> {
+  const positions = (await getAnnotations()).filter((a) => a.customPosition);
+  await clearAllLists();
+  await clearAllAnnotations();
+  for (const annotation of positions) {
+    await setAnnotation(annotation.uid, { customPosition: annotation.customPosition });
+  }
+}
+
 export async function setUnwanted(
   uid: number,
   unwanted: boolean,
