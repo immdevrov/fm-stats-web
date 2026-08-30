@@ -143,6 +143,7 @@ function TeamProfileTable({ players, teamName }: { players: Player[]; teamName: 
   const columns: Column<TeamProfileRow>[] = [
     {
       key: "uid",
+      id: "status",
       header: "",
       sortable: false,
       width: "56px",

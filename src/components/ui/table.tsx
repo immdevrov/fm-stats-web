@@ -6,6 +6,7 @@ export type SortDirection = "asc" | "desc";
 
 export interface Column<T> {
   key: keyof T;
+  id?: string;
   header: string;
   headerTooltip?: string;
   render?: (value: T[keyof T], row: T) => React.ReactNode;
@@ -126,7 +127,7 @@ export function Table<T extends object>(props: TableProps<T>) {
           <ChakraTable.Row>
             {columns.map((column) => (
               <ChakraTable.ColumnHeader
-                key={String(column.key)}
+                key={column.id ?? String(column.key)}
                 cursor={column.sortable !== false ? "pointer" : "default"}
                 onClick={() =>
                   column.sortable !== false && handleSort(column.key)
@@ -171,7 +172,7 @@ export function Table<T extends object>(props: TableProps<T>) {
             >
               {columns.map((column) => (
                 <ChakraTable.Cell
-                  key={String(column.key)}
+                  key={column.id ?? String(column.key)}
                   borderRightWidth="1px"
                   borderColor="border.emphasized"
                   width={column.width}
