@@ -17,6 +17,7 @@ function App() {
       <Route path="/" element={<Layout />}>
         <Route index element={<Navigate to="/import" replace />} />
         <Route path="my-team" element={<MyTeamView />} />
+        <Route path="my-team/planner" element={<MyTeamView />} />
         <Route path="import" element={<ImportView />} />
         <Route path="leagues" element={<LeaguesView />} />
         <Route path="teams" element={<TeamsView />} />

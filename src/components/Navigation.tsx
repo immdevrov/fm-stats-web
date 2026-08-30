@@ -32,7 +32,8 @@ export function Navigation() {
 
       <VStack align="stretch" gap={2}>
         {navItems.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive =
+            location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
           return (
             <ChakraLink
               key={item.path}

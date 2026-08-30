@@ -1,15 +1,19 @@
-import { Container, Heading, VStack, Box, Text, Spinner, HStack, Button } from "@chakra-ui/react";
+import { Container, Heading, VStack, Box, Text, Spinner, HStack, Button, Tabs } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { db } from "../services/db";
 import type { Player } from "../types/types";
 import { SearchableSelect } from "../components/SearchableSelect";
 import { SquadTable } from "../components/SquadTable";
+import { SquadPlanner } from "../components/planner/SquadPlanner";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { useMyTeam } from "../contexts/MyTeamContext";
 
 export function MyTeamView() {
   const { myClub, isLoaded, setMyClub, clearMyClub } = useMyTeam();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const isPlanner = location.pathname === "/my-team/planner";
   useDocumentTitle(myClub ? `My Team: ${myClub}` : "My Team");
 
   const [clubs, setClubs] = useState<string[] | null>(null);
@@ -96,19 +100,40 @@ export function MyTeamView() {
 
   return (
     <Box minH="100vh" p={8}>
-      <Container maxW="container.lg">
+      <Container maxW={isPlanner ? "container.2xl" : "container.lg"}>
         <VStack gap={6} align="stretch">
           <HStack justify="space-between" align="center" flexWrap="wrap" gap={4}>
-            <Heading size="2xl" colorPalette="glaucous" color="fg.emphasized">
-              {myClub}
-            </Heading>
+            <HStack gap={3} align="baseline">
+              <Heading size="2xl" colorPalette="glaucous" color="fg.emphasized">
+                {myClub}
+              </Heading>
+              {players && (
+                <Text fontSize="sm" color="fg.muted">
+                  {players.length} players
+                </Text>
+              )}
+            </HStack>
             <Button size="sm" variant="outline" onClick={() => setIsPicking(true)}>
               Change club
             </Button>
           </HStack>
 
+          <Tabs.Root
+            value={isPlanner ? "planner" : "squad"}
+            onValueChange={(e) =>
+              navigate(e.value === "planner" ? "/my-team/planner" : "/my-team")
+            }
+          >
+            <Tabs.List>
+              <Tabs.Trigger value="squad">Squad</Tabs.Trigger>
+              <Tabs.Trigger value="planner">Planner</Tabs.Trigger>
+            </Tabs.List>
+          </Tabs.Root>
+
           {players === null ? (
             <Spinner size="lg" colorPalette="glaucous" alignSelf="center" />
+          ) : isPlanner ? (
+            <SquadPlanner club={myClub} players={players} />
           ) : players.length === 0 ? (
             <Text color="fg.muted">{myClub} is not in the current data.</Text>
           ) : (
