@@ -74,9 +74,13 @@ npm run preview  # Preview production build
 - **Display**: Horizontal bars with color coding (red < 30, yellow 30-60, green > 60)
 - **ROLE_CONFIG**: Defined in `src/roles/index.ts` - maps roles to their display stat keys
 
-### IndexedDB Schema (v2)
+### IndexedDB Schema (v5)
 - **players** store: keyPath `UID`, indexes: `by-name`, `by-club`, `by-position`
 - **leagueRankings** store: keyPath `rank`
+- **compareList** store: keyPath `id`
+- **playerAnnotations** store: keyPath `uid`
+- **playerLists** store: keyPath `id`
+- **settings** store: keyPath `key`
 - Batch writes use single transaction with `Promise.all()`
 - Connection is lazy (opens on first access)
 
@@ -138,11 +142,21 @@ Route: `/scouting` — role-based player scouting with percentile analysis.
 
 Users can override a player's imported positions from the Player Profile view.
 
-- **Storage**: Optional `CustomPosition?: PlayerPositions` field on the `Player` type (no IDB schema change needed)
+- **Storage**: `customPosition` on the `playerAnnotations` record, merged onto `Player` by the database layer on read and stripped on write
 - **Helper**: `getEffectivePosition(player)` returns `CustomPosition ?? Position` — used by all `isRole()` methods and position displays
 - **UI**: Edit button (pencil icon) next to position in PlayerHeader opens a dialog with position type + side checkboxes. "Edited" badge shown when custom position is set. X button clears the override.
 - **Clear options**: Per-player clear in profile view; "Clear All Custom Positions" button in Import view
 - **DB methods**: `updatePlayerPosition()`, `clearPlayerCustomPosition()`, `clearAllCustomPositions()`
+
+## My Team
+
+The user nominates one club as their own. Route: `/my-team`.
+
+- **Storage**: the club name in the `settings` store under key `myClub`, reached only through `db.getMyClub()` / `db.setMyClub()`. Living outside `players` means `clearAllPlayers()` cannot touch it, so the choice survives a re-import.
+- **State**: `MyTeamProvider` (`src/contexts/MyTeamContext.tsx`), mounted in `Layout`. `useMyTeam()` returns `myClub`, `isLoaded`, `setMyClub`, `clearMyClub`. Consumers must gate on `isLoaded` before rendering an empty state.
+- **Set from**: the `/my-team` picker, or "Set as My Team" on a team profile.
+- **Squad table**: `SquadTable` (`src/components/SquadTable.tsx`) is shared by `/my-team` and `/teams/:teamName`.
+- A club missing from the current import is kept, not cleared; the view says so.
 
 ## Type Utilities
 
