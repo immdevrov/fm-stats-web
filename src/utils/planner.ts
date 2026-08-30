@@ -14,7 +14,7 @@ export type PlacementIndex = Map<number, Placement[]>;
 
 function sideMatches(slotSide: PlayerPosition['side'], playerSide: PlayerPosition['side']): boolean {
   if (!slotSide?.length || !playerSide?.length) return true;
-  return slotSide.every((side) => playerSide.includes(side));
+  return slotSide.some((side) => playerSide.includes(side));
 }
 
 export function matchesSlot(player: PositionedPlayer, slot: FormationSlot): boolean {
@@ -81,7 +81,9 @@ export function countSlotsWithoutCover(plan: SquadPlan | null, slotCount: number
 }
 
 export function parseHorizon(horizon: string | null): Date | null {
-  if (!horizon || horizon.split('/').length !== 3) return null;
+  if (!horizon) return null;
+  const parts = horizon.split('/');
+  if (parts.length !== 3 || parts.some((part) => part.trim() === '')) return null;
   const date = parseCustomDate(horizon);
   return Number.isNaN(date.getTime()) ? null : date;
 }
