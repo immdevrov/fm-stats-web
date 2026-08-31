@@ -18,7 +18,7 @@ function CandidateRow({ player }: { player: Player }) {
       py="6px"
       gap={2}
       borderRadius="md"
-      bg={unwanted ? "bg.subtle" : undefined}
+      bg={unwanted ? "bg.muted" : undefined}
       _hover={{ bg: "bg.muted" }}
     >
       <VStack align="stretch" gap={0} flexGrow={1} minW={0} opacity={unwanted ? 0.5 : 1}>
