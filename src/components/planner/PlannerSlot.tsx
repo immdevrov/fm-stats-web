@@ -1,12 +1,23 @@
-import { Box, HStack, Text, VStack } from "@chakra-ui/react";
+import { Text, VStack } from "@chakra-ui/react";
 import type { FormationSlot } from "../../formations";
+import type { Player } from "../../types/types";
 import { slotLabel } from "../../utils/planner";
 import { useSquadPlan } from "../../contexts/SquadPlanContext";
 import { MAX_DEPTH } from "../../types/planner";
+import { PlannerCard } from "./PlannerCard";
+import { CandidatePopover } from "./CandidatePopover";
 
 const EMPTY_LABEL = ["Nobody", "No cover", "Add"];
 
-export function PlannerSlot({ slot }: { slot: FormationSlot }) {
+export function PlannerSlot({
+  slot,
+  candidates,
+  byUid,
+}: {
+  slot: FormationSlot;
+  candidates: Player[];
+  byUid: Map<number, Player>;
+}) {
   const { plan } = useSquadPlan();
   const placed = plan?.slots.find((s) => s.slotId === slot.id)?.players ?? [];
 
@@ -22,21 +33,18 @@ export function PlannerSlot({ slot }: { slot: FormationSlot }) {
         {slotLabel(slot)}
       </Text>
 
+      {placed.map((planned, rank) => (
+        <PlannerCard
+          key={planned.uid}
+          slot={slot}
+          planned={planned}
+          rank={rank}
+          player={byUid.get(planned.uid)}
+        />
+      ))}
+
       {placed.length < MAX_DEPTH && (
-        <HStack
-          justify="center"
-          gap="6px"
-          borderWidth="1px"
-          borderStyle="dashed"
-          borderColor="border.emphasized"
-          borderRadius="md"
-          p="10px"
-          color="softBlush.700"
-          fontSize="xs"
-        >
-          <Box aria-hidden>&#43;</Box>
-          <Text>{EMPTY_LABEL[placed.length]}</Text>
-        </HStack>
+        <CandidatePopover slot={slot} squad={candidates} label={EMPTY_LABEL[placed.length]} />
       )}
     </VStack>
   );

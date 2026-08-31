@@ -1,12 +1,34 @@
+import { useEffect, useMemo, useState } from "react";
 import { Button, Heading, SimpleGrid, Spinner, Text, VStack } from "@chakra-ui/react";
 import type { Player } from "../../types/types";
 import { FORMATIONS, getFormation } from "../../formations";
+import { db } from "../../services/db";
 import { useSquadPlan } from "../../contexts/SquadPlanContext";
+import { usePlayerNotes } from "../../contexts/PlayerNotesContext";
 import { PlannerBoard } from "./PlannerBoard";
 import { PlannerToolbar } from "./PlannerToolbar";
 
-export function SquadPlanner({ club }: { club: string; players: Player[] }) {
-  const { plan, isLoaded, setFormation } = useSquadPlan();
+export function SquadPlanner({ club, players }: { club: string; players: Player[] }) {
+  const { lists } = usePlayerNotes();
+  const { plan, isLoaded, setFormation, refreshSnapshots } = useSquadPlan();
+  const [allPlayers, setAllPlayers] = useState<Player[] | null>(null);
+
+  useEffect(() => {
+    db.getAllPlayers().then(setAllPlayers);
+  }, []);
+
+  const listed = useMemo(() => {
+    if (!allPlayers) return [];
+    const uids = new Set(lists.flatMap((list) => list.uids));
+    return allPlayers.filter((player) => uids.has(player.UID));
+  }, [allPlayers, lists]);
+
+  useEffect(() => {
+    if (!isLoaded || !plan || !allPlayers) return;
+    refreshSnapshots(
+      new Map(allPlayers.map((p) => [p.UID, { name: p.Name, club: p.Club }]))
+    );
+  }, [isLoaded, plan, allPlayers, refreshSnapshots]);
 
   if (!isLoaded) {
     return <Spinner size="lg" colorPalette="glaucous" alignSelf="center" />;
@@ -42,7 +64,7 @@ export function SquadPlanner({ club }: { club: string; players: Player[] }) {
   return (
     <VStack align="stretch" gap={4}>
       <PlannerToolbar formation={formation} />
-      <PlannerBoard formation={formation} />
+      <PlannerBoard formation={formation} squad={players} listed={listed} />
     </VStack>
   );
 }
