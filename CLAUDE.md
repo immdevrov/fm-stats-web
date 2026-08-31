@@ -99,6 +99,23 @@ The user nominates one club as their own. Route: `/my-team`.
 - **Storage**: the club name in the `settings` store under key `myClub`, reached only through `db.getMyClub()` / `db.setMyClub()`. Living outside `players` means `clearAllPlayers()` cannot touch it, so the choice survives a re-import.
 - **State**: `MyTeamProvider` (`src/contexts/MyTeamContext.tsx`), mounted in `Layout`. `useMyTeam()` returns `myClub`, `isLoaded`, `setMyClub`, `clearMyClub`. Every consumer that renders based on `myClub` (the "Set as My Team" control on a team profile, the `/my-team` squad branch) gates on `isLoaded` first, so it never shows a default "no club" state before the initial read resolves. A club the user sets or clears while that read is still in flight is never overwritten by it landing late.
 - **Set from**: the `/my-team` picker, or "Set as My Team" on a team profile.
+- **Tabs**: `MyTeamView` is a shell. It owns the club gate — loading, no club, club absent from the current import — in one place and renders either `SquadTable` (`/my-team`) or `SquadPlanner` (`/my-team/planner`), each handed a club known to exist. The two tabs are two routes so a reload and a bookmark land where the user left off.
 - **Squad table**: `SquadTable` (`src/components/SquadTable.tsx`) is shared by `/my-team` and `/teams/:teamName`; it takes only `players` and reads each row's own club from `Player.Club`.
 - `/my-team`'s club picker also loads the full club list (`db.getAllPlayers()`) to populate its `SearchableSelect`. That load is independent of `MyTeamProvider`'s `isLoaded` and only blocks the picker branch, not a returning user's squad view.
 - A club missing from the current import is kept, not cleared; the view says so.
+
+## Squad Planner
+
+Route: `/my-team/planner`, the second tab of `/my-team`. Lays the squad and the
+shortlist onto a formation as one ranked depth stack per slot.
+
+- **Storage**: one `SquadPlan` value in the `settings` store under key `squadPlan`, reached through `db.getSquadPlan()` / `db.setSquadPlan()`. No schema change — the database stays at version 5 — and a re-import cannot touch it, so the board survives one. It deliberately does not join the import "Preserve data" dialog: that dialog lists what an import can destroy, and this is not that.
+- **Settings module**: `src/services/db/settings.ts` keeps a private untyped `_get`/`_set` pair and composes the typed accessors over it, so a third setting adds a pair of one-liners rather than another two `try`/`catch` blocks.
+- **State**: `SquadPlanProvider` (`src/contexts/SquadPlanContext.tsx`), mounted in `Layout` inside `MyTeamProvider`. `useSquadPlan()` returns the plan, `isLoaded`, a memoised `placements` index, and the mutators. Gate on `isLoaded` before rendering: without it the formation picker flashes before a saved plan arrives, and a plan created in that frame would be overwritten by the read landing late.
+- **Formations**: static data in `src/formations/index.ts`, never persisted — the plan stores only `formationId`. Slots carry a `row` (0 = goalkeeper, increasing towards the attack) rather than pitch coordinates, and are ordered left to right within a row. Eight shapes; a ninth is a data edit.
+- **Matching is strict** (`matchesSlot` in `src/utils/planner.ts`): no `D`/`WB`, `M`/`DM` or left/right equivalence. The one allowance is a missing `side` on either side of the comparison, because the export writes `DM` with no side. A full-back in a `WB` slot is therefore out of position, which is what the game does too.
+- **Nothing about a card is stored.** Out of position, unwanted, listed, injury-prone, contract and counted-elsewhere are all derived on render from the plan, the player record and the annotations.
+- **No statistics.** The planner computes nothing — it links through to the player profile instead. Its first choices are the seam the future team-statistics screen reads.
+- **Planning date**: the toolbar's "Planning for" field, empty by default. A contract expiring on or before it turns paprika; empty means no contract tint. Nothing is derived from the machine's clock — the app does not know the save's date.
+- **Formation switch clears the board**, after a confirm raised by the toolbar (the provider's `setFormation` does not ask). The plan is not keyed by formation id on purpose: two plans for the same shape is what named plans will need, so that key would already be wrong.
+- **Orphans**: a placed player missing from the current import keeps his slot and rank, renders from the `name`/`club` snapshot, and is counted in the toolbar with a "Remove missing" action.
