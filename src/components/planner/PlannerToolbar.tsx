@@ -1,17 +1,26 @@
 import { useState } from "react";
-import { HStack, Input, NativeSelect, Text } from "@chakra-ui/react";
+import { Button, HStack, Input, NativeSelect, Text } from "@chakra-ui/react";
 import type { Formation } from "../../formations";
 import { FORMATIONS } from "../../formations";
 import { countSlotsWithoutCover } from "../../utils/planner";
 import { useSquadPlan } from "../../contexts/SquadPlanContext";
 import { ConfirmDialog } from "../ui/confirm-dialog";
 
-export function PlannerToolbar({ formation }: { formation: Formation }) {
-  const { plan, setFormation, setHorizon } = useSquadPlan();
+export function PlannerToolbar({
+  formation,
+  presentUids,
+}: {
+  formation: Formation;
+  presentUids: Set<number>;
+}) {
+  const { plan, setFormation, setHorizon, removeMissing } = useSquadPlan();
   const [pendingFormation, setPendingFormation] = useState<string | null>(null);
 
   const uncovered = countSlotsWithoutCover(plan, formation.slots.length);
   const hasPlacements = (plan?.slots ?? []).some((slot) => slot.players.length > 0);
+  const missing = (plan?.slots ?? [])
+    .flatMap((slot) => slot.players)
+    .filter((player) => !presentUids.has(player.uid)).length;
 
   const handleSelect = (id: string) => {
     if (id === formation.id) return;
@@ -55,6 +64,17 @@ export function PlannerToolbar({ formation }: { formation: Formation }) {
             ? "Every slot has cover"
             : `${uncovered} ${uncovered === 1 ? "slot has" : "slots have"} no cover`}
         </Text>
+
+        {missing > 0 && (
+          <HStack gap={2}>
+            <Text fontSize="sm" color="spicyPaprika.500">
+              {missing} not in current data
+            </Text>
+            <Button size="xs" variant="outline" onClick={() => removeMissing(presentUids)}>
+              Remove missing
+            </Button>
+          </HStack>
+        )}
       </HStack>
 
       <ConfirmDialog

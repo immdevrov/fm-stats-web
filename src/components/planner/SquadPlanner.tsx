@@ -24,6 +24,11 @@ export function SquadPlanner({ club, players }: { club: string; players: Player[
     return allPlayers.filter((player) => uids.has(player.UID));
   }, [allPlayers, lists]);
 
+  const presentUids = useMemo(
+    () => new Set((allPlayers ?? []).map((player) => player.UID)),
+    [allPlayers]
+  );
+
   useEffect(() => {
     if (!isLoaded || !plan || !allPlayers) return;
     refreshSnapshots(
@@ -31,7 +36,7 @@ export function SquadPlanner({ club, players }: { club: string; players: Player[
     );
   }, [isLoaded, plan, allPlayers, refreshSnapshots]);
 
-  if (!isLoaded) {
+  if (!isLoaded || allPlayers === null) {
     return <Spinner size="lg" colorPalette="glaucous" alignSelf="center" />;
   }
 
@@ -64,7 +69,7 @@ export function SquadPlanner({ club, players }: { club: string; players: Player[
 
   return (
     <VStack align="stretch" gap={4}>
-      <PlannerToolbar formation={formation} />
+      <PlannerToolbar formation={formation} presentUids={presentUids} />
       <HStack align="stretch" gap={6}>
         <PlannerBoard formation={formation} squad={players} listed={listed} />
         <CandidatePanel squad={players} listed={listed} />
