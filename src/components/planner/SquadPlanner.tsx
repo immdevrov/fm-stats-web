@@ -71,7 +71,7 @@ export function SquadPlanner({ club, players }: { club: string; players: Player[
     <VStack align="stretch" gap={4}>
       <PlannerToolbar formation={formation} presentUids={presentUids} />
       <HStack align="stretch" gap={6}>
-        <PlannerBoard formation={formation} squad={players} listed={listed} />
+        <PlannerBoard formation={formation} squad={players} listed={listed} allPlayers={allPlayers} />
         <CandidatePanel squad={players} listed={listed} />
       </HStack>
     </VStack>

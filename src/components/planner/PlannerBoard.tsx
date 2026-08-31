@@ -8,10 +8,12 @@ export function PlannerBoard({
   formation,
   squad,
   listed,
+  allPlayers,
 }: {
   formation: Formation;
   squad: Player[];
   listed: Player[];
+  allPlayers: Player[];
 }) {
   const candidates = useMemo(() => {
     const byUid = new Map(listed.map((player) => [player.UID, player]));
@@ -19,7 +21,7 @@ export function PlannerBoard({
     return [...byUid.values()].sort((a, b) => a.Name.localeCompare(b.Name));
   }, [squad, listed]);
 
-  const byUid = useMemo(() => new Map(candidates.map((p) => [p.UID, p])), [candidates]);
+  const byUid = useMemo(() => new Map(allPlayers.map((p) => [p.UID, p])), [allPlayers]);
 
   const rows = [...new Set(formation.slots.map((slot) => slot.row))].sort((a, b) => b - a);
 
