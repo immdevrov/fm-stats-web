@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button, Heading, SimpleGrid, Spinner, Text, VStack } from "@chakra-ui/react";
+import { Button, Heading, HStack, SimpleGrid, Spinner, Text, VStack } from "@chakra-ui/react";
 import type { Player } from "../../types/types";
 import { FORMATIONS, getFormation } from "../../formations";
 import { db } from "../../services/db";
@@ -7,6 +7,7 @@ import { useSquadPlan } from "../../contexts/SquadPlanContext";
 import { usePlayerNotes } from "../../contexts/PlayerNotesContext";
 import { PlannerBoard } from "./PlannerBoard";
 import { PlannerToolbar } from "./PlannerToolbar";
+import { CandidatePanel } from "./CandidatePanel";
 
 export function SquadPlanner({ club, players }: { club: string; players: Player[] }) {
   const { lists } = usePlayerNotes();
@@ -64,7 +65,10 @@ export function SquadPlanner({ club, players }: { club: string; players: Player[
   return (
     <VStack align="stretch" gap={4}>
       <PlannerToolbar formation={formation} />
-      <PlannerBoard formation={formation} squad={players} listed={listed} />
+      <HStack align="stretch" gap={6}>
+        <PlannerBoard formation={formation} squad={players} listed={listed} />
+        <CandidatePanel squad={players} listed={listed} />
+      </HStack>
     </VStack>
   );
 }
