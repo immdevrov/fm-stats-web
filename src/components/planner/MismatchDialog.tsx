@@ -2,7 +2,7 @@ import { Button, Dialog, HStack, Portal, Text, VStack } from "@chakra-ui/react";
 import type { FormationSlot } from "../../formations";
 import { getFormation } from "../../formations";
 import type { Player } from "../../types/types";
-import type { PlannedPlayer } from "../../types/planner";
+import { MAX_DEPTH, type PlannedPlayer } from "../../types/planner";
 import { formatPositions, getEffectivePosition } from "../../utils/utils";
 import { matchesSlot, slotLabel } from "../../utils/planner";
 import { useSquadPlan } from "../../contexts/SquadPlanContext";
@@ -27,14 +27,15 @@ export function MismatchDialog({
   const { refresh } = usePlayerNotes();
 
   const formation = plan ? getFormation(plan.formationId) : undefined;
-  const openMatching = (formation?.slots ?? []).filter(
-    (candidate) =>
+  const openMatching = (formation?.slots ?? []).filter((candidate) => {
+    const candidatePlayers = plan?.slots.find((s) => s.slotId === candidate.id)?.players ?? [];
+    return (
       candidate.id !== slot.id &&
       matchesSlot(player, candidate) &&
-      !(plan?.slots.find((s) => s.slotId === candidate.id)?.players ?? []).some(
-        (p) => p.uid === planned.uid
-      )
-  );
+      !candidatePlayers.some((p) => p.uid === planned.uid) &&
+      candidatePlayers.length < MAX_DEPTH
+    );
+  });
 
   const addPosition = async () => {
     try {
