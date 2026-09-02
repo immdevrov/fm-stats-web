@@ -32,7 +32,12 @@ import {
   extractGoalkeeperStats,
 } from "../types/stat-categories";
 import { formatWage, displayDate, formatPositions, getEffectivePosition, getPercentile, getColumn } from "../utils/utils";
-import { ROLE_CONFIG, STAT_LABELS, INVERTED_STATS, type RoleConfig } from "../roles";
+import { ROLE_CONFIG, INVERTED_STATS, type RoleConfig } from "../roles";
+import {
+  getComparisonCohort,
+  calculateRolePercentiles,
+  type StatPercentile,
+} from "../utils/role-percentiles";
 import { PercentileBar } from "../components/PercentileBar";
 import { SimilarPlayers } from "../components/SimilarPlayers";
 import { PlayerStatusControl } from "../components/PlayerStatusControl";
@@ -664,54 +669,8 @@ function formatPercent(value: number): string {
   return `${value.toFixed(1)}%`;
 }
 
-interface StatPercentile {
-  statKey: string;
-  label: string;
-  value: number;
-  percentile: number;
-}
-
 function getPlayerRoles(player: Player): RoleConfig[] {
   return ROLE_CONFIG.filter(({ RoleClass }) => RoleClass.isRole(player));
-}
-
-function getComparisonCohort(
-  RoleClass: RoleConfig["RoleClass"],
-  allPlayers: Player[],
-  leagueRankings: LeagueRanking[],
-  sameLeagueOnly?: string
-): Record<string, unknown>[] {
-  const rankedLeagues = new Set(
-    leagueRankings.filter((r) => r.rank < 999).map((r) => r.league)
-  );
-
-  return allPlayers
-    .filter(
-      (p) =>
-        RoleClass.isRole(p) &&
-        rankedLeagues.has(p.Division) &&
-        p.Mins >= 900 &&
-        (!sameLeagueOnly || p.Division === sameLeagueOnly)
-    )
-    .map((p) => new RoleClass(p) as unknown as Record<string, unknown>);
-}
-
-function calculateRolePercentiles(
-  playerRole: Record<string, unknown>,
-  cohort: Record<string, unknown>[],
-  statKeys: string[]
-): StatPercentile[] {
-  return statKeys.map((key) => {
-    const playerValue = playerRole[key] as number;
-    const cohortValues = getColumn(cohort, key) as number[];
-
-    return {
-      statKey: key,
-      label: STAT_LABELS[key] ?? key,
-      value: playerValue,
-      percentile: getPercentile(playerValue, cohortValues),
-    };
-  });
 }
 
 function ComparisonColumn({ player, allPlayers }: { player: Player; allPlayers: Player[] | null }) {

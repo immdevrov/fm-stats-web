@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Box, Heading, Spinner, Table, Text, VStack } from "@chakra-ui/react";
+import { Box, Button, Heading, Spinner, Table, Text, VStack } from "@chakra-ui/react";
 import { db } from "../services/db";
 import { ROLE_CONFIG, STAT_LABELS } from "../roles";
+import { getComparisonCohort, calculateRolePercentiles } from "../utils/role-percentiles";
 import { isoToDisplay } from "../utils/import-date";
 import type { PlayerHistoryEntry } from "../types/snapshot";
 
@@ -16,6 +17,8 @@ function statValue(entry: PlayerHistoryEntry, roleKey: string | null, statKey: s
 
 export function PlayerHistory({ uid, roleKey }: { uid: number; roleKey: string | null }) {
   const [entries, setEntries] = useState<PlayerHistoryEntry[] | null>(null);
+  const [ranked, setRanked] = useState<Record<string, Record<string, number>>>({});
+  const [ranking, setRanking] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -26,6 +29,26 @@ export function PlayerHistory({ uid, roleKey }: { uid: number; roleKey: string |
       cancelled = true;
     };
   }, [uid]);
+
+  const rankRow = (entry: PlayerHistoryEntry) => {
+    const config = ROLE_CONFIG.find((role) => role.key === roleKey);
+    if (!config || !config.RoleClass.isRole(entry.player)) return;
+
+    setRanking(entry.snapshot.id);
+    Promise.all([db.getSnapshotRoster(entry.snapshot.id), db.getLeagueRankings()])
+      .then(([roster, rankings]) => {
+        const cohort = getComparisonCohort(config.RoleClass, roster, rankings);
+        const playerRole = new config.RoleClass(entry.player) as unknown as Record<string, unknown>;
+        const percentiles = calculateRolePercentiles(playerRole, cohort, config.statKeys);
+        setRanked((prev) => ({
+          ...prev,
+          [entry.snapshot.id]: Object.fromEntries(percentiles.map((p) => [p.statKey, p.percentile])),
+        }));
+      })
+      .finally(() => {
+        setRanking(null);
+      });
+  };
 
   if (entries === null) return <Spinner size="sm" colorPalette="glaucous" />;
   if (entries.length <= 1) return null;
@@ -40,7 +63,7 @@ export function PlayerHistory({ uid, roleKey }: { uid: number; roleKey: string |
         </Heading>
         <Text fontSize="sm" color="fg.muted">
           Raw per-90 figures as imported. These are not percentiles — league quality drifts
-          between dates.
+          between dates. Rank a row against its own snapshot's cohort on demand.
         </Text>
 
         <Box overflowX="auto">
@@ -55,6 +78,7 @@ export function PlayerHistory({ uid, roleKey }: { uid: number; roleKey: string |
                 {statKeys.map((key) => (
                   <Table.ColumnHeader key={key}>{STAT_LABELS[key] ?? key}</Table.ColumnHeader>
                 ))}
+                <Table.ColumnHeader />
               </Table.Row>
             </Table.Header>
             <Table.Body>
@@ -68,8 +92,24 @@ export function PlayerHistory({ uid, roleKey }: { uid: number; roleKey: string |
                   <Table.Cell>{entry.player.Starts}</Table.Cell>
                   <Table.Cell>{entry.player.Mins}</Table.Cell>
                   {statKeys.map((key) => (
-                    <Table.Cell key={key}>{statValue(entry, roleKey, key)}</Table.Cell>
+                    <Table.Cell key={key}>
+                      {ranked[entry.snapshot.id]?.[key] !== undefined
+                        ? `${Math.round(ranked[entry.snapshot.id][key])}%`
+                        : statValue(entry, roleKey, key)}
+                    </Table.Cell>
                   ))}
+                  <Table.Cell whiteSpace="nowrap">
+                    {!ranked[entry.snapshot.id] && roleKey && (
+                      <Button
+                        size="xs"
+                        variant="outline"
+                        loading={ranking === entry.snapshot.id}
+                        onClick={() => rankRow(entry)}
+                      >
+                        Rank this row
+                      </Button>
+                    )}
+                  </Table.Cell>
                 </Table.Row>
               ))}
             </Table.Body>
