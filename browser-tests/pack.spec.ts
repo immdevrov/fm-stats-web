@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { parseCustomDate } from '../src/utils/utils';
+import { deriveDateFromFilename, displayToIso, isoToDisplay } from '../src/utils/import-date';
 import { PLAYER_FIELDS, pack, unpack } from '../src/services/db/pack';
 import { sortSnapshots, newestSnapshot } from '../src/utils/snapshot-order';
 import type { Player } from '../src/types/types';
@@ -85,4 +86,28 @@ test('an undated snapshot alone is the newest', () => {
 test('importedAt breaks a tie between equal dates', () => {
   const sameDay = [snap('first', '2035-01-24', 1), snap('second', '2035-01-24', 2)];
   expect(sortSnapshots(sameDay).map((s) => s.id)).toEqual(['second', 'first']);
+});
+
+test('derives the date from a team_date filename', () => {
+  expect(deriveDateFromFilename('emmen_24_01_2035.html')).toBe('2035-01-24');
+});
+
+test('accepts hyphens and a club name containing digits', () => {
+  expect(deriveDateFromFilename('fc-utrecht-2-24-01-2035.htm')).toBe('2035-01-24');
+});
+
+test('rejects a filename with no trailing date', () => {
+  expect(deriveDateFromFilename('squad-export.html')).toBeNull();
+});
+
+test('rejects an impossible date', () => {
+  expect(deriveDateFromFilename('emmen_32_01_2035.html')).toBeNull();
+  expect(deriveDateFromFilename('emmen_24_13_2035.html')).toBeNull();
+});
+
+test('converts between display and iso', () => {
+  expect(displayToIso('24/01/2035')).toBe('2035-01-24');
+  expect(displayToIso('nonsense')).toBeNull();
+  expect(isoToDisplay('2035-01-24')).toBe('24/01/2035');
+  expect(isoToDisplay(null)).toBe('');
 });
