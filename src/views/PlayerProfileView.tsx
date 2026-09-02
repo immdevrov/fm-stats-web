@@ -37,24 +37,30 @@ import { PercentileBar } from "../components/PercentileBar";
 import { SimilarPlayers } from "../components/SimilarPlayers";
 import { PlayerStatusControl } from "../components/PlayerStatusControl";
 import { PricingFields } from "../components/PricingFields";
+import { PlayerHistory } from "../components/PlayerHistory";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
+
+interface MissingIdentity {
+  name: string;
+  club: string;
+}
 
 export function PlayerProfileView() {
   const { playerId } = useParams<{ playerId: string }>();
   const navigate = useNavigate();
+  const uid = playerId ? parseInt(playerId, 10) : NaN;
   const [player, setPlayer] = useState<Player | null>(null);
+  const [missingIdentity, setMissingIdentity] = useState<MissingIdentity | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { players: allPlayers } = useRoster();
-  useDocumentTitle(player ? `Player: ${player.Name}` : "Player");
+  useDocumentTitle(player ? `Player: ${player.Name}` : missingIdentity ? missingIdentity.name : "Player");
 
   const reloadPlayer = useCallback(async () => {
-    if (!playerId) return;
-    const uid = parseInt(playerId, 10);
     if (isNaN(uid)) return;
     const updated = await db.getPlayer(uid);
     if (updated) setPlayer(updated);
-  }, [playerId]);
+  }, [uid]);
 
   useEffect(() => {
     async function loadPlayer() {
@@ -64,21 +70,32 @@ export function PlayerProfileView() {
         return;
       }
 
-      try {
-        const uid = parseInt(playerId, 10);
-        if (isNaN(uid)) {
-          setError("Invalid player ID");
-          setIsLoading(false);
-          return;
-        }
+      if (isNaN(uid)) {
+        setError("Invalid player ID");
+        setIsLoading(false);
+        return;
+      }
 
+      try {
         const playerData = await db.getPlayer(uid);
         if (!playerData) {
-          setError("Player not found");
+          const annotation = await db.getAnnotation(uid);
+          if (!annotation) {
+            setError("Player not found");
+            setIsLoading(false);
+            return;
+          }
+          setMissingIdentity({
+            name: annotation.lastKnownName ?? "Unknown player",
+            club: annotation.lastKnownClub ?? "",
+          });
+          setPlayer(null);
           setIsLoading(false);
           return;
         }
 
+        setError(null);
+        setMissingIdentity(null);
         setPlayer(playerData);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load player");
@@ -88,7 +105,7 @@ export function PlayerProfileView() {
     }
 
     loadPlayer();
-  }, [playerId]);
+  }, [playerId, uid]);
 
   if (isLoading) {
     return (
@@ -103,7 +120,7 @@ export function PlayerProfileView() {
     );
   }
 
-  if (error || !player) {
+  if (error || (!player && !missingIdentity)) {
     return (
       <Box minH="100vh" p={8}>
         <Container maxW="container.xl">
@@ -119,6 +136,33 @@ export function PlayerProfileView() {
       </Box>
     );
   }
+
+  if (missingIdentity) {
+    return (
+      <Box minH="100vh" p={3}>
+        <Container maxW="container.xl">
+          <VStack align="stretch" gap={3}>
+            <Box borderWidth="1px" borderRadius="md" p={2}>
+              <Heading size="lg" color="fg.emphasized">
+                {missingIdentity.name}
+              </Heading>
+              {missingIdentity.club && (
+                <Text color="fg.muted" fontSize="sm">
+                  {missingIdentity.club}
+                </Text>
+              )}
+              <Text color="fg.muted" fontSize="sm" mt={1}>
+                Not in the selected date's data.
+              </Text>
+            </Box>
+            <PlayerHistory uid={uid} roleKey={null} />
+          </VStack>
+        </Container>
+      </Box>
+    );
+  }
+
+  if (!player) return null;
 
   return (
     <Box minH="100vh" p={3}>
@@ -817,6 +861,10 @@ function ComparisonColumn({ player, allPlayers }: { player: Player; allPlayers: 
           targetPercentiles={targetPercentiles}
         />
       )}
+
+      <Box mt={3}>
+        <PlayerHistory uid={player.UID} roleKey={selectedRole} />
+      </Box>
     </Box>
   );
 }
