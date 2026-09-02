@@ -49,8 +49,15 @@ async function migrateCustomPositions(tx: UpgradeTx): Promise<void> {
   }
 }
 
+function generateSnapshotId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `snapshot-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 async function migrateToSnapshots(db: IDBPDatabase<FmStatsDB>, tx: UpgradeTx): Promise<void> {
-  const snapshotId = crypto.randomUUID();
+  const snapshotId = generateSnapshotId();
   const target = tx.objectStore('playerSnapshots');
   const source = tx.objectStore('players');
 
@@ -76,7 +83,6 @@ async function migrateToSnapshots(db: IDBPDatabase<FmStatsDB>, tx: UpgradeTx): P
     });
   }
 
-  await source.clear();
   db.deleteObjectStore('players');
 }
 
@@ -114,7 +120,15 @@ export function getDB(): Promise<IDBPDatabase<FmStatsDB>> {
             : Promise.resolve();
 
         if (hadPlayers) {
-          chain.then(() => migrateToSnapshots(db, tx)).catch(() => tx.abort());
+          chain.then(() => migrateToSnapshots(db, tx)).catch((error) => {
+            console.error('Snapshot migration failed', error);
+            // A failed request auto-aborts tx already; abort() again would throw and mask this error.
+            try {
+              tx.abort();
+            } catch {
+              // already aborted
+            }
+          });
         }
       },
     });
