@@ -21,10 +21,16 @@ export function PlayerHistory({ uid, roleKey }: { uid: number; roleKey: string |
   const [ranked, setRanked] = useState<Record<string, Record<string, number>>>({});
   const [ranking, setRanking] = useState<Record<string, boolean>>({});
   const [loadedUid, setLoadedUid] = useState(uid);
+  const [loadedRoleKey, setLoadedRoleKey] = useState(roleKey);
 
   if (uid !== loadedUid) {
     setLoadedUid(uid);
+    setLoadedRoleKey(roleKey);
     setEntries(null);
+    setRanked({});
+    setRanking({});
+  } else if (roleKey !== loadedRoleKey) {
+    setLoadedRoleKey(roleKey);
     setRanked({});
     setRanking({});
   }
