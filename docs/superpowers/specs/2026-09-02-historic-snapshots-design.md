@@ -64,6 +64,7 @@ implementation.
 | Save identity | Asked on every import | No detection heuristic to be wrong |
 | New save | Erases everything | Positions, lists, rankings, club and plan are all save-scoped |
 | Import date | Derived from the filename, else typed | Never taken from the machine's clock |
+| Ordering | By `date`, never by import time | Snapshots can be back-filled in any order |
 | Active snapshot | One, global, app-wide | There is always one answer to "what am I looking at" |
 | Switcher | In the sidebar, always visible | An old snapshot cannot be misread as current |
 | Roster access | A context, loaded lazily | One 50k load a screen instead of up to three |
@@ -201,6 +202,51 @@ pressure, and asking is free.
 
 The new snapshot becomes active on success.
 
+### Column shape
+
+Before writing anything, the import checks the parsed headers against the
+columns `transformPlayerStats` requires and refuses the file with a message
+naming what is missing.
+
+This is not hypothetical, and it is not new: `transformPlayerStats` reads
+`record["Pas %"].replace(...)` and `record["xSv %"].replace(...)` unguarded, so
+a file without those columns throws a bare `TypeError` today. Back-filling an
+older export is the case that provokes it — an FM search saved two seasons ago
+may not carry every column the current view expects. A named refusal before
+the write is worth more than a partial snapshot of `NaN`s that percentile
+maths will silently propagate.
+
+## Import order
+
+Snapshots may arrive in any order: a 2035 export, then 2036, then a 2033 file
+found later. Everything below is ordered **by `date`, never by import time**,
+which is what makes back-filling work.
+
+- **The switcher, the snapshot table and player history** sort by `date`
+  descending. `importedAt` breaks ties between two snapshots that share a date.
+- **"Newest"**, wherever this spec uses it — the Historic badge, the planner's
+  *Remove missing* guard — means the greatest `date`, not the most recent
+  import. Reading it as import time would let a freshly back-filled 2033
+  snapshot suppress the badge while rendering 2033 data, which is precisely
+  the confusion the badge exists to prevent.
+- **An undated snapshot sorts oldest** and can never be the newest. Only the
+  migrated snapshot is undated, and dating it in the snapshot table moves it
+  into place. If it is the *only* snapshot it is trivially active, and the
+  badge does not appear.
+- **A back-filled import still becomes active**, like any other — you asked
+  for that file. The Historic badge appears in the same render, so the app
+  says what it has done rather than silently dropping you two seasons back.
+- **Deleting the active snapshot** moves active to the newest remaining by
+  date. The same fallback covers a stored `activeSnapshot` naming an id that
+  no longer exists, which is what a half-finished delete or a stale setting
+  leaves behind.
+
+Nothing else depends on arrival order. Each snapshot's `fields` list is
+written with it, so an older file imported later decodes against the columns
+it was actually written with; annotations are keyed by UID and are indifferent
+to dates; and percentile cohorts never span snapshots, so no computation mixes
+two dates however they were loaded.
+
 ## Reading
 
 `SnapshotProvider` (`src/contexts/SnapshotContext.tsx`) mounts in `Layout`
@@ -255,8 +301,8 @@ listing snapshots newest date first and labelled by date — `24 Jan 2035` —
 with the label appended when one is set. A single snapshot renders as static
 text, not a control. An undated snapshot renders as *Undated*.
 
-When the active snapshot is not the newest, the sidebar carries a paprika
-**Historic** badge. This is the whole justification for a global switcher over
+When the active snapshot is not the newest **by date**, the sidebar carries a
+paprika **Historic** badge. This is the whole justification for a global switcher over
 per-view ones: the state is visible from everywhere, and an old snapshot
 cannot be quietly mistaken for the current one.
 
@@ -278,7 +324,12 @@ before the browser tells them about it.
 ## Player history
 
 `PlayerProfileView` gains a History section: one row per snapshot the player
-appears in, newest first, from a single `by-uid` read. Columns are the date,
+appears in, from a single `by-uid` read. The index returns those rows ordered
+by UID then by primary key, and the primary key's leading component is a UUID
+— so index order is arbitrary and **the rows must be sorted by joining each
+`s` to its snapshot's date**, newest first. Sorting them as they arrive
+happens to look right until an older export is imported after a newer one,
+which is exactly when it stops being right. Columns are the date,
 Club, Age, Starts, Mins, and his role's `ROLE_CONFIG` display stats.
 
 **These are raw per-90s, not percentiles**, and the section says so. A
@@ -322,7 +373,8 @@ rather than from the data.
 An undated snapshot produces no horizon and no contract tint, matching the
 current behaviour of an empty planning date.
 
-**Remove missing is disabled unless the active snapshot is the newest.** It
+**Remove missing is disabled unless the active snapshot is the newest by
+date.** It
 counts placed players absent from the active snapshot; viewed on a 2033
 snapshot it would offer to delete players who are in the 2035 squad and
 perfectly present. The button is disabled with a note saying why, rather than
@@ -392,6 +444,10 @@ behaviour must break the test.
 3. *New save* clears annotations; *Same save* leaves them intact and adds a
    snapshot.
 4. A player's profile history lists every snapshot he appears in.
+5. Importing 2035, then 2036, then a back-filled 2033 file: the switcher lists
+   all three in date order, the 2033 one is active with the Historic badge
+   shown, and the profile history reads 2036, 2035, 2033 top to bottom. This
+   is the one test that catches ordering taken from import time.
 
 One exception to behaviour-only: a `pack`/`unpack` round-trip over a fully
 populated `Player`, including a null `Expires`, both position fields, and a
