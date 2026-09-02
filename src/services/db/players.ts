@@ -1,4 +1,5 @@
 import { getDB, wrapError } from './connection';
+import { getActiveSnapshotId, getSnapshotRoster, getSnapshotPlayer } from './snapshots';
 import type { Player } from '../../types/types';
 import type { PlayerPositions } from '../../fields/positions';
 
@@ -18,39 +19,25 @@ async function withCustomPositions(players: Player[]): Promise<Player[]> {
   });
 }
 
-function withoutCustomPosition(player: Player): Player {
-  if (player.CustomPosition === undefined) return player;
-  const stripped = { ...player };
-  delete stripped.CustomPosition;
-  return stripped;
+async function activeRoster(): Promise<Player[]> {
+  const snapshotId = await getActiveSnapshotId();
+  if (!snapshotId) return [];
+  return await withCustomPositions(await getSnapshotRoster(snapshotId));
 }
 
-export async function savePlayer(player: Player): Promise<void> {
+export async function getAllPlayers(): Promise<Player[]> {
   try {
-    const db = await getDB();
-    const tx = db.transaction('players', 'readwrite');
-    await tx.store.put(withoutCustomPosition(player));
-    await tx.done;
+    return await activeRoster();
   } catch (error) {
-    throw wrapError('save player', error);
-  }
-}
-
-export async function savePlayers(players: Player[]): Promise<void> {
-  try {
-    const db = await getDB();
-    const tx = db.transaction('players', 'readwrite');
-    await Promise.all(players.map((player) => tx.store.put(withoutCustomPosition(player))));
-    await tx.done;
-  } catch (error) {
-    throw wrapError('save players', error);
+    throw wrapError('get players', error);
   }
 }
 
 export async function getPlayer(uid: number): Promise<Player | undefined> {
   try {
-    const db = await getDB();
-    const player = await db.get('players', uid);
+    const snapshotId = await getActiveSnapshotId();
+    if (!snapshotId) return undefined;
+    const player = await getSnapshotPlayer(snapshotId, uid);
     if (!player) return undefined;
     const [merged] = await withCustomPositions([player]);
     return merged;
@@ -59,19 +46,9 @@ export async function getPlayer(uid: number): Promise<Player | undefined> {
   }
 }
 
-export async function getAllPlayers(): Promise<Player[]> {
-  try {
-    const db = await getDB();
-    return await withCustomPositions(await db.getAll('players'));
-  } catch (error) {
-    throw wrapError('get players', error);
-  }
-}
-
 export async function getPlayersByClub(club: string): Promise<Player[]> {
   try {
-    const db = await getDB();
-    return await withCustomPositions(await db.getAllFromIndex('players', 'by-club', club));
+    return (await activeRoster()).filter((player) => player.Club === club);
   } catch (error) {
     throw wrapError('get players by club', error);
   }
@@ -79,9 +56,8 @@ export async function getPlayersByClub(club: string): Promise<Player[]> {
 
 export async function getPlayersByPosition(position: string): Promise<Player[]> {
   try {
-    const db = await getDB();
-    return await withCustomPositions(
-      await db.getAllFromIndex('players', 'by-position', position)
+    return (await activeRoster()).filter((player) =>
+      player.Position.some((entry) => entry.type === position)
     );
   } catch (error) {
     throw wrapError('get players by position', error);
@@ -90,41 +66,18 @@ export async function getPlayersByPosition(position: string): Promise<Player[]> 
 
 export async function searchPlayersByName(searchTerm: string): Promise<Player[]> {
   try {
-    const db = await getDB();
-    const allPlayers = await db.getAll('players');
     const lowerSearch = searchTerm.toLowerCase();
-    return await withCustomPositions(
-      allPlayers.filter((player) => player.Name.toLowerCase().includes(lowerSearch))
+    return (await activeRoster()).filter((player) =>
+      player.Name.toLowerCase().includes(lowerSearch)
     );
   } catch (error) {
     throw wrapError('search players', error);
   }
 }
 
-export async function deletePlayer(uid: number): Promise<void> {
-  try {
-    const db = await getDB();
-    await db.delete('players', uid);
-  } catch (error) {
-    throw wrapError('delete player', error);
-  }
-}
-
-export async function clearAllPlayers(): Promise<void> {
-  try {
-    const db = await getDB();
-    const tx = db.transaction('players', 'readwrite');
-    await tx.store.clear();
-    await tx.done;
-  } catch (error) {
-    throw wrapError('clear players', error);
-  }
-}
-
 export async function getPlayerCount(): Promise<number> {
   try {
-    const db = await getDB();
-    return await db.count('players');
+    return (await activeRoster()).length;
   } catch (error) {
     throw wrapError('get player count', error);
   }
@@ -136,7 +89,7 @@ export async function updatePlayerPosition(
 ): Promise<void> {
   try {
     const db = await getDB();
-    const player = await db.get('players', uid);
+    const player = await getPlayer(uid);
     const existing = await db.get('playerAnnotations', uid);
     await db.put('playerAnnotations', {
       ...existing,

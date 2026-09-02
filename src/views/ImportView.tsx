@@ -85,8 +85,8 @@ export function ImportView() {
         await db.clearListsAndAnnotations(clear.includes("positions"));
       }
 
-      await db.clearAllPlayers();
-      await db.savePlayers(players);
+      await db.clearAllSnapshots();
+      await db.createSnapshot(players, { date: new Date().toISOString().slice(0, 10) });
       await refresh();
 
       // Show success feedback
