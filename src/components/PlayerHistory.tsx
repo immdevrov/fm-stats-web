@@ -4,6 +4,7 @@ import { db } from "../services/db";
 import { ROLE_CONFIG, STAT_LABELS } from "../roles";
 import { getComparisonCohort, calculateRolePercentiles } from "../utils/role-percentiles";
 import { isoToDisplay } from "../utils/import-date";
+import { toaster } from "./ui/toaster";
 import type { PlayerHistoryEntry } from "../types/snapshot";
 
 function statValue(entry: PlayerHistoryEntry, roleKey: string | null, statKey: string): string {
@@ -18,7 +19,15 @@ function statValue(entry: PlayerHistoryEntry, roleKey: string | null, statKey: s
 export function PlayerHistory({ uid, roleKey }: { uid: number; roleKey: string | null }) {
   const [entries, setEntries] = useState<PlayerHistoryEntry[] | null>(null);
   const [ranked, setRanked] = useState<Record<string, Record<string, number>>>({});
-  const [ranking, setRanking] = useState<string | null>(null);
+  const [ranking, setRanking] = useState<Record<string, boolean>>({});
+  const [loadedUid, setLoadedUid] = useState(uid);
+
+  if (uid !== loadedUid) {
+    setLoadedUid(uid);
+    setEntries(null);
+    setRanked({});
+    setRanking({});
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -34,19 +43,28 @@ export function PlayerHistory({ uid, roleKey }: { uid: number; roleKey: string |
     const config = ROLE_CONFIG.find((role) => role.key === roleKey);
     if (!config || !config.RoleClass.isRole(entry.player)) return;
 
-    setRanking(entry.snapshot.id);
-    Promise.all([db.getSnapshotRoster(entry.snapshot.id), db.getLeagueRankings()])
+    const snapshotId = entry.snapshot.id;
+    setRanking((prev) => ({ ...prev, [snapshotId]: true }));
+    Promise.all([db.getSnapshotRoster(snapshotId), db.getLeagueRankings()])
       .then(([roster, rankings]) => {
         const cohort = getComparisonCohort(config.RoleClass, roster, rankings);
         const playerRole = new config.RoleClass(entry.player) as unknown as Record<string, unknown>;
         const percentiles = calculateRolePercentiles(playerRole, cohort, config.statKeys);
         setRanked((prev) => ({
           ...prev,
-          [entry.snapshot.id]: Object.fromEntries(percentiles.map((p) => [p.statKey, p.percentile])),
+          [snapshotId]: Object.fromEntries(percentiles.map((p) => [p.statKey, p.percentile])),
         }));
       })
+      .catch(() => {
+        toaster.create({
+          title: "Ranking failed",
+          description: "Could not load this snapshot's cohort. Try again.",
+          type: "error",
+          duration: 5000,
+        });
+      })
       .finally(() => {
-        setRanking(null);
+        setRanking((prev) => ({ ...prev, [snapshotId]: false }));
       });
   };
 
@@ -103,7 +121,7 @@ export function PlayerHistory({ uid, roleKey }: { uid: number; roleKey: string |
                       <Button
                         size="xs"
                         variant="outline"
-                        loading={ranking === entry.snapshot.id}
+                        loading={!!ranking[entry.snapshot.id]}
                         onClick={() => rankRow(entry)}
                       >
                         Rank this row
