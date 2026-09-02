@@ -46,24 +46,6 @@ export async function getPlayer(uid: number): Promise<Player | undefined> {
   }
 }
 
-export async function getPlayersByClub(club: string): Promise<Player[]> {
-  try {
-    return (await activeRoster()).filter((player) => player.Club === club);
-  } catch (error) {
-    throw wrapError('get players by club', error);
-  }
-}
-
-export async function getPlayersByPosition(position: string): Promise<Player[]> {
-  try {
-    return (await activeRoster()).filter((player) =>
-      player.Position.some((entry) => entry.type === position)
-    );
-  } catch (error) {
-    throw wrapError('get players by position', error);
-  }
-}
-
 export async function searchPlayersByName(searchTerm: string): Promise<Player[]> {
   try {
     const lowerSearch = searchTerm.toLowerCase();

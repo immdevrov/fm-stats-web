@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from "react";
 import { db } from "../services/db";
+import { useRoster } from "./SnapshotContext";
 
 interface CompareContextValue {
   compareList: number[];
@@ -15,15 +16,17 @@ const MAX_PLAYERS = 3;
 export function CompareProvider({ children }: { children: ReactNode }) {
   const [compareList, setCompareList] = useState<number[]>([]);
   const loaded = useRef(false);
+  const { players } = useRoster();
 
   useEffect(() => {
-    Promise.all([db.getCompareList(), db.getAllPlayers()]).then(([uids, players]) => {
+    if (players === null) return;
+    db.getCompareList().then((uids) => {
       const validUids = new Set(players.map((p) => p.UID));
       const cleaned = uids.filter((uid) => validUids.has(uid));
       setCompareList(cleaned);
       loaded.current = true;
     });
-  }, []);
+  }, [players]);
 
   useEffect(() => {
     if (!loaded.current) return;

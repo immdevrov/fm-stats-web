@@ -13,7 +13,7 @@ import {
 } from "@chakra-ui/react";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { db } from "../services/db";
+import { useRoster } from "../contexts/SnapshotContext";
 import type { Player } from "../types/types";
 import { Table, type Column, type SortDirection } from "../components/ui/table";
 import { formatWage, displayDate, formatPositions, getEffectivePosition } from "../utils/utils";
@@ -56,21 +56,18 @@ export function PlayersView() {
   const [hideUnwanted, setHideUnwanted] = useState(false);
 
   const { isUnwanted } = usePlayerNotes();
+  const { players: allPlayers } = useRoster();
 
   useEffect(() => {
-    async function loadData() {
-      try {
-        const allPlayers = await db.getAllPlayers();
-        setPlayers(allPlayers);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load players");
-      } finally {
-        setIsLoading(false);
-      }
+    if (allPlayers === null) return;
+    try {
+      setPlayers(allPlayers);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load players");
+    } finally {
+      setIsLoading(false);
     }
-
-    loadData();
-  }, []);
+  }, [allPlayers]);
 
   const clubs = useMemo(() => {
     const clubSet = new Set<string>();

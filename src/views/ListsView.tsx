@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Box, Button, Container, HStack, Heading, Spinner, Text, VStack } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
-import { db } from "../services/db";
 import { usePlayerNotes, type PlayerIdentity } from "../contexts/PlayerNotesContext";
+import { useRoster } from "../contexts/SnapshotContext";
 import { PlayerStatusControl } from "../components/PlayerStatusControl";
 import { Table, type Column } from "../components/ui/table";
 import { formatWage, displayDate, formatPositions, getEffectivePosition } from "../utils/utils";
@@ -43,21 +43,18 @@ export function ListsView() {
   const [playersLoaded, setPlayersLoaded] = useState(false);
   const [playersError, setPlayersError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string | null>(null);
+  const { players: rosterPlayers } = useRoster();
 
   useEffect(() => {
-    async function loadPlayers() {
-      try {
-        const loaded = await db.getAllPlayers();
-        setPlayers(loaded);
-      } catch (err) {
-        setPlayersError(err instanceof Error ? err.message : "Failed to load players");
-      } finally {
-        setPlayersLoaded(true);
-      }
+    if (rosterPlayers === null) return;
+    try {
+      setPlayers(rosterPlayers);
+    } catch (err) {
+      setPlayersError(err instanceof Error ? err.message : "Failed to load players");
+    } finally {
+      setPlayersLoaded(true);
     }
-
-    loadPlayers();
-  }, []);
+  }, [rosterPlayers]);
 
   const playersByUid = useMemo(
     () => new Map(players.map((player) => [player.UID, player])),

@@ -11,7 +11,7 @@ import {
 } from "@chakra-ui/react";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { db } from "../services/db";
+import { useRoster } from "../contexts/SnapshotContext";
 import { Table, type Column, type SortDirection } from "../components/ui/table";
 import { SearchableSelect } from "../components/SearchableSelect";
 import { formatWage, average } from "../utils/utils";
@@ -43,54 +43,50 @@ export function TeamsView() {
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
   const [currentPage, setCurrentPage] = useState(1);
+  const { players } = useRoster();
 
   useEffect(() => {
-    async function loadData() {
-      try {
-        const players = await db.getAllPlayers();
+    if (players === null) return;
+    try {
+      const clubMap = new Map<
+        string,
+        { league: string; wages: number[]; ages: number[] }
+      >();
+      const leagueSet = new Set<string>();
 
-        const clubMap = new Map<
-          string,
-          { league: string; wages: number[]; ages: number[] }
-        >();
-        const leagueSet = new Set<string>();
+      for (const player of players) {
+        const club = player.Club || "Unknown";
+        const league = player.Division || "Unknown";
 
-        for (const player of players) {
-          const club = player.Club || "Unknown";
-          const league = player.Division || "Unknown";
+        leagueSet.add(league);
 
-          leagueSet.add(league);
-
-          if (!clubMap.has(club)) {
-            clubMap.set(club, { league, wages: [], ages: [] });
-          }
-          const data = clubMap.get(club)!;
-          data.wages.push(player.Wage ?? 0);
-          data.ages.push(player.Age);
+        if (!clubMap.has(club)) {
+          clubMap.set(club, { league, wages: [], ages: [] });
         }
-
-        const teamData: TeamData[] = [];
-        for (const [name, data] of clubMap) {
-          teamData.push({
-            name,
-            league: data.league,
-            playerCount: data.wages.length,
-            averageWage: average(data.wages) ?? 0,
-            averageAge: average(data.ages) ?? 0,
-          });
-        }
-
-        setTeams(teamData);
-        setLeagues(Array.from(leagueSet).sort());
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load teams");
-      } finally {
-        setIsLoading(false);
+        const data = clubMap.get(club)!;
+        data.wages.push(player.Wage ?? 0);
+        data.ages.push(player.Age);
       }
-    }
 
-    loadData();
-  }, []);
+      const teamData: TeamData[] = [];
+      for (const [name, data] of clubMap) {
+        teamData.push({
+          name,
+          league: data.league,
+          playerCount: data.wages.length,
+          averageWage: average(data.wages) ?? 0,
+          averageAge: average(data.ages) ?? 0,
+        });
+      }
+
+      setTeams(teamData);
+      setLeagues(Array.from(leagueSet).sort());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load teams");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [players]);
 
   const filteredAndSortedTeams = useMemo(() => {
     let result = teams;

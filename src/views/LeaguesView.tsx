@@ -13,6 +13,7 @@ import {
 } from "@chakra-ui/react";
 import { useState, useEffect, useMemo } from "react";
 import { db } from "../services/db";
+import { useRoster } from "../contexts/SnapshotContext";
 import { Table, type Column, type SortDirection } from "../components/ui/table";
 import { formatWage, average } from "../utils/utils";
 import type { Player, LeagueRanking } from "../types/types";
@@ -43,20 +44,20 @@ export function LeaguesView() {
   const [savedRankings, setSavedRankings] = useState<Map<string, number>>(new Map());
   const [isEditingRankings, setIsEditingRankings] = useState(false);
   const [editingRankings, setEditingRankings] = useState<Map<string, string>>(new Map());
+  const { players } = useRoster();
 
   useEffect(() => {
+    if (players === null) return;
+    const roster: Player[] = players;
     async function loadData() {
       try {
-        const [players, rankings] = await Promise.all([
-          db.getAllPlayers(),
-          db.getLeagueRankings(),
-        ]);
+        const rankings = await db.getLeagueRankings();
 
         // Process league data
         const leagueMap = new Map<string, { wages: number[]; ages: number[] }>();
         const playersWithBadData: Player[] = [];
 
-        for (const player of players) {
+        for (const player of roster) {
           const division = player.Division || "Unknown";
           if (division === "Unknown") {
             playersWithBadData.push(player);
@@ -97,7 +98,7 @@ export function LeaguesView() {
     }
 
     loadData();
-  }, []);
+  }, [players]);
 
   const sortedLeagues = useMemo(() => {
     let result = leagues.filter((league) => league.playerCount >= 10);

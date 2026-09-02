@@ -12,6 +12,7 @@ import {
 } from "@chakra-ui/react";
 import { useState, useEffect, useMemo } from "react";
 import { db } from "../services/db";
+import { useRoster } from "../contexts/SnapshotContext";
 import type { Player, LeagueRanking } from "../types/types";
 import {
   ROLE_CONFIG,
@@ -57,7 +58,7 @@ interface PlayerPercentiles {
 export function CompareView() {
   useDocumentTitle("Compare");
   const { compareList, addPlayer, removePlayer } = useCompare();
-  const [allPlayers, setAllPlayers] = useState<Player[]>([]);
+  const { players: allPlayers } = useRoster();
   const [leagueRankings, setLeagueRankings] = useState<LeagueRanking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -65,17 +66,15 @@ export function CompareView() {
   const [side, setSide] = useState<Side>("both");
 
   useEffect(() => {
-    Promise.all([db.getAllPlayers(), db.getLeagueRankings()]).then(
-      ([players, rankings]) => {
-        setAllPlayers(players);
-        setLeagueRankings(rankings);
-        setIsLoading(false);
-      }
-    );
-  }, []);
+    if (allPlayers === null) return;
+    db.getLeagueRankings().then((rankings) => {
+      setLeagueRankings(rankings);
+      setIsLoading(false);
+    });
+  }, [allPlayers]);
 
   const players = useMemo(() => {
-    if (allPlayers.length === 0) return [];
+    if (!allPlayers || allPlayers.length === 0) return [];
     return compareList
       .map((uid) => allPlayers.find((p) => p.UID === uid))
       .filter((p): p is Player => !!p);
@@ -105,7 +104,7 @@ export function CompareView() {
   }, [selectedRoleIndex]);
 
   const cohort = useMemo(() => {
-    if (allPlayers.length === 0 || leagueRankings.length === 0) return [];
+    if (!allPlayers || allPlayers.length === 0 || leagueRankings.length === 0) return [];
     const RoleClass = getRoleClassForSide(roleConfig, side);
     return buildCohort(allPlayers, RoleClass, leagueRankings);
   }, [allPlayers, leagueRankings, roleConfig, side]);
@@ -128,7 +127,7 @@ export function CompareView() {
 
   const autocompletePool = useMemo(() => {
     const RoleClass = getRoleClassForSide(roleConfig, side);
-    return allPlayers.filter((p) => RoleClass.isRole(p));
+    return (allPlayers ?? []).filter((p) => RoleClass.isRole(p));
   }, [allPlayers, roleConfig, side]);
 
   const excludeUids = useMemo(() => compareList, [compareList]);

@@ -17,6 +17,7 @@ import {
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useCompare } from "../contexts/CompareContext";
+import { useRoster } from "../contexts/SnapshotContext";
 import { db } from "../services/db";
 import type { Player, LeagueRanking } from "../types/types";
 import type { PlayerPosition, PlayerPositions } from "../fields/positions";
@@ -44,6 +45,7 @@ export function PlayerProfileView() {
   const [player, setPlayer] = useState<Player | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { players: allPlayers } = useRoster();
   useDocumentTitle(player ? `Player: ${player.Name}` : "Player");
 
   const reloadPlayer = useCallback(async () => {
@@ -122,16 +124,24 @@ export function PlayerProfileView() {
     <Box minH="100vh" p={3}>
       <Container maxW="container.xl">
         <HStack align="start" gap={3}>
-          <PlayerInfoColumn player={player} onPlayerUpdate={reloadPlayer} />
+          <PlayerInfoColumn player={player} onPlayerUpdate={reloadPlayer} allPlayers={allPlayers} />
 
-          <ComparisonColumn player={player} />
+          <ComparisonColumn player={player} allPlayers={allPlayers} />
         </HStack>
       </Container>
     </Box>
   );
 }
 
-function PlayerInfoColumn({ player, onPlayerUpdate }: { player: Player; onPlayerUpdate: () => Promise<void> }) {
+function PlayerInfoColumn({
+  player,
+  onPlayerUpdate,
+  allPlayers,
+}: {
+  player: Player;
+  onPlayerUpdate: () => Promise<void>;
+  allPlayers: Player[] | null;
+}) {
   const isGoalkeeper = getEffectivePosition(player).some((pos) => pos.type === "GK");
 
   return (
@@ -141,7 +151,7 @@ function PlayerInfoColumn({ player, onPlayerUpdate }: { player: Player; onPlayer
       <PlayingTimeSection player={player} />
 
       {isGoalkeeper ? (
-        <GoalkeeperStatsSection player={player} />
+        <GoalkeeperStatsSection player={player} allPlayers={allPlayers} />
       ) : (
         <OutfieldStatsSection player={player} />
       )}
@@ -525,16 +535,17 @@ function OutfieldStatsSection({ player }: { player: Player }) {
   );
 }
 
-function GoalkeeperStatsSection({ player }: { player: Player }) {
+function GoalkeeperStatsSection({ player, allPlayers }: { player: Player; allPlayers: Player[] | null }) {
   const gkStats = extractGoalkeeperStats(player);
   const [shotStoppingRank, setShotStoppingRank] = useState<number | null>(null);
 
   useEffect(() => {
+    if (allPlayers === null) return;
     const gkConfig = ROLE_CONFIG.find((r) => r.key === "GK");
     if (!gkConfig) return;
 
-    Promise.all([db.getAllPlayers(), db.getLeagueRankings()]).then(
-      ([allPlayers, leagueRankings]) => {
+    db.getLeagueRankings().then(
+      (leagueRankings) => {
         const cohort = getComparisonCohort(gkConfig.RoleClass, allPlayers, leagueRankings);
         if (cohort.length === 0) return;
 
@@ -564,7 +575,7 @@ function GoalkeeperStatsSection({ player }: { player: Player }) {
         setShotStoppingRank(getPercentile(rank, allRanks));
       }
     );
-  }, [player]);
+  }, [player, allPlayers]);
 
   return (
     <StatSection
@@ -659,9 +670,8 @@ function calculateRolePercentiles(
   });
 }
 
-function ComparisonColumn({ player }: { player: Player }) {
+function ComparisonColumn({ player, allPlayers }: { player: Player; allPlayers: Player[] | null }) {
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
-  const [allPlayers, setAllPlayers] = useState<Player[]>([]);
   const [leagueRankings, setLeagueRankings] = useState<LeagueRanking[]>([]);
   const [percentiles, setPercentiles] = useState<StatPercentile[]>([]);
   const [cohortSize, setCohortSize] = useState(0);
@@ -671,13 +681,11 @@ function ComparisonColumn({ player }: { player: Player }) {
   const applicableRoles = useMemo(() => getPlayerRoles(player), [player]);
 
   useEffect(() => {
-    Promise.all([db.getAllPlayers(), db.getLeagueRankings()]).then(
-      ([players, rankings]) => {
-        setAllPlayers(players);
-        setLeagueRankings(rankings);
-      }
-    );
-  }, []);
+    if (allPlayers === null) return;
+    db.getLeagueRankings().then((rankings) => {
+      setLeagueRankings(rankings);
+    });
+  }, [allPlayers]);
 
   useEffect(() => {
     if (applicableRoles.length > 0 && !selectedRole) {
@@ -686,7 +694,7 @@ function ComparisonColumn({ player }: { player: Player }) {
   }, [applicableRoles, selectedRole]);
 
   useEffect(() => {
-    if (!selectedRole || !allPlayers.length) return;
+    if (!selectedRole || !allPlayers || !allPlayers.length) return;
 
     const roleConfig = ROLE_CONFIG.find((r) => r.key === selectedRole);
     if (!roleConfig) return;

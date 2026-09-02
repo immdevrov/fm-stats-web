@@ -9,71 +9,52 @@ import {
   Button,
   Badge,
 } from "@chakra-ui/react";
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { db } from "../services/db";
-import type { Player } from "../types/types";
 import { SquadTable } from "../components/SquadTable";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { useMyTeam } from "../contexts/MyTeamContext";
+import { useRoster } from "../contexts/SnapshotContext";
 import { toaster } from "../components/ui/toaster";
 
 export function TeamProfileView() {
   const { teamName } = useParams<{ teamName: string }>();
   const navigate = useNavigate();
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const { myClub, isLoaded: isMyTeamLoaded, setMyClub } = useMyTeam();
+  const { players: allPlayers } = useRoster();
 
   const decodedTeamName = teamName ? decodeURIComponent(teamName) : "";
   useDocumentTitle(decodedTeamName ? `Team: ${decodedTeamName}` : "Teams");
 
-  useEffect(() => {
-    async function loadData() {
-      if (!decodedTeamName) {
-        setError("No team specified");
-        setIsLoading(false);
-        return;
-      }
+  const players = useMemo(
+    () => (allPlayers ? allPlayers.filter((p) => p.Club === decodedTeamName) : null),
+    [allPlayers, decodedTeamName]
+  );
 
-      try {
-        const teamPlayers = await db.getPlayersByClub(decodedTeamName);
-        setPlayers(teamPlayers);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load team");
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    loadData();
-  }, [decodedTeamName]);
-
-  if (isLoading) {
+  if (!decodedTeamName) {
     return (
       <Box minH="100vh" p={8}>
         <Container maxW="container.lg">
-          <VStack gap={8}>
-            <Spinner size="lg" colorPalette="glaucous" />
-            <Text color="fg.muted">Loading team...</Text>
+          <VStack gap={4}>
+            <Box p={4} borderRadius="md" bg="red.500" color="white">
+              <Text fontWeight="medium">No team specified</Text>
+            </Box>
+            <Button variant="outline" onClick={() => navigate("/teams")}>
+              Back to Teams
+            </Button>
           </VStack>
         </Container>
       </Box>
     );
   }
 
-  if (error) {
+  if (players === null) {
     return (
       <Box minH="100vh" p={8}>
         <Container maxW="container.lg">
-          <VStack gap={4}>
-            <Box p={4} borderRadius="md" bg="red.500" color="white">
-              <Text fontWeight="medium">{error}</Text>
-            </Box>
-            <Button variant="outline" onClick={() => navigate("/teams")}>
-              Back to Teams
-            </Button>
+          <VStack gap={8}>
+            <Spinner size="lg" colorPalette="glaucous" />
+            <Text color="fg.muted">Loading team...</Text>
           </VStack>
         </Container>
       </Box>
