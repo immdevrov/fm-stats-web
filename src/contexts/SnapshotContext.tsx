@@ -29,12 +29,13 @@ interface SnapshotContextValue {
 
 const SnapshotContext = createContext<SnapshotContextValue | null>(null);
 
+const EMPTY_ROSTER: Player[] = [];
+
 export function SnapshotProvider({ children }: { children: ReactNode }) {
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [roster, setRoster] = useState<Player[] | null>(null);
-  const [rosterLoading, setRosterLoading] = useState(false);
   const [rosterWanted, setRosterWanted] = useState(false);
 
   const refresh = useCallback(async () => {
@@ -45,28 +46,30 @@ export function SnapshotProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    Promise.all([db.listSnapshots(), db.getActiveSnapshotId()]).then(([list, id]) => {
+      setSnapshots(list);
+      setActiveId(id);
+      setIsLoaded(true);
+    });
+  }, []);
 
   useEffect(() => {
-    if (!rosterWanted || !isLoaded) return;
-    if (!activeId) {
-      setRoster([]);
-      return;
-    }
+    if (!rosterWanted || !isLoaded || !activeId) return;
     let cancelled = false;
-    setRosterLoading(true);
     db.getAllPlayers()
       .then((players) => {
         if (!cancelled) setRoster(players);
       })
-      .finally(() => {
-        if (!cancelled) setRosterLoading(false);
+      .catch(() => {
+        if (!cancelled) setRoster(EMPTY_ROSTER);
       });
     return () => {
       cancelled = true;
     };
   }, [rosterWanted, isLoaded, activeId]);
+
+  const effectiveRoster = activeId ? roster : EMPTY_ROSTER;
+  const rosterLoading = rosterWanted && isLoaded && activeId !== null && roster === null;
 
   const setActive = useCallback((id: string) => {
     setActiveId(id);
@@ -115,7 +118,7 @@ export function SnapshotProvider({ children }: { children: ReactNode }) {
         refresh,
         removeSnapshot,
         editSnapshot,
-        roster,
+        roster: effectiveRoster,
         rosterLoading,
         requestRoster,
       }}
