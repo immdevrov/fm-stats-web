@@ -115,6 +115,11 @@ export function findMissingColumns(headers: string[]): string[] {
   return REQUIRED_COLUMNS.filter((column) => !present.has(column));
 }
 
+/**
+ * Converts the raw string records into the final Player array with correct types.
+ * @param rawRecords The array of raw string records from the HTML table.
+ * @returns An array of Player objects.
+ */
 export function transformPlayerStats(rawRecords: Record<string, string>[]): Player[] {
   const players: Player[] = [];
 

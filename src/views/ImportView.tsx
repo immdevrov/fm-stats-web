@@ -1,12 +1,13 @@
 import { Container, Heading, VStack, Box, Text, Spinner, Button, HStack } from "@chakra-ui/react";
-import { useState, useRef } from "react";
+import { useRef, useState } from "react";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { FileInput } from "../components/ui/file-input";
-import { parseHtmlTable, transformPlayerStats } from "../parser/html-parser";
+import { findMissingColumns, parseHtmlTable, transformPlayerStats } from "../parser/html-parser";
 import { db } from "../services/db";
 import { toaster } from "../components/ui/toaster";
-import { ImportPreserveDialog, type PreserveCategory } from "../components/ui/import-preserve-dialog";
+import { ImportSaveDialog } from "../components/ui/import-save-dialog";
 import { usePlayerNotes } from "../contexts/PlayerNotesContext";
+import { useSnapshots } from "../contexts/SnapshotContext";
 import type { Player } from "../types/types";
 
 export function ImportView() {
@@ -17,8 +18,10 @@ export function ImportView() {
     count: number;
     message: string;
   } | null>(null);
-  const [preserveOptions, setPreserveOptions] = useState<PreserveCategory[] | null>(null);
-  const { refresh } = usePlayerNotes();
+  const { refresh: notesRefresh } = usePlayerNotes();
+  const { snapshots, refresh, setActive } = useSnapshots();
+  const [pendingName, setPendingName] = useState<string | null>(null);
+  const [progress, setProgress] = useState<{ written: number; total: number } | null>(null);
 
   // Store pending import data while dialog is open
   const pendingPlayers = useRef<Player[] | null>(null);
@@ -26,76 +29,62 @@ export function ImportView() {
   const handleFileSelect = async (file: File) => {
     setIsImporting(true);
     setImportStatus(null);
-
     try {
-      // Step 1: Read and parse the file
-      const text = await file.text();
-      const rawRecords = parseHtmlTable(text);
-
+      const rawRecords = parseHtmlTable(await file.text());
       if (rawRecords.length === 0) {
         throw new Error("Could not extract table data from the HTML file.");
       }
 
-      // Step 2: Transform records to Player objects
+      const missing = findMissingColumns(Object.keys(rawRecords[0]));
+      if (missing.length > 0) {
+        throw new Error(
+          `This export is missing ${missing.length} column${missing.length === 1 ? "" : "s"}: ${missing.join(", ")}. Re-run the search in Football Manager with the full column set.`
+        );
+      }
+
       const players = transformPlayerStats(rawRecords);
+      if (players.length === 0) throw new Error("No player data found in the file.");
 
-      if (players.length === 0) {
-        throw new Error("No player data found in the file.");
-      }
-
-      // Step 3: Check which categories of preserved data actually exist
-      const [rankings, annotations, lists] = await Promise.all([
-        db.getLeagueRankings(),
-        db.getAnnotations(),
-        db.getLists(),
-      ]);
-
-      const available: PreserveCategory[] = [];
-      if (rankings.length > 0) available.push("rankings");
-      if (annotations.some((a) => a.customPosition)) available.push("positions");
-      if (
-        lists.length > 0 ||
-        annotations.some(
-          (a) => a.unwanted || a.price !== undefined || a.wageDemand !== undefined || a.note
-        )
-      ) {
-        available.push("lists");
-      }
-
-      if (available.length === 0) {
-        await performImport(players, []);
-      } else {
-        pendingPlayers.current = players;
-        setIsImporting(false);
-        setPreserveOptions(available);
-      }
+      pendingPlayers.current = players;
+      setIsImporting(false);
+      setPendingName(file.name);
     } catch (error) {
       handleImportError(error);
     }
   };
 
-  const performImport = async (players: Player[], clear: PreserveCategory[]) => {
+  const performImport = async (choice: {
+    mode: "same" | "new";
+    date: string;
+    replacesId: string | null;
+  }) => {
+    const players = pendingPlayers.current;
+    if (!players) return;
     try {
       setIsImporting(true);
 
-      if (clear.includes("rankings")) await db.clearLeagueRankings();
-      if (clear.includes("positions")) await db.clearAllCustomPositions();
-
-      if (clear.includes("lists")) {
-        await db.clearListsAndAnnotations(clear.includes("positions"));
+      if (choice.mode === "new") {
+        await db.clearAllSnapshots();
+        await db.clearLeagueRankings();
+        await db.clearListsAndAnnotations(true);
+        await db.setMyClub(null);
+        await db.setSquadPlan(null);
+      } else if (choice.replacesId) {
+        await db.deleteSnapshot(choice.replacesId);
       }
 
-      await db.clearAllSnapshots();
-      await db.createSnapshot(players, { date: new Date().toISOString().slice(0, 10) });
+      const id = await db.createSnapshot(players, { date: choice.date }, (written, total) =>
+        setProgress({ written, total })
+      );
+
+      await navigator.storage?.persist?.().catch(() => undefined);
       await refresh();
+      setActive(id);
+      await notesRefresh();
 
       // Show success feedback
-      const successMessage = `Successfully imported ${players.length} player${players.length !== 1 ? "s" : ""}`;
-      setImportStatus({
-        success: true,
-        count: players.length,
-        message: successMessage,
-      });
+      const successMessage = `Imported ${players.length} player${players.length !== 1 ? "s" : ""}`;
+      setImportStatus({ success: true, count: players.length, message: successMessage });
 
       toaster.create({
         title: "Import Successful",
@@ -103,12 +92,11 @@ export function ImportView() {
         type: "success",
         duration: 5000,
       });
-
-      console.log("Parsed and saved players:", players);
     } catch (error) {
       handleImportError(error);
     } finally {
       setIsImporting(false);
+      setProgress(null);
       pendingPlayers.current = null;
     }
   };
@@ -145,7 +133,11 @@ export function ImportView() {
           {isImporting && (
             <VStack gap={2}>
               <Spinner size="lg" colorPalette="glaucous" />
-              <Text color="fg.muted">Processing file and saving to database...</Text>
+              <Text color="fg.muted">
+                {progress
+                  ? `Saving ${progress.written.toLocaleString()} of ${progress.total.toLocaleString()} players…`
+                  : "Processing file…"}
+              </Text>
             </VStack>
           )}
 
@@ -175,7 +167,7 @@ export function ImportView() {
               onClick={async () => {
                 try {
                   await db.clearAllCustomPositions();
-                  await refresh();
+                  await notesRefresh();
                   toaster.create({
                     title: "Custom Positions Cleared",
                     description: "All custom position overrides have been removed.",
@@ -203,7 +195,7 @@ export function ImportView() {
               onClick={async () => {
                 try {
                   await db.clearListsAndAnnotations(false);
-                  await refresh();
+                  await notesRefresh();
                   toaster.create({
                     title: "Lists Cleared",
                     description: "All lists, prices, notes and unwanted flags have been removed.",
@@ -227,17 +219,18 @@ export function ImportView() {
         </VStack>
       </Container>
 
-      <ImportPreserveDialog
-        isOpen={preserveOptions !== null}
-        available={preserveOptions ?? []}
+      <ImportSaveDialog
+        isOpen={pendingName !== null}
+        filename={pendingName ?? ""}
+        snapshots={snapshots}
         onClose={() => {
-          setPreserveOptions(null);
+          setPendingName(null);
           pendingPlayers.current = null;
           setImportStatus(null);
         }}
-        onConfirm={async (clear) => {
-          setPreserveOptions(null);
-          if (pendingPlayers.current) await performImport(pendingPlayers.current, clear);
+        onConfirm={async (choice) => {
+          setPendingName(null);
+          await performImport(choice);
         }}
       />
     </Box>
