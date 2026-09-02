@@ -126,3 +126,70 @@ export async function seedPlayersAndCompareList(
     }
   );
 }
+
+export async function seedSnapshots(
+  page: Page,
+  snapshots: Array<{
+    id: string;
+    date: string | null;
+    players: Array<{ uid: number; name: string; club?: string }>;
+  }>,
+  activeId?: string
+) {
+  await page.evaluate(
+    ({ dbName, dbVersion, snapshots, activeId, fields }) => {
+      return new Promise<void>((resolve, reject) => {
+        const request = indexedDB.open(dbName, dbVersion);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          const db = request.result;
+          const tx = db.transaction(['snapshots', 'playerSnapshots', 'settings'], 'readwrite');
+          tx.objectStore('snapshots').clear();
+          tx.objectStore('playerSnapshots').clear();
+          const meta = tx.objectStore('snapshots');
+          const rows = tx.objectStore('playerSnapshots');
+          snapshots.forEach((snapshot, index) => {
+            meta.put({
+              id: snapshot.id,
+              date: snapshot.date,
+              label: null,
+              playerCount: snapshot.players.length,
+              importedAt: index + 1,
+              fields,
+            });
+            for (const player of snapshot.players) {
+              const record = player as unknown as Record<string, unknown>;
+              rows.put({
+                s: snapshot.id,
+                u: record.UID,
+                v: fields.map((field) => record[field]),
+              });
+            }
+          });
+          tx.objectStore('settings').put({ key: 'activeSnapshot', value: activeId });
+          tx.oncomplete = () => {
+            db.close();
+            resolve();
+          };
+          tx.onerror = () => {
+            db.close();
+            reject(tx.error);
+          };
+        };
+      });
+    },
+    {
+      dbName: DB_NAME,
+      dbVersion: DB_VERSION,
+      activeId: activeId ?? snapshots[0].id,
+      fields: [...PLAYER_FIELDS],
+      snapshots: snapshots.map((snapshot) => ({
+        ...snapshot,
+        players: snapshot.players.map((p) => ({
+          ...makePlayer(p.uid, p.name),
+          Club: p.club ?? 'Test FC',
+        })),
+      })),
+    }
+  );
+}

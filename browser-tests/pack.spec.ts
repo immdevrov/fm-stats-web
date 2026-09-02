@@ -137,6 +137,20 @@ test('season resolves to the following 30 June', () => {
   expect(resolveHorizon('2035-08-10', 'season')?.getFullYear()).toBe(2036);
 });
 
+test('season resolves to the same 30 June when the snapshot is dated on it', () => {
+  const boundary = resolveHorizon('2035-06-30', 'season');
+  expect(boundary?.getFullYear()).toBe(2035);
+  expect(boundary?.getMonth()).toBe(5);
+  expect(boundary?.getDate()).toBe(30);
+});
+
+test('season rolls to next year the day after 30 June', () => {
+  const dayAfter = resolveHorizon('2035-07-01', 'season');
+  expect(dayAfter?.getFullYear()).toBe(2036);
+  expect(dayAfter?.getMonth()).toBe(5);
+  expect(dayAfter?.getDate()).toBe(30);
+});
+
 test('year offsets add whole years to the snapshot date', () => {
   expect(resolveHorizon('2035-01-24', '1y')?.getFullYear()).toBe(2036);
   expect(resolveHorizon('2035-01-24', '2y')?.getFullYear()).toBe(2037);
