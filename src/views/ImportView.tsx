@@ -8,7 +8,13 @@ import { toaster } from "../components/ui/toaster";
 import { ImportSaveDialog } from "../components/ui/import-save-dialog";
 import { usePlayerNotes } from "../contexts/PlayerNotesContext";
 import { useSnapshots } from "../contexts/SnapshotContext";
+import { useMyTeam } from "../contexts/MyTeamContext";
+import { useSquadPlan } from "../contexts/SquadPlanContext";
 import type { Player } from "../types/types";
+
+function errorText(error: unknown): string {
+  return error instanceof Error ? error.message : "an unknown error occurred";
+}
 
 export function ImportView() {
   useDocumentTitle("Import");
@@ -19,7 +25,9 @@ export function ImportView() {
     message: string;
   } | null>(null);
   const { refresh: notesRefresh } = usePlayerNotes();
-  const { snapshots, refresh, setActive } = useSnapshots();
+  const { snapshots, refresh, setActive, isLoaded: snapshotsLoaded } = useSnapshots();
+  const { clearMyClub } = useMyTeam();
+  const { clearPlan } = useSquadPlan();
   const [pendingName, setPendingName] = useState<string | null>(null);
   const [progress, setProgress] = useState<{ written: number; total: number } | null>(null);
 
@@ -62,22 +70,49 @@ export function ImportView() {
     if (!players) return;
     try {
       setIsImporting(true);
+      await navigator.storage?.persist?.().catch(() => undefined);
 
       if (choice.mode === "new") {
-        await db.clearAllSnapshots();
-        await db.clearLeagueRankings();
-        await db.clearListsAndAnnotations(true);
-        await db.setMyClub(null);
-        await db.setSquadPlan(null);
-      } else if (choice.replacesId) {
-        await db.deleteSnapshot(choice.replacesId);
+        try {
+          await db.clearAllSnapshots();
+          await db.clearLeagueRankings();
+          await db.clearListsAndAnnotations(true);
+          await db.clearCompareList();
+        } catch (error) {
+          throw new Error(
+            `Erasing the old save did not finish (${errorText(error)}). Some of it may still be there and some may be gone — check My Team, snapshots and lists before importing again.`
+          );
+        }
+        clearMyClub();
+        clearPlan();
       }
 
-      const id = await db.createSnapshot(players, { date: choice.date }, (written, total) =>
-        setProgress({ written, total })
-      );
+      let id: string;
+      try {
+        id = await db.createSnapshot(players, { date: choice.date }, (written, total) =>
+          setProgress({ written, total })
+        );
+      } catch (error) {
+        throw choice.mode === "new"
+          ? new Error(
+              `The old save was erased, but the new import could not be saved (${errorText(error)}). You have no snapshots — try importing again.`
+            )
+          : new Error(`Import failed (${errorText(error)}). Nothing was changed.`);
+      }
 
-      await navigator.storage?.persist?.().catch(() => undefined);
+      if (choice.mode === "same" && choice.replacesId) {
+        try {
+          await db.deleteSnapshot(choice.replacesId);
+        } catch (error) {
+          toaster.create({
+            title: "Old Snapshot Left Behind",
+            description: `The new snapshot saved, but the one it was meant to replace could not be removed (${errorText(error)}). Delete it manually from the snapshot list.`,
+            type: "warning",
+            duration: 8000,
+          });
+        }
+      }
+
       await refresh();
       setActive(id);
       await notesRefresh();
@@ -223,6 +258,7 @@ export function ImportView() {
         isOpen={pendingName !== null}
         filename={pendingName ?? ""}
         snapshots={snapshots}
+        snapshotsLoaded={snapshotsLoaded}
         onClose={() => {
           setPendingName(null);
           pendingPlayers.current = null;

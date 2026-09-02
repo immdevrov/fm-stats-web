@@ -25,6 +25,7 @@ interface SquadPlanContextValue {
   makeFirstChoice: (slotId: string, uid: number) => void;
   refreshSnapshots: (byUid: Map<number, { name: string; club: string }>) => void;
   removeMissing: (presentUids: Set<number>) => void;
+  clearPlan: () => void;
 }
 
 const SquadPlanContext = createContext<SquadPlanContextValue | null>(null);
@@ -81,6 +82,11 @@ export function SquadPlanProvider({ children }: { children: ReactNode }) {
   const setFormation = useCallback((formationId: string) => {
     userChanged.current = true;
     setPlanState((current) => emptyPlan(formationId, current?.horizon ?? null));
+  }, []);
+
+  const clearPlan = useCallback(() => {
+    userChanged.current = true;
+    setPlanState(null);
   }, []);
 
   const setHorizon = useCallback(
@@ -163,6 +169,7 @@ export function SquadPlanProvider({ children }: { children: ReactNode }) {
         makeFirstChoice,
         refreshSnapshots,
         removeMissing,
+        clearPlan,
       }}
     >
       {children}

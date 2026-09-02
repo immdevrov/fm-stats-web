@@ -7,12 +7,14 @@ export function ImportSaveDialog({
   isOpen,
   filename,
   snapshots,
+  snapshotsLoaded,
   onClose,
   onConfirm,
 }: {
   isOpen: boolean;
   filename: string;
   snapshots: Snapshot[];
+  snapshotsLoaded: boolean;
   onClose: () => void;
   onConfirm: (choice: { mode: "same" | "new"; date: string; replacesId: string | null }) => void;
 }) {
@@ -27,7 +29,7 @@ export function ImportSaveDialog({
 
   const iso = displayToIso(dateText);
   const clash = iso ? snapshots.find((s) => s.date === iso) : undefined;
-  const canImport = mode !== null && iso !== null;
+  const canImport = mode !== null && iso !== null && snapshotsLoaded;
 
   return (
     <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && onClose()}>
@@ -44,6 +46,7 @@ export function ImportSaveDialog({
                   value={mode ?? ""}
                   onValueChange={(e) => setMode(e.value as "same" | "new")}
                 >
+                  <RadioGroup.Label>Which save is this?</RadioGroup.Label>
                   <VStack align="stretch" gap={2}>
                     <RadioGroup.Item value="same">
                       <RadioGroup.ItemHiddenInput />
@@ -90,6 +93,12 @@ export function ImportSaveDialog({
                     </Text>
                   )}
                 </VStack>
+
+                {!snapshotsLoaded && (
+                  <Text fontSize="sm" color="fg.muted">
+                    Loading existing snapshots…
+                  </Text>
+                )}
               </VStack>
             </Dialog.Body>
             <Dialog.Footer>
