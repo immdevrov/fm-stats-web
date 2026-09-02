@@ -23,7 +23,7 @@ export function PlannerToolbar({
   presentUids: Set<number>;
 }) {
   const { plan, setFormation, setHorizon, removeMissing } = useSquadPlan();
-  const { active } = useSnapshots();
+  const { active, isNewest } = useSnapshots();
   const [pendingFormation, setPendingFormation] = useState<string | null>(null);
 
   const uncovered = countSlotsWithoutCover(plan, formation.slots.length);
@@ -84,11 +84,16 @@ export function PlannerToolbar({
         {missing > 0 && (
           <HStack gap={2}>
             <Text fontSize="sm" color="spicyPaprika.500">
-              {missing} not in current data
+              {missing} not in this date&rsquo;s data
             </Text>
-            <Button size="xs" variant="outline" onClick={() => removeMissing(presentUids)}>
+            <Button size="xs" variant="outline" disabled={!isNewest} onClick={() => removeMissing(presentUids)}>
               Remove missing
             </Button>
+            {!isNewest && (
+              <Text fontSize="sm" color="fg.muted">
+                Only available on the newest data.
+              </Text>
+            )}
           </HStack>
         )}
       </HStack>
