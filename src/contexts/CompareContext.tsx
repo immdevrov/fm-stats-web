@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from "react";
 import { db } from "../services/db";
-import { useRoster } from "./SnapshotContext";
 
 interface CompareContextValue {
   compareList: number[];
@@ -17,17 +16,16 @@ export function CompareProvider({ children }: { children: ReactNode }) {
   const [compareList, setCompareList] = useState<number[]>([]);
   const loaded = useRef(false);
   const userChanged = useRef(false);
-  const { players } = useRoster();
 
   useEffect(() => {
-    if (loaded.current || players === null) return;
     db.getCompareList().then((uids) => {
-      const validUids = new Set(players.map((p) => p.UID));
-      const cleaned = uids.filter((uid) => validUids.has(uid));
-      setCompareList((current) => (userChanged.current ? current : cleaned));
-      loaded.current = true;
+      Promise.all(uids.map((uid) => db.getPlayer(uid))).then((players) => {
+        const cleaned = uids.filter((_, index) => players[index] !== undefined);
+        setCompareList((current) => (userChanged.current ? current : cleaned));
+        loaded.current = true;
+      });
     });
-  }, [players]);
+  }, []);
 
   useEffect(() => {
     if (!loaded.current) return;
