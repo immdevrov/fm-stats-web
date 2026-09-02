@@ -75,8 +75,14 @@ export function SnapshotProvider({ children }: { children: ReactNode }) {
     };
   }, [rosterWanted, isLoaded, activeId, rosterFor]);
 
-  const effectiveRoster = activeId === null ? EMPTY_ROSTER : rosterFor === activeId ? roster : null;
-  const rosterLoading = rosterWanted && activeId !== null && rosterFor !== activeId;
+  const effectiveRoster = !isLoaded
+    ? null
+    : activeId === null
+      ? EMPTY_ROSTER
+      : rosterFor === activeId
+        ? roster
+        : null;
+  const rosterLoading = rosterWanted && (!isLoaded || (activeId !== null && rosterFor !== activeId));
 
   const setActive = useCallback((id: string) => {
     setActiveId(id);
