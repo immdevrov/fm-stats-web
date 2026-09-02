@@ -1,7 +1,9 @@
 import { test, expect } from '@playwright/test';
 import { parseCustomDate } from '../src/utils/utils';
 import { PLAYER_FIELDS, pack, unpack } from '../src/services/db/pack';
+import { sortSnapshots, newestSnapshot } from '../src/utils/snapshot-order';
 import type { Player } from '../src/types/types';
+import type { Snapshot } from '../src/types/snapshot';
 
 test('parseCustomDate reads the month as written', () => {
   const january = parseCustomDate('24/01/2035');
@@ -59,4 +61,28 @@ test('unpack decodes against the field list a snapshot was written with', () => 
 test('PLAYER_FIELDS excludes the key and the derived override', () => {
   expect(PLAYER_FIELDS).not.toContain('UID');
   expect(PLAYER_FIELDS).not.toContain('CustomPosition');
+});
+
+function snap(id: string, date: string | null, importedAt = 0): Snapshot {
+  return { id, date, label: null, playerCount: 1, importedAt, fields: [] };
+}
+
+test('snapshots sort by date regardless of import order', () => {
+  const backfilled = [snap('b', '2035-01-24', 1), snap('c', '2036-05-01', 2), snap('a', '2033-08-10', 3)];
+  expect(sortSnapshots(backfilled).map((s) => s.id)).toEqual(['c', 'b', 'a']);
+});
+
+test('an undated snapshot sorts oldest and is never the newest', () => {
+  const withUndated = [snap('u', null, 9), snap('d', '2033-08-10', 1)];
+  expect(sortSnapshots(withUndated).map((s) => s.id)).toEqual(['d', 'u']);
+  expect(newestSnapshot(withUndated)?.id).toBe('d');
+});
+
+test('an undated snapshot alone is the newest', () => {
+  expect(newestSnapshot([snap('u', null)])?.id).toBe('u');
+});
+
+test('importedAt breaks a tie between equal dates', () => {
+  const sameDay = [snap('first', '2035-01-24', 1), snap('second', '2035-01-24', 2)];
+  expect(sortSnapshots(sameDay).map((s) => s.id)).toEqual(['second', 'first']);
 });
