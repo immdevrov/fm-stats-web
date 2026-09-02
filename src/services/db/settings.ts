@@ -52,7 +52,7 @@ export function setSquadPlan(plan: SquadPlan | null): Promise<void> {
   return _set(SQUAD_PLAN, plan, 'save squad plan');
 }
 
-export async function getStoredActiveSnapshot(): Promise<string | null> {
+export async function _getStoredActiveSnapshot(): Promise<string | null> {
   const value = await _get(ACTIVE_SNAPSHOT);
   return typeof value === 'string' ? value : null;
 }

@@ -1,5 +1,5 @@
-import { getDB, wrapError } from './connection';
-import { getStoredActiveSnapshot, setActiveSnapshotId } from './settings';
+import { getDB, wrapError, generateSnapshotId } from './connection';
+import { _getStoredActiveSnapshot, setActiveSnapshotId } from './settings';
 import { PLAYER_FIELDS, pack, unpack } from './pack';
 import { sortSnapshots, newestSnapshot } from '../../utils/snapshot-order';
 import type { Player } from '../../types/types';
@@ -8,6 +8,8 @@ import type { Snapshot, PlayerHistoryEntry } from '../../types/snapshot';
 const CHUNK_SIZE = 2000;
 
 function rosterRange(snapshotId: string): IDBKeyRange {
+  // Upper bound [snapshotId, []] works because IndexedDB orders numbers before arrays,
+  // so [] sorts above every real uid and this bounds the full range for the snapshot.
   return IDBKeyRange.bound([snapshotId], [snapshotId, []]);
 }
 
@@ -27,7 +29,7 @@ export async function createSnapshot(
 ): Promise<string> {
   try {
     const db = await getDB();
-    const id = crypto.randomUUID();
+    const id = generateSnapshotId();
     const fields = [...PLAYER_FIELDS];
 
     for (let start = 0; start < players.length; start += CHUNK_SIZE) {
@@ -89,7 +91,8 @@ export async function purgeOrphanedRows(): Promise<number> {
     const db = await getDB();
     const known = new Set((await db.getAll('snapshots')).map((snapshot) => snapshot.id));
     let removed = 0;
-    let cursor = await db.transaction('playerSnapshots', 'readwrite').store.openCursor();
+    const tx = db.transaction('playerSnapshots', 'readwrite');
+    let cursor = await tx.store.openCursor();
     while (cursor) {
       if (!known.has(cursor.value.s)) {
         await cursor.delete();
@@ -97,6 +100,7 @@ export async function purgeOrphanedRows(): Promise<number> {
       }
       cursor = await cursor.continue();
     }
+    await tx.done;
     return removed;
   } catch (error) {
     throw wrapError('purge orphaned rows', error);
@@ -126,16 +130,16 @@ export async function getPlayerHistory(uid: number): Promise<PlayerHistoryEntry[
 export async function deleteSnapshot(snapshotId: string): Promise<void> {
   try {
     const db = await getDB();
-    let cursor = await db
-      .transaction('playerSnapshots', 'readwrite')
-      .store.openCursor(rosterRange(snapshotId));
+    const tx = db.transaction(['snapshots', 'playerSnapshots'], 'readwrite');
+    let cursor = await tx.objectStore('playerSnapshots').openCursor(rosterRange(snapshotId));
     while (cursor) {
       await cursor.delete();
       cursor = await cursor.continue();
     }
-    await db.delete('snapshots', snapshotId);
+    await tx.objectStore('snapshots').delete(snapshotId);
+    await tx.done;
 
-    if ((await getStoredActiveSnapshot()) === snapshotId) {
+    if ((await _getStoredActiveSnapshot()) === snapshotId) {
       await setActiveSnapshotId(newestSnapshot(await db.getAll('snapshots'))?.id ?? null);
     }
   } catch (error) {
@@ -158,16 +162,20 @@ export async function updateSnapshot(
 }
 
 export async function getActiveSnapshotId(): Promise<string | null> {
-  const db = await getDB();
-  const all = await db.getAll('snapshots');
-  if (all.length === 0) return null;
+  try {
+    const db = await getDB();
+    const all = await db.getAll('snapshots');
+    if (all.length === 0) return null;
 
-  const stored = await getStoredActiveSnapshot();
-  if (stored && all.some((snapshot) => snapshot.id === stored)) return stored;
+    const stored = await _getStoredActiveSnapshot();
+    if (stored && all.some((snapshot) => snapshot.id === stored)) return stored;
 
-  const fallback = newestSnapshot(all)?.id ?? null;
-  await setActiveSnapshotId(fallback);
-  return fallback;
+    const fallback = newestSnapshot(all)?.id ?? null;
+    await setActiveSnapshotId(fallback);
+    return fallback;
+  } catch (error) {
+    throw wrapError('get active snapshot', error);
+  }
 }
 
 export async function clearAllSnapshots(): Promise<void> {

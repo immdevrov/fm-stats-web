@@ -49,7 +49,7 @@ async function migrateCustomPositions(tx: UpgradeTx): Promise<void> {
   }
 }
 
-function generateSnapshotId(): string {
+export function generateSnapshotId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();
   }
