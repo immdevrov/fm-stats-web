@@ -98,11 +98,23 @@ export function parseHtmlTable(html: string): Record<string, string>[] {
   return records;
 }
 
-/**
- * Converts the raw string records into the final Player array with correct types.
- * @param rawRecords The array of raw string records from the HTML table.
- * @returns An array of Player objects.
- */
+export const REQUIRED_COLUMNS: readonly string[] = [
+  'UID', 'Name', 'Age', 'Nat', 'Division', 'Club', 'Position', 'Sec. Position',
+  'Wage', 'Expires', 'Height', 'Weight', 'Rc Injury', 'Starts', 'Mins',
+  'Pas %', 'Asts/90', 'xA/90', 'Pr passes/90', 'OP-KP/90', 'Ch C/90',
+  'OP-Cr %', 'OP-Crs C/90', 'Conv %', 'xG-OP', 'ShT/90',
+  'Shots Outside Box/90', 'NP-xG/90', 'Gls/90', 'Gl Mst', 'Tck/90', 'Tck R',
+  'Int/90', 'Clr/90', 'K Tck/90', 'K Hdrs/90', 'Aer A/90', 'Hdr %',
+  'Hdrs W/90', 'Blk/90', 'Poss Won/90', 'Poss Lost/90', 'Sprints/90',
+  'Drb/90', 'Dist/90', 'Pres C/90', 'Pres A/90', 'Svt', 'Svp', 'Svh',
+  'xSv %', 'Sv %', 'xGP/90', 'Con/90',
+];
+
+export function findMissingColumns(headers: string[]): string[] {
+  const present = new Set(headers.map((header) => header.trim()));
+  return REQUIRED_COLUMNS.filter((column) => !present.has(column));
+}
+
 export function transformPlayerStats(rawRecords: Record<string, string>[]): Player[] {
   const players: Player[] = [];
 

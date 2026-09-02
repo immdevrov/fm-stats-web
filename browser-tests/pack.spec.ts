@@ -3,6 +3,7 @@ import { parseCustomDate } from '../src/utils/utils';
 import { deriveDateFromFilename, displayToIso, isoToDisplay } from '../src/utils/import-date';
 import { PLAYER_FIELDS, pack, unpack } from '../src/services/db/pack';
 import { sortSnapshots, newestSnapshot } from '../src/utils/snapshot-order';
+import { REQUIRED_COLUMNS, findMissingColumns } from '../src/parser/html-parser';
 import type { Player } from '../src/types/types';
 import type { Snapshot } from '../src/types/snapshot';
 
@@ -110,4 +111,13 @@ test('converts between display and iso', () => {
   expect(displayToIso('nonsense')).toBeNull();
   expect(isoToDisplay('2035-01-24')).toBe('24/01/2035');
   expect(isoToDisplay(null)).toBe('');
+});
+
+test('reports the columns an old export is missing', () => {
+  const headers = REQUIRED_COLUMNS.filter((c) => c !== 'Pas %' && c !== 'xSv %');
+  expect(findMissingColumns([...headers])).toEqual(['Pas %', 'xSv %']);
+});
+
+test('a complete header list reports nothing missing', () => {
+  expect(findMissingColumns([...REQUIRED_COLUMNS, 'Extra Column'])).toEqual([]);
 });
