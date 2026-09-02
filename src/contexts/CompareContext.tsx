@@ -16,14 +16,15 @@ const MAX_PLAYERS = 3;
 export function CompareProvider({ children }: { children: ReactNode }) {
   const [compareList, setCompareList] = useState<number[]>([]);
   const loaded = useRef(false);
+  const userChanged = useRef(false);
   const { players } = useRoster();
 
   useEffect(() => {
-    if (players === null) return;
+    if (loaded.current || players === null) return;
     db.getCompareList().then((uids) => {
       const validUids = new Set(players.map((p) => p.UID));
       const cleaned = uids.filter((uid) => validUids.has(uid));
-      setCompareList(cleaned);
+      setCompareList((current) => (userChanged.current ? current : cleaned));
       loaded.current = true;
     });
   }, [players]);
@@ -35,6 +36,7 @@ export function CompareProvider({ children }: { children: ReactNode }) {
 
   const addPlayer = useCallback((uid: number): boolean => {
     let added = false;
+    userChanged.current = true;
     setCompareList((prev) => {
       if (prev.length >= MAX_PLAYERS || prev.includes(uid)) return prev;
       added = true;
@@ -44,10 +46,12 @@ export function CompareProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const removePlayer = useCallback((uid: number) => {
+    userChanged.current = true;
     setCompareList((prev) => prev.filter((id) => id !== uid));
   }, []);
 
   const clearAll = useCallback(() => {
+    userChanged.current = true;
     setCompareList([]);
   }, []);
 

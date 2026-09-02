@@ -10,6 +10,7 @@ import { usePlayerNotes } from "../contexts/PlayerNotesContext";
 import { useSnapshots } from "../contexts/SnapshotContext";
 import { useMyTeam } from "../contexts/MyTeamContext";
 import { useSquadPlan } from "../contexts/SquadPlanContext";
+import { useCompare } from "../contexts/CompareContext";
 import type { Player } from "../types/types";
 
 function errorText(error: unknown): string {
@@ -28,6 +29,7 @@ export function ImportView() {
   const { snapshots, refresh, setActive, isLoaded: snapshotsLoaded } = useSnapshots();
   const { clearMyClub } = useMyTeam();
   const { clearPlan } = useSquadPlan();
+  const { clearAll: clearCompareList } = useCompare();
   const [pendingName, setPendingName] = useState<string | null>(null);
   const [progress, setProgress] = useState<{ written: number; total: number } | null>(null);
 
@@ -85,6 +87,7 @@ export function ImportView() {
         }
         clearMyClub();
         clearPlan();
+        clearCompareList();
       }
 
       let id: string;
