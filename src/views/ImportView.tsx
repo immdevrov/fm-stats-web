@@ -2,6 +2,7 @@ import { Container, Heading, VStack, Box, Text, Spinner, Button, HStack } from "
 import { useRef, useState } from "react";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { FileInput } from "../components/ui/file-input";
+import { SnapshotTable } from "../components/SnapshotTable";
 import { findMissingColumns, parseHtmlTable, transformPlayerStats } from "../parser/html-parser";
 import { db } from "../services/db";
 import { toaster } from "../components/ui/toaster";
@@ -189,6 +190,8 @@ export function ImportView() {
               <Text fontWeight="medium">{importStatus.message}</Text>
             </Box>
           )}
+
+          <SnapshotTable />
 
           <FileInput onFileSelect={handleFileSelect} accept=".html,.htm" disabled={isImporting} />
 
