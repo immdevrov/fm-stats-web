@@ -5,8 +5,9 @@ import type { FormationSlot } from "../../formations";
 import type { Player } from "../../types/types";
 import type { PlannedPlayer } from "../../types/planner";
 import { displayDate, formatPositions, getEffectivePosition } from "../../utils/utils";
-import { describeMismatch, parseHorizon, placementFacts, slotLabel } from "../../utils/planner";
+import { describeMismatch, resolveHorizon, placementFacts, slotLabel } from "../../utils/planner";
 import { useSquadPlan } from "../../contexts/SquadPlanContext";
+import { useSnapshots } from "../../contexts/SnapshotContext";
 import { usePlayerNotes } from "../../contexts/PlayerNotesContext";
 import { useMyTeam } from "../../contexts/MyTeamContext";
 import { Tooltip } from "../ui/tooltip";
@@ -24,6 +25,7 @@ export function PlannerCard({
   player: Player | undefined;
 }) {
   const { plan, placements, remove, makeFirstChoice } = useSquadPlan();
+  const { active } = useSnapshots();
   const { annotations, listsFor } = usePlayerNotes();
   const { myClub } = useMyTeam();
   const [showMismatch, setShowMismatch] = useState(false);
@@ -36,7 +38,7 @@ export function PlannerCard({
   const memberships = listsFor(planned.uid);
   const unwanted = annotations.get(planned.uid)?.unwanted === true;
 
-  const horizon = parseHorizon(plan?.horizon ?? null);
+  const horizon = resolveHorizon(active?.date ?? null, plan?.horizon ?? null);
   const expiring = Boolean(horizon && player?.Expires && player.Expires <= horizon);
 
   const { elsewhere, firstChoiceCount } = placementFacts(placements, planned.uid, slot.id);

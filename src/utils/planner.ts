@@ -1,7 +1,7 @@
 import type { FormationSlot } from '../formations';
 import type { PlayerPosition, PlayerPositions } from '../fields/positions';
-import type { SquadPlan } from '../types/planner';
-import { formatPositions, getEffectivePosition, parseCustomDate } from './utils';
+import type { HorizonPreset, SquadPlan } from '../types/planner';
+import { formatPositions, getEffectivePosition } from './utils';
 
 export type PositionedPlayer = { Position: PlayerPositions; CustomPosition?: PlayerPositions };
 
@@ -80,10 +80,14 @@ export function countSlotsWithoutCover(plan: SquadPlan | null, slotCount: number
   return slotCount - plan.slots.filter((slot) => slot.players.length >= 2).length;
 }
 
-export function parseHorizon(horizon: string | null): Date | null {
-  if (!horizon) return null;
-  const parts = horizon.split('/');
-  if (parts.length !== 3 || parts.some((part) => part.trim() === '')) return null;
-  const date = parseCustomDate(horizon);
-  return Number.isNaN(date.getTime()) ? null : date;
+export function resolveHorizon(
+  snapshotDate: string | null,
+  preset: HorizonPreset | null
+): Date | null {
+  if (!snapshotDate || !preset) return null;
+  const [year, month, day] = snapshotDate.split('-').map(Number);
+  if (preset === 'now') return new Date(year, month - 1, day);
+  if (preset === '1y') return new Date(year + 1, month - 1, day);
+  if (preset === '2y') return new Date(year + 2, month - 1, day);
+  return new Date(month > 6 ? year + 1 : year, 5, 30);
 }

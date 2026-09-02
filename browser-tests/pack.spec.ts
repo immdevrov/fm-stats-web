@@ -4,6 +4,7 @@ import { deriveDateFromFilename, displayToIso, isoToDisplay } from '../src/utils
 import { PLAYER_FIELDS, pack, unpack } from '../src/services/db/pack';
 import { sortSnapshots, newestSnapshot } from '../src/utils/snapshot-order';
 import { REQUIRED_COLUMNS, findMissingColumns } from '../src/parser/html-parser';
+import { resolveHorizon } from '../src/utils/planner';
 import type { Player } from '../src/types/types';
 import type { Snapshot } from '../src/types/snapshot';
 
@@ -120,4 +121,28 @@ test('reports the columns an old export is missing', () => {
 
 test('a complete header list reports nothing missing', () => {
   expect(findMissingColumns([...REQUIRED_COLUMNS, 'Extra Column'])).toEqual([]);
+});
+
+test('now resolves to the snapshot date itself', () => {
+  const now = resolveHorizon('2035-01-24', 'now');
+  expect(now?.getFullYear()).toBe(2035);
+  expect(now?.getMonth()).toBe(0);
+  expect(now?.getDate()).toBe(24);
+});
+
+test('season resolves to the following 30 June', () => {
+  expect(resolveHorizon('2035-01-24', 'season')?.getFullYear()).toBe(2035);
+  expect(resolveHorizon('2035-01-24', 'season')?.getMonth()).toBe(5);
+  expect(resolveHorizon('2035-01-24', 'season')?.getDate()).toBe(30);
+  expect(resolveHorizon('2035-08-10', 'season')?.getFullYear()).toBe(2036);
+});
+
+test('year offsets add whole years to the snapshot date', () => {
+  expect(resolveHorizon('2035-01-24', '1y')?.getFullYear()).toBe(2036);
+  expect(resolveHorizon('2035-01-24', '2y')?.getFullYear()).toBe(2037);
+});
+
+test('an undated snapshot or no preset gives no horizon', () => {
+  expect(resolveHorizon(null, 'season')).toBeNull();
+  expect(resolveHorizon('2035-01-24', null)).toBeNull();
 });

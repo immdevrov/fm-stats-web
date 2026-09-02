@@ -43,9 +43,14 @@ function isSquadPlan(value: unknown): value is SquadPlan {
   return typeof plan.formationId === 'string' && Array.isArray(plan.slots);
 }
 
+const HORIZON_PRESETS = new Set(['now', 'season', '1y', '2y']);
+
 export async function getSquadPlan(): Promise<SquadPlan | null> {
   const value = await _get(SQUAD_PLAN);
-  return isSquadPlan(value) ? value : null;
+  if (!isSquadPlan(value)) return null;
+  return HORIZON_PRESETS.has(value.horizon as string)
+    ? value
+    : { ...value, horizon: null };
 }
 
 export function setSquadPlan(plan: SquadPlan | null): Promise<void> {
