@@ -36,6 +36,7 @@ export function SnapshotProvider({ children }: { children: ReactNode }) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [roster, setRoster] = useState<Player[] | null>(null);
+  const [rosterFor, setRosterFor] = useState<string | null>(null);
   const [rosterWanted, setRosterWanted] = useState(false);
 
   const refresh = useCallback(async () => {
@@ -54,33 +55,37 @@ export function SnapshotProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!rosterWanted || !isLoaded || !activeId) return;
+    if (!rosterWanted || !isLoaded || !activeId || rosterFor === activeId) return;
     let cancelled = false;
     db.getAllPlayers()
       .then((players) => {
-        if (!cancelled) setRoster(players);
+        if (!cancelled) {
+          setRoster(players);
+          setRosterFor(activeId);
+        }
       })
       .catch(() => {
-        if (!cancelled) setRoster(EMPTY_ROSTER);
+        if (!cancelled) {
+          setRoster(EMPTY_ROSTER);
+          setRosterFor(activeId);
+        }
       });
     return () => {
       cancelled = true;
     };
-  }, [rosterWanted, isLoaded, activeId]);
+  }, [rosterWanted, isLoaded, activeId, rosterFor]);
 
-  const effectiveRoster = activeId ? roster : EMPTY_ROSTER;
-  const rosterLoading = rosterWanted && isLoaded && activeId !== null && roster === null;
+  const effectiveRoster = activeId === null ? EMPTY_ROSTER : rosterFor === activeId ? roster : null;
+  const rosterLoading = rosterWanted && activeId !== null && rosterFor !== activeId;
 
   const setActive = useCallback((id: string) => {
     setActiveId(id);
-    setRoster(null);
     db.setActiveSnapshotId(id);
   }, []);
 
   const removeSnapshot = useCallback(
     async (id: string) => {
       await db.deleteSnapshot(id);
-      setRoster(null);
       await refresh();
     },
     [refresh]
