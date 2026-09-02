@@ -3,6 +3,7 @@ import * as rankings from './rankings';
 import * as compare from './compare';
 import * as annotations from './annotations';
 import * as settings from './settings';
+import * as snapshots from './snapshots';
 
 export const db = {
   ...players,
@@ -10,6 +11,7 @@ export const db = {
   ...compare,
   ...annotations,
   ...settings,
+  ...snapshots,
 };
 
 export type { FmStatsDB } from './connection';
