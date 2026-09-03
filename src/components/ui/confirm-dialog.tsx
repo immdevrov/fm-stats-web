@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Dialog, Button, VStack, HStack, Text, Portal } from "@chakra-ui/react";
 
 export interface ConfirmOption {
@@ -9,10 +10,11 @@ export interface ConfirmOption {
 interface ConfirmDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (value: string) => void;
+  onConfirm: (value: string) => void | Promise<void>;
   title: string;
   message: string;
   options: ConfirmOption[];
+  busyLabel?: string;
 }
 
 export function ConfirmDialog({
@@ -22,9 +24,21 @@ export function ConfirmDialog({
   title,
   message,
   options,
+  busyLabel,
 }: ConfirmDialogProps) {
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const handleConfirm = async (value: string) => {
+    setBusy(value);
+    try {
+      await onConfirm(value);
+    } finally {
+      setBusy(null);
+    }
+  };
+
   return (
-    <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && onClose()}>
+    <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && busy === null && onClose()}>
       <Portal>
         <Dialog.Backdrop />
         <Dialog.Positioner>
@@ -40,7 +54,10 @@ export function ConfirmDialog({
                     <Button
                       key={option.value}
                       variant="outline"
-                      onClick={() => onConfirm(option.value)}
+                      onClick={() => handleConfirm(option.value)}
+                      disabled={busy !== null && busy !== option.value}
+                      loading={busy === option.value}
+                      loadingText={busyLabel ?? option.label}
                       justifyContent="flex-start"
                       textAlign="left"
                       h="auto"
@@ -62,7 +79,7 @@ export function ConfirmDialog({
             </Dialog.Body>
             <Dialog.Footer>
               <HStack gap={2}>
-                <Button variant="ghost" onClick={onClose}>
+                <Button variant="ghost" onClick={onClose} disabled={busy !== null}>
                   Cancel
                 </Button>
               </HStack>

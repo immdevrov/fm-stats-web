@@ -217,6 +217,7 @@ export function SnapshotTable() {
         }}
         title="Delete this snapshot?"
         message="Its players are removed permanently. Annotations, lists and your plan are not touched."
+        busyLabel="Deleting…"
         options={pendingDelete ? [{ label: "Delete", value: pendingDelete }] : []}
       />
     </VStack>
