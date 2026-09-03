@@ -27,7 +27,13 @@ export function ImportView() {
     message: string;
   } | null>(null);
   const { refresh: notesRefresh } = usePlayerNotes();
-  const { snapshots, refresh, setActive, isLoaded: snapshotsLoaded } = useSnapshots();
+  const {
+    snapshots,
+    refresh,
+    setActive,
+    isLoaded: snapshotsLoaded,
+    loadError: snapshotsError,
+  } = useSnapshots();
   const { clearMyClub } = useMyTeam();
   const { clearPlan } = useSquadPlan();
   const { clearAll: clearCompareList } = useCompare();
@@ -265,6 +271,7 @@ export function ImportView() {
         filename={pendingName ?? ""}
         snapshots={snapshots}
         snapshotsLoaded={snapshotsLoaded}
+        snapshotsError={snapshotsError}
         onClose={() => {
           setPendingName(null);
           pendingPlayers.current = null;

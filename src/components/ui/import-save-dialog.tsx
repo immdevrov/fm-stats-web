@@ -8,6 +8,7 @@ export function ImportSaveDialog({
   filename,
   snapshots,
   snapshotsLoaded,
+  snapshotsError,
   onClose,
   onConfirm,
 }: {
@@ -15,21 +16,26 @@ export function ImportSaveDialog({
   filename: string;
   snapshots: Snapshot[];
   snapshotsLoaded: boolean;
+  snapshotsError: string | null;
   onClose: () => void;
   onConfirm: (choice: { mode: "same" | "new"; date: string; replacesId: string | null }) => void;
 }) {
   const [mode, setMode] = useState<"same" | "new" | null>(null);
   const [dateText, setDateText] = useState("");
+  const [onClash, setOnClash] = useState<"replace" | "add" | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
     setMode(null); // eslint-disable-line react-hooks/set-state-in-effect
     setDateText(isoToDisplay(deriveDateFromFilename(filename)));
+    setOnClash(null);
   }, [isOpen, filename]);
 
   const iso = displayToIso(dateText);
   const clash = iso ? snapshots.find((s) => s.date === iso) : undefined;
-  const canImport = mode !== null && iso !== null && snapshotsLoaded;
+  const asksAboutClash = mode === "same" && clash !== undefined;
+  const canImport =
+    mode !== null && iso !== null && snapshotsLoaded && (!asksAboutClash || onClash !== null);
 
   return (
     <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && onClose()}>
@@ -79,7 +85,10 @@ export function ImportSaveDialog({
                   <Input
                     placeholder="DD/MM/YYYY"
                     value={dateText}
-                    onChange={(e) => setDateText(e.target.value)}
+                    onChange={(e) => {
+                      setDateText(e.target.value);
+                      setOnClash(null);
+                    }}
                     maxW="160px"
                   />
                   {dateText !== "" && iso === null && (
@@ -87,16 +96,45 @@ export function ImportSaveDialog({
                       Not a date. Use DD/MM/YYYY.
                     </Text>
                   )}
-                  {mode === "same" && clash && (
-                    <Text fontSize="sm" color="fg.muted">
-                      A snapshot already exists for this date. Importing replaces it.
-                    </Text>
-                  )}
                 </VStack>
+
+                {asksAboutClash && (
+                  <RadioGroup.Root
+                    value={onClash ?? ""}
+                    onValueChange={(e) => setOnClash(e.value as "replace" | "add")}
+                  >
+                    <RadioGroup.Label>
+                      A snapshot already exists for this date. What should this import do?
+                    </RadioGroup.Label>
+                    <VStack align="stretch" gap={2}>
+                      <RadioGroup.Item value="replace">
+                        <RadioGroup.ItemHiddenInput />
+                        <RadioGroup.ItemIndicator />
+                        <RadioGroup.ItemText>
+                          Replace it — the existing snapshot for this date is deleted
+                        </RadioGroup.ItemText>
+                      </RadioGroup.Item>
+                      <RadioGroup.Item value="add">
+                        <RadioGroup.ItemHiddenInput />
+                        <RadioGroup.ItemIndicator />
+                        <RadioGroup.ItemText>
+                          Add a second snapshot for this date — keep both
+                        </RadioGroup.ItemText>
+                      </RadioGroup.Item>
+                    </VStack>
+                  </RadioGroup.Root>
+                )}
 
                 {!snapshotsLoaded && (
                   <Text fontSize="sm" color="fg.muted">
                     Loading existing snapshots…
+                  </Text>
+                )}
+
+                {snapshotsLoaded && snapshotsError && (
+                  <Text fontSize="sm" color="spicyPaprika.500">
+                    Existing snapshots could not be read ({snapshotsError}), so this import cannot
+                    tell whether one already exists for that date. Importing still works.
                   </Text>
                 )}
               </VStack>
@@ -112,7 +150,7 @@ export function ImportSaveDialog({
                   onConfirm({
                     mode: mode!,
                     date: iso!,
-                    replacesId: mode === "same" ? (clash?.id ?? null) : null,
+                    replacesId: asksAboutClash && onClash === "replace" ? clash!.id : null,
                   })
                 }
               >
