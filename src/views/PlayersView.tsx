@@ -18,6 +18,7 @@ import type { Player } from "../types/types";
 import { Table, type Column, type SortDirection } from "../components/ui/table";
 import { formatWage, displayDate, formatPositions, getEffectivePosition } from "../utils/utils";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import { RosterErrorNotice } from "../components/RosterErrorNotice";
 import { PlayerStatusControl } from "../components/PlayerStatusControl";
 import { usePlayerNotes } from "../contexts/PlayerNotesContext";
 
@@ -196,19 +197,7 @@ export function PlayersView() {
     setSelectedPositions(new Set());
   }, []);
 
-  if (error) {
-    return (
-      <Box minH="100vh" p={8}>
-        <Container maxW="container.xl">
-          <VStack gap={4}>
-            <Box p={4} borderRadius="md" bg="red.500" color="white">
-              <Text fontWeight="medium">{error}</Text>
-            </Box>
-          </VStack>
-        </Container>
-      </Box>
-    );
-  }
+  if (error) return <RosterErrorNotice error={error} />;
 
   if (isLoading) {
     return (

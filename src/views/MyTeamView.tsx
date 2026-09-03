@@ -7,6 +7,7 @@ import { SquadPlanner } from "../components/planner/SquadPlanner";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { useMyTeam } from "../contexts/MyTeamContext";
 import { useRoster } from "../contexts/SnapshotContext";
+import { RosterErrorNotice } from "../components/RosterErrorNotice";
 
 export function MyTeamView() {
   const { myClub, isLoaded, setMyClub, clearMyClub } = useMyTeam();
@@ -16,7 +17,7 @@ export function MyTeamView() {
   useDocumentTitle(myClub ? `My Team: ${myClub}` : "My Team");
 
   const [isPicking, setIsPicking] = useState(false);
-  const { players: allPlayers } = useRoster();
+  const { players: allPlayers, error: rosterError } = useRoster();
 
   const clubs = useMemo(
     () => (allPlayers ? [...new Set(allPlayers.map((p) => p.Club).filter(Boolean))].sort() : null),
@@ -33,6 +34,8 @@ export function MyTeamView() {
     else clearMyClub();
     setIsPicking(false);
   };
+
+  if (rosterError) return <RosterErrorNotice error={rosterError} />;
 
   if (!isLoaded) {
     return (

@@ -98,6 +98,7 @@ export function SnapshotProvider({ children }: { children: ReactNode }) {
         ? roster
         : null;
   const rosterLoading = rosterWanted && (!isLoaded || (activeId !== null && rosterFor !== activeId));
+  const effectiveRosterError = rosterFor === activeId ? rosterError : null;
 
   const setActive = useCallback((id: string) => {
     setActiveId(id);
@@ -148,7 +149,7 @@ export function SnapshotProvider({ children }: { children: ReactNode }) {
         isNewest,
         isLoaded,
         loadError,
-        rosterError,
+        rosterError: effectiveRosterError,
         setActive,
         refresh,
         removeSnapshot,

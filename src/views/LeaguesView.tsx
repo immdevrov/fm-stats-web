@@ -14,6 +14,7 @@ import {
 import { useState, useEffect, useMemo } from "react";
 import { db } from "../services/db";
 import { useRoster } from "../contexts/SnapshotContext";
+import { RosterErrorNotice } from "../components/RosterErrorNotice";
 import { Table, type Column, type SortDirection } from "../components/ui/table";
 import { formatWage, average } from "../utils/utils";
 import type { Player, LeagueRanking } from "../types/types";
@@ -44,7 +45,7 @@ export function LeaguesView() {
   const [savedRankings, setSavedRankings] = useState<Map<string, number>>(new Map());
   const [isEditingRankings, setIsEditingRankings] = useState(false);
   const [editingRankings, setEditingRankings] = useState<Map<string, string>>(new Map());
-  const { players } = useRoster();
+  const { players, error: rosterError } = useRoster();
 
   useEffect(() => {
     if (players === null) return;
@@ -298,6 +299,8 @@ export function LeaguesView() {
     return cols;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditingRankings, editingRankings]);
+
+  if (rosterError) return <RosterErrorNotice error={rosterError} />;
 
   if (isLoading) {
     return (

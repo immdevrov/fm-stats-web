@@ -16,6 +16,7 @@ import { Link } from "react-router-dom";
 import { db } from "../services/db";
 import { useCompare } from "../contexts/CompareContext";
 import { useRoster } from "../contexts/SnapshotContext";
+import { RosterErrorNotice } from "../components/RosterErrorNotice";
 import type { Player, LeagueRanking } from "../types/types";
 import { Table, type Column, type SortDirection } from "../components/ui/table";
 import { PlayerStatusControl } from "../components/PlayerStatusControl";
@@ -286,7 +287,7 @@ function ColumnFilterPopover({
 }
 
 export function ScoutingView() {
-  const { players: rosterPlayers } = useRoster();
+  const { players: rosterPlayers, error: rosterError } = useRoster();
   const [allPlayers, setAllPlayers] = useState<Player[]>([]);
   const [leagueRankings, setLeagueRankings] = useState<LeagueRanking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -651,6 +652,8 @@ export function ScoutingView() {
       </CTable.Row>
     );
   }, [columns, columnFiltersRaw, setColumnFilter]);
+
+  if (rosterError) return <RosterErrorNotice error={rosterError} />;
 
   if (isLoading) {
     return (

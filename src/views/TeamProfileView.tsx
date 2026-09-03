@@ -15,13 +15,14 @@ import { SquadTable } from "../components/SquadTable";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { useMyTeam } from "../contexts/MyTeamContext";
 import { useRoster } from "../contexts/SnapshotContext";
+import { RosterErrorNotice } from "../components/RosterErrorNotice";
 import { toaster } from "../components/ui/toaster";
 
 export function TeamProfileView() {
   const { teamName } = useParams<{ teamName: string }>();
   const navigate = useNavigate();
   const { myClub, isLoaded: isMyTeamLoaded, setMyClub } = useMyTeam();
-  const { players: allPlayers } = useRoster();
+  const { players: allPlayers, error: rosterError } = useRoster();
 
   const decodedTeamName = teamName ? decodeURIComponent(teamName) : "";
   useDocumentTitle(decodedTeamName ? `Team: ${decodedTeamName}` : "Teams");
@@ -30,6 +31,8 @@ export function TeamProfileView() {
     () => (allPlayers ? allPlayers.filter((p) => p.Club === decodedTeamName) : null),
     [allPlayers, decodedTeamName]
   );
+
+  if (rosterError) return <RosterErrorNotice error={rosterError} />;
 
   if (!decodedTeamName) {
     return (

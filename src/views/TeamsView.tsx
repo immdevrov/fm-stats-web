@@ -16,6 +16,7 @@ import { Table, type Column, type SortDirection } from "../components/ui/table";
 import { SearchableSelect } from "../components/SearchableSelect";
 import { formatWage, average } from "../utils/utils";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import { RosterErrorNotice } from "../components/RosterErrorNotice";
 
 interface TeamData {
   name: string;
@@ -171,17 +172,7 @@ export function TeamsView() {
     [handleTeamClick]
   );
 
-  if (error) {
-    return (
-      <Box minH="100vh" p={8}>
-        <Container maxW="container.lg">
-          <Box p={4} borderRadius="md" bg="red.500" color="white">
-            <Text fontWeight="medium">{error}</Text>
-          </Box>
-        </Container>
-      </Box>
-    );
-  }
+  if (error) return <RosterErrorNotice error={error} />;
 
   if (isLoading) {
     return (

@@ -7,6 +7,7 @@ import { PlayerStatusControl } from "../components/PlayerStatusControl";
 import { Table, type Column } from "../components/ui/table";
 import { formatWage, displayDate, formatPositions, getEffectivePosition } from "../utils/utils";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import { RosterErrorNotice } from "../components/RosterErrorNotice";
 import type { Player } from "../types/types";
 
 const UNWANTED_TAB = "__unwanted__";
@@ -90,19 +91,8 @@ export function ListsView() {
     [uids, playersByUid, annotations]
   );
 
-  if (loadError || playersError) {
-    return (
-      <Box minH="100vh" p={8}>
-        <Container maxW="container.xl">
-          <VStack gap={4}>
-            <Box p={4} borderRadius="md" bg="red.500" color="white">
-              <Text fontWeight="medium">{loadError ?? playersError}</Text>
-            </Box>
-          </VStack>
-        </Container>
-      </Box>
-    );
-  }
+  const listsError = loadError ?? playersError;
+  if (listsError) return <RosterErrorNotice error={listsError} />;
 
   if (!isLoaded || !playersLoaded) {
     return (
