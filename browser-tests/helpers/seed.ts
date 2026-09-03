@@ -221,3 +221,28 @@ export async function seedAnnotation(
     { dbName: DB_NAME, dbVersion: DB_VERSION, annotation }
   );
 }
+
+export async function seedCompareList(page: Page, uids: number[]) {
+  await page.evaluate(
+    ({ dbName, dbVersion, uids }) => {
+      return new Promise<void>((resolve, reject) => {
+        const request = indexedDB.open(dbName, dbVersion);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          const db = request.result;
+          const tx = db.transaction(['compareList'], 'readwrite');
+          tx.objectStore('compareList').put({ id: 'default', uids });
+          tx.oncomplete = () => {
+            db.close();
+            resolve();
+          };
+          tx.onerror = () => {
+            db.close();
+            reject(tx.error);
+          };
+        };
+      });
+    },
+    { dbName: DB_NAME, dbVersion: DB_VERSION, uids }
+  );
+}

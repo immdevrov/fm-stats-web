@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { seedAnnotation, seedSnapshots } from './helpers/seed';
+import { seedAnnotation, seedCompareList, seedSnapshots } from './helpers/seed';
 import { REQUIRED_COLUMNS } from '../src/parser/html-parser';
 
 async function buildExport(): Promise<string> {
@@ -100,4 +100,19 @@ test('a same-save import keeps annotations and a new-save import erases them', a
   await importOnce(page, 'New save');
   await page.goto('/lists');
   await expect(page.getByRole('button', { name: 'Unwanted (0)' })).toBeVisible();
+});
+
+test('a compared player missing from the active snapshot is shown, not dropped', async ({ page }) => {
+  await page.goto('/import');
+  await seedSnapshots(page, [OLD, MID], OLD.id);
+  await seedAnnotation(page, { uid: 2, lastKnownName: 'Later Player' });
+  await seedCompareList(page, [1, 2]);
+
+  await page.goto('/compare');
+
+  await expect(page.getByText('Not in this date’s data')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Later Player' })).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByText('Not in this date’s data')).toBeVisible();
 });
