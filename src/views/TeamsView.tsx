@@ -9,7 +9,7 @@ import {
   Input,
   Button,
 } from "@chakra-ui/react";
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useRoster } from "../contexts/SnapshotContext";
 import { Table, type Column, type SortDirection } from "../components/ui/table";
@@ -31,10 +31,6 @@ const MIN_SEARCH_LENGTH = 3;
 export function TeamsView() {
   useDocumentTitle("Teams");
   const navigate = useNavigate();
-  const [teams, setTeams] = useState<TeamData[]>([]);
-  const [leagues, setLeagues] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLeague, setSelectedLeague] = useState<string>("");
@@ -43,50 +39,41 @@ export function TeamsView() {
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
   const [currentPage, setCurrentPage] = useState(1);
-  const { players } = useRoster();
+  const { players, error } = useRoster();
 
-  useEffect(() => {
-    if (players === null) return;
-    try {
-      const clubMap = new Map<
-        string,
-        { league: string; wages: number[]; ages: number[] }
-      >();
-      const leagueSet = new Set<string>();
+  const { teams, leagues } = useMemo(() => {
+    const clubMap = new Map<string, { league: string; wages: number[]; ages: number[] }>();
+    const leagueSet = new Set<string>();
 
-      for (const player of players) {
-        const club = player.Club || "Unknown";
-        const league = player.Division || "Unknown";
+    for (const player of players ?? []) {
+      const club = player.Club || "Unknown";
+      const league = player.Division || "Unknown";
 
-        leagueSet.add(league);
+      leagueSet.add(league);
 
-        if (!clubMap.has(club)) {
-          clubMap.set(club, { league, wages: [], ages: [] });
-        }
-        const data = clubMap.get(club)!;
-        data.wages.push(player.Wage ?? 0);
-        data.ages.push(player.Age);
+      if (!clubMap.has(club)) {
+        clubMap.set(club, { league, wages: [], ages: [] });
       }
-
-      const teamData: TeamData[] = [];
-      for (const [name, data] of clubMap) {
-        teamData.push({
-          name,
-          league: data.league,
-          playerCount: data.wages.length,
-          averageWage: average(data.wages) ?? 0,
-          averageAge: average(data.ages) ?? 0,
-        });
-      }
-
-      setTeams(teamData);
-      setLeagues(Array.from(leagueSet).sort());
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load teams");
-    } finally {
-      setIsLoading(false);
+      const data = clubMap.get(club)!;
+      data.wages.push(player.Wage ?? 0);
+      data.ages.push(player.Age);
     }
+
+    const teamData: TeamData[] = [];
+    for (const [name, data] of clubMap) {
+      teamData.push({
+        name,
+        league: data.league,
+        playerCount: data.wages.length,
+        averageWage: average(data.wages) ?? 0,
+        averageAge: average(data.ages) ?? 0,
+      });
+    }
+
+    return { teams: teamData, leagues: Array.from(leagueSet).sort() };
   }, [players]);
+
+  const isLoading = players === null;
 
   const filteredAndSortedTeams = useMemo(() => {
     let result = teams;
@@ -128,9 +115,12 @@ export function TeamsView() {
     return filteredAndSortedTeams.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredAndSortedTeams, currentPage]);
 
-  useEffect(() => {
+  const filterKey = `${searchQuery}|${selectedLeague}|${sortKey}|${sortDirection}`;
+  const [pagedFor, setPagedFor] = useState(filterKey);
+  if (pagedFor !== filterKey) {
+    setPagedFor(filterKey);
     setCurrentPage(1);
-  }, [searchQuery, selectedLeague, sortKey, sortDirection]);
+  }
 
   const handleTeamClick = useCallback(
     (team: TeamData) => {
@@ -181,6 +171,18 @@ export function TeamsView() {
     [handleTeamClick]
   );
 
+  if (error) {
+    return (
+      <Box minH="100vh" p={8}>
+        <Container maxW="container.lg">
+          <Box p={4} borderRadius="md" bg="red.500" color="white">
+            <Text fontWeight="medium">{error}</Text>
+          </Box>
+        </Container>
+      </Box>
+    );
+  }
+
   if (isLoading) {
     return (
       <Box minH="100vh" p={8}>
@@ -189,18 +191,6 @@ export function TeamsView() {
             <Spinner size="lg" colorPalette="glaucous" />
             <Text color="fg.muted">Loading teams...</Text>
           </VStack>
-        </Container>
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Box minH="100vh" p={8}>
-        <Container maxW="container.lg">
-          <Box p={4} borderRadius="md" bg="red.500" color="white">
-            <Text fontWeight="medium">{error}</Text>
-          </Box>
         </Container>
       </Box>
     );

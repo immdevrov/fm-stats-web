@@ -11,7 +11,7 @@ import {
   NativeSelect,
   Checkbox,
 } from "@chakra-ui/react";
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useRoster } from "../contexts/SnapshotContext";
 import type { Player } from "../types/types";
@@ -23,6 +23,7 @@ import { usePlayerNotes } from "../contexts/PlayerNotesContext";
 
 const PAGE_SIZE = 20;
 const MIN_SEARCH_LENGTH = 3;
+const NO_PLAYERS: Player[] = [];
 const POSITION_TYPES = ["GK", "D", "WB", "DM", "M", "AM", "ST"] as const;
 
 interface PlayerRow extends Record<string, unknown> {
@@ -43,9 +44,6 @@ interface PlayerRow extends Record<string, unknown> {
 export function PlayersView() {
   useDocumentTitle("Players");
   const navigate = useNavigate();
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [sortKey, setSortKey] = useState<keyof PlayerRow>("name");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
@@ -56,18 +54,9 @@ export function PlayersView() {
   const [hideUnwanted, setHideUnwanted] = useState(false);
 
   const { isUnwanted } = usePlayerNotes();
-  const { players: allPlayers } = useRoster();
-
-  useEffect(() => {
-    if (allPlayers === null) return;
-    try {
-      setPlayers(allPlayers);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load players");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [allPlayers]);
+  const { players: allPlayers, error } = useRoster();
+  const players = allPlayers ?? NO_PLAYERS;
+  const isLoading = allPlayers === null;
 
   const clubs = useMemo(() => {
     const clubSet = new Set<string>();
@@ -162,9 +151,19 @@ export function PlayersView() {
     return filteredAndSortedData.slice(start, start + PAGE_SIZE);
   }, [filteredAndSortedData, currentPage]);
 
-  useEffect(() => {
+  const filterKey = [
+    searchQuery,
+    [...selectedPositions].sort().join(","),
+    selectedClub,
+    sortKey,
+    sortDirection,
+    hideUnwanted,
+  ].join("|");
+  const [pagedFor, setPagedFor] = useState(filterKey);
+  if (pagedFor !== filterKey) {
+    setPagedFor(filterKey);
     setCurrentPage(1);
-  }, [searchQuery, selectedPositions, selectedClub, sortKey, sortDirection, hideUnwanted]);
+  }
 
   const handleSortChange = useCallback(
     (key: keyof PlayerRow, direction: SortDirection) => {
@@ -197,19 +196,6 @@ export function PlayersView() {
     setSelectedPositions(new Set());
   }, []);
 
-  if (isLoading) {
-    return (
-      <Box minH="100vh" p={8}>
-        <Container maxW="container.xl">
-          <VStack gap={8}>
-            <Spinner size="lg" colorPalette="glaucous" />
-            <Text color="fg.muted">Loading players...</Text>
-          </VStack>
-        </Container>
-      </Box>
-    );
-  }
-
   if (error) {
     return (
       <Box minH="100vh" p={8}>
@@ -218,6 +204,19 @@ export function PlayersView() {
             <Box p={4} borderRadius="md" bg="red.500" color="white">
               <Text fontWeight="medium">{error}</Text>
             </Box>
+          </VStack>
+        </Container>
+      </Box>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <Box minH="100vh" p={8}>
+        <Container maxW="container.xl">
+          <VStack gap={8}>
+            <Spinner size="lg" colorPalette="glaucous" />
+            <Text color="fg.muted">Loading players...</Text>
           </VStack>
         </Container>
       </Box>

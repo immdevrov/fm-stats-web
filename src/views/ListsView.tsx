@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Box, Button, Container, HStack, Heading, Spinner, Text, VStack } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
 import { usePlayerNotes, type PlayerIdentity } from "../contexts/PlayerNotesContext";
@@ -10,6 +10,7 @@ import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import type { Player } from "../types/types";
 
 const UNWANTED_TAB = "__unwanted__";
+const NO_PLAYERS: Player[] = [];
 
 interface ListRow extends Record<string, unknown> {
   uid: number;
@@ -39,22 +40,10 @@ export function ListsView() {
     deleteList,
     removeFromList,
   } = usePlayerNotes();
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [playersLoaded, setPlayersLoaded] = useState(false);
-  const [playersError, setPlayersError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string | null>(null);
-  const { players: rosterPlayers } = useRoster();
-
-  useEffect(() => {
-    if (rosterPlayers === null) return;
-    try {
-      setPlayers(rosterPlayers);
-    } catch (err) {
-      setPlayersError(err instanceof Error ? err.message : "Failed to load players");
-    } finally {
-      setPlayersLoaded(true);
-    }
-  }, [rosterPlayers]);
+  const { players: rosterPlayers, error: playersError } = useRoster();
+  const players = rosterPlayers ?? NO_PLAYERS;
+  const playersLoaded = rosterPlayers !== null;
 
   const playersByUid = useMemo(
     () => new Map(players.map((player) => [player.UID, player])),
@@ -101,19 +90,6 @@ export function ListsView() {
     [uids, playersByUid, annotations]
   );
 
-  if (!isLoaded || !playersLoaded) {
-    return (
-      <Box minH="100vh" p={8}>
-        <Container maxW="container.xl">
-          <VStack gap={8}>
-            <Spinner size="lg" colorPalette="glaucous" />
-            <Text color="fg.muted">Loading lists...</Text>
-          </VStack>
-        </Container>
-      </Box>
-    );
-  }
-
   if (loadError || playersError) {
     return (
       <Box minH="100vh" p={8}>
@@ -122,6 +98,19 @@ export function ListsView() {
             <Box p={4} borderRadius="md" bg="red.500" color="white">
               <Text fontWeight="medium">{loadError ?? playersError}</Text>
             </Box>
+          </VStack>
+        </Container>
+      </Box>
+    );
+  }
+
+  if (!isLoaded || !playersLoaded) {
+    return (
+      <Box minH="100vh" p={8}>
+        <Container maxW="container.xl">
+          <VStack gap={8}>
+            <Spinner size="lg" colorPalette="glaucous" />
+            <Text color="fg.muted">Loading lists...</Text>
           </VStack>
         </Container>
       </Box>

@@ -1,10 +1,19 @@
 import { useEffect, useState } from "react";
-import { Badge, Button, HStack, Input, Text, VStack } from "@chakra-ui/react";
+import { Badge, Box, Button, HStack, Input, Text, VStack } from "@chakra-ui/react";
 import { useSnapshots } from "../contexts/SnapshotContext";
 import { displayToIso, isoToDisplay } from "../utils/import-date";
 import { db } from "../services/db";
 import { toaster } from "./ui/toaster";
 import { ConfirmDialog } from "./ui/confirm-dialog";
+
+function reportFailure(title: string, error: unknown) {
+  toaster.create({
+    title,
+    description: error instanceof Error ? error.message : "An unknown error occurred.",
+    type: "error",
+    duration: 7000,
+  });
+}
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
@@ -13,7 +22,8 @@ function formatBytes(bytes: number): string {
 }
 
 export function SnapshotTable() {
-  const { snapshots, activeId, isLoaded, setActive, removeSnapshot, editSnapshot } = useSnapshots();
+  const { snapshots, activeId, isLoaded, loadError, setActive, removeSnapshot, editSnapshot } =
+    useSnapshots();
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [dateText, setDateText] = useState("");
@@ -21,14 +31,30 @@ export function SnapshotTable() {
   const [purging, setPurging] = useState(false);
 
   useEffect(() => {
-    navigator.storage?.estimate?.().then((estimate) => {
-      if (estimate.usage !== undefined && estimate.quota !== undefined) {
-        setUsage({ used: estimate.usage, quota: estimate.quota });
-      }
-    });
+    navigator.storage
+      ?.estimate?.()
+      .then((estimate) => {
+        if (estimate.usage !== undefined && estimate.quota !== undefined) {
+          setUsage({ used: estimate.usage, quota: estimate.quota });
+        }
+      })
+      .catch(() => setUsage(null));
   }, [snapshots]);
 
-  if (!isLoaded || snapshots.length === 0) return null;
+  if (!isLoaded) return null;
+
+  if (loadError) {
+    return (
+      <Box p={4} borderRadius="md" bg="red.500" color="white">
+        <Text fontWeight="medium">
+          Your imported data could not be read ({loadError}). Importing a file below is the way
+          back — it leaves your lists, notes, prices and squad plan alone.
+        </Text>
+      </Box>
+    );
+  }
+
+  if (snapshots.length === 0) return null;
 
   return (
     <VStack align="stretch" gap={2}>
@@ -60,8 +86,12 @@ export function SnapshotTable() {
                   colorPalette="glaucous"
                   disabled={displayToIso(dateText) === null}
                   onClick={async () => {
-                    await editSnapshot(snapshot.id, { date: displayToIso(dateText) });
-                    setEditing(null);
+                    try {
+                      await editSnapshot(snapshot.id, { date: displayToIso(dateText) });
+                      setEditing(null);
+                    } catch (error) {
+                      reportFailure("Date not saved", error);
+                    }
                   }}
                 >
                   Save
@@ -138,6 +168,8 @@ export function SnapshotTable() {
                 type: "success",
                 duration: 5000,
               });
+            } catch (error) {
+              reportFailure("Clean-up failed", error);
             } finally {
               setPurging(false);
             }
@@ -151,7 +183,11 @@ export function SnapshotTable() {
         isOpen={pendingDelete !== null}
         onClose={() => setPendingDelete(null)}
         onConfirm={async (value: string) => {
-          await removeSnapshot(value);
+          try {
+            await removeSnapshot(value);
+          } catch (error) {
+            reportFailure("Snapshot not deleted", error);
+          }
           setPendingDelete(null);
         }}
         title="Delete this snapshot?"
