@@ -17,7 +17,7 @@ import {
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useCompare } from "../contexts/CompareContext";
-import { useRoster } from "../contexts/SnapshotContext";
+import { useRoster, useSnapshots } from "../contexts/SnapshotContext";
 import { db } from "../services/db";
 import type { Player, LeagueRanking } from "../types/types";
 import type { PlayerPosition, PlayerPositions } from "../fields/positions";
@@ -59,6 +59,7 @@ export function PlayerProfileView() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { players: allPlayers } = useRoster();
+  const { activeId } = useSnapshots();
   useDocumentTitle(player ? `Player: ${player.Name}` : missingIdentity ? missingIdentity.name : "Player");
 
   const reloadPlayer = useCallback(async () => {
@@ -86,10 +87,13 @@ export function PlayerProfileView() {
         if (!playerData) {
           const annotation = await db.getAnnotation(uid);
           if (!annotation) {
+            setPlayer(null);
+            setMissingIdentity(null);
             setError("Player not found");
             setIsLoading(false);
             return;
           }
+          setError(null);
           setMissingIdentity({
             name: annotation.lastKnownName ?? "Unknown player",
             club: annotation.lastKnownClub ?? "",
@@ -110,7 +114,7 @@ export function PlayerProfileView() {
     }
 
     loadPlayer();
-  }, [playerId, uid]);
+  }, [playerId, uid, activeId]);
 
   if (isLoading) {
     return (

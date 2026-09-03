@@ -4,7 +4,7 @@ import type { Player } from "../../types/types";
 import { FORMATIONS, getFormation } from "../../formations";
 import { useSquadPlan } from "../../contexts/SquadPlanContext";
 import { usePlayerNotes } from "../../contexts/PlayerNotesContext";
-import { useRoster } from "../../contexts/SnapshotContext";
+import { useRoster, useSnapshots } from "../../contexts/SnapshotContext";
 import { PlannerBoard } from "./PlannerBoard";
 import { PlannerToolbar } from "./PlannerToolbar";
 import { CandidatePanel } from "./CandidatePanel";
@@ -13,6 +13,7 @@ export function SquadPlanner({ club, players }: { club: string; players: Player[
   const { lists } = usePlayerNotes();
   const { plan, isLoaded, setFormation, refreshSnapshots } = useSquadPlan();
   const { players: allPlayers } = useRoster();
+  const { isNewest } = useSnapshots();
 
   const listed = useMemo(() => {
     if (!allPlayers) return [];
@@ -26,11 +27,12 @@ export function SquadPlanner({ club, players }: { club: string; players: Player[
   );
 
   useEffect(() => {
-    if (!isLoaded || !plan || !allPlayers) return;
+    // Only the newest snapshot may write back name and club: browsing 2033 must not persist 2033 clubs.
+    if (!isLoaded || !plan || !allPlayers || !isNewest) return;
     refreshSnapshots(
       new Map(allPlayers.map((p) => [p.UID, { name: p.Name, club: p.Club }]))
     );
-  }, [isLoaded, plan, allPlayers, refreshSnapshots]);
+  }, [isLoaded, plan, allPlayers, isNewest, refreshSnapshots]);
 
   if (!isLoaded || allPlayers === null) {
     return <Spinner size="lg" colorPalette="glaucous" alignSelf="center" />;

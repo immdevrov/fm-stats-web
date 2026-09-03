@@ -19,8 +19,9 @@ export function CompareProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     db.getCompareList().then((uids) => {
-      Promise.all(uids.map((uid) => db.getPlayer(uid))).then((players) => {
-        const cleaned = uids.filter((_, index) => players[index] !== undefined);
+      // Missing from the active snapshot renders as missing; only a uid in no snapshot at all is stale.
+      Promise.all(uids.map((uid) => db.getPlayerHistory(uid))).then((histories) => {
+        const cleaned = uids.filter((_, index) => histories[index].length > 0);
         setCompareList((current) => (userChanged.current ? current : cleaned));
         loaded.current = true;
       });

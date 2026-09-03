@@ -1,6 +1,8 @@
 const TRAILING_DATE = /(\d{1,2})[_-](\d{1,2})[_-](\d{4})$/;
 
 function toIso(day: number, month: number, year: number): string | null {
+  // A three-digit year sorts above a four-digit one, which would silently make the snapshot newest.
+  if (year < 1000 || year > 9999) return null;
   if (month < 1 || month > 12 || day < 1) return null;
   const candidate = new Date(year, month - 1, day);
   if (candidate.getMonth() !== month - 1 || candidate.getDate() !== day) return null;
