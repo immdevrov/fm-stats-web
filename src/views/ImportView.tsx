@@ -73,7 +73,7 @@ export function ImportView() {
   const performImport = async (choice: {
     mode: "same" | "new";
     date: string;
-    replacesId: string | null;
+    replaces: string[];
   }) => {
     const players = pendingPlayers.current;
     if (!players) return;
@@ -110,9 +110,9 @@ export function ImportView() {
           : new Error(`Import failed (${errorText(error)}). Nothing was changed.`);
       }
 
-      if (choice.mode === "same" && choice.replacesId) {
+      for (const replacedId of choice.mode === "same" ? choice.replaces : []) {
         try {
-          await db.deleteSnapshot(choice.replacesId);
+          await db.deleteSnapshot(replacedId);
         } catch (error) {
           toaster.create({
             title: "Old Snapshot Left Behind",

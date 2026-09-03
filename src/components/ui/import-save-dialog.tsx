@@ -18,7 +18,7 @@ export function ImportSaveDialog({
   snapshotsLoaded: boolean;
   snapshotsError: string | null;
   onClose: () => void;
-  onConfirm: (choice: { mode: "same" | "new"; date: string; replacesId: string | null }) => void;
+  onConfirm: (choice: { mode: "same" | "new"; date: string; replaces: string[] }) => void;
 }) {
   const [mode, setMode] = useState<"same" | "new" | null>(null);
   const [dateText, setDateText] = useState("");
@@ -32,8 +32,8 @@ export function ImportSaveDialog({
   }, [isOpen, filename]);
 
   const iso = displayToIso(dateText);
-  const clash = iso ? snapshots.find((s) => s.date === iso) : undefined;
-  const asksAboutClash = mode === "same" && clash !== undefined;
+  const clashes = iso ? snapshots.filter((s) => s.date === iso) : [];
+  const asksAboutClash = mode === "same" && clashes.length > 0;
   const canImport =
     mode !== null && iso !== null && snapshotsLoaded && (!asksAboutClash || onClash !== null);
 
@@ -111,7 +111,7 @@ export function ImportSaveDialog({
                         <RadioGroup.ItemHiddenInput />
                         <RadioGroup.ItemIndicator />
                         <RadioGroup.ItemText>
-                          Replace it — the existing snapshot for this date is deleted
+                          Replace — every snapshot already on this date is deleted
                         </RadioGroup.ItemText>
                       </RadioGroup.Item>
                       <RadioGroup.Item value="add">
@@ -150,7 +150,8 @@ export function ImportSaveDialog({
                   onConfirm({
                     mode: mode!,
                     date: iso!,
-                    replacesId: asksAboutClash && onClash === "replace" ? clash!.id : null,
+                    replaces:
+                      asksAboutClash && onClash === "replace" ? clashes.map((s) => s.id) : [],
                   })
                 }
               >

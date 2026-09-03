@@ -25,8 +25,8 @@ export function SnapshotTable() {
   const { snapshots, activeId, isLoaded, loadError, setActive, removeSnapshot, editSnapshot } =
     useSnapshots();
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
-  const [editing, setEditing] = useState<string | null>(null);
-  const [dateText, setDateText] = useState("");
+  const [editing, setEditing] = useState<{ id: string; field: "date" | "label" } | null>(null);
+  const [draft, setDraft] = useState("");
   const [usage, setUsage] = useState<{ used: number; quota: number } | null>(null);
   const [purging, setPurging] = useState(false);
 
@@ -47,8 +47,9 @@ export function SnapshotTable() {
     return (
       <Box p={4} borderRadius="md" bg="red.500" color="white">
         <Text fontWeight="medium">
-          Your imported data could not be read ({loadError}). Importing a file below is the way
-          back — it leaves your lists, notes, prices and squad plan alone.
+          Your imported data could not be read ({loadError}). Reload the page first — if that does
+          not clear it, importing a file below as <em>Same save</em> rebuilds the data and leaves
+          your lists, notes, prices and squad plan alone.
         </Text>
       </Box>
     );
@@ -72,25 +73,31 @@ export function SnapshotTable() {
           gap={3}
         >
           <HStack gap={2} flex={1} minW={0}>
-            {editing === snapshot.id ? (
+            {editing?.id === snapshot.id ? (
               <>
                 <Input
                   size="sm"
-                  maxW="130px"
-                  placeholder="DD/MM/YYYY"
-                  value={dateText}
-                  onChange={(e) => setDateText(e.target.value)}
+                  maxW={editing.field === "date" ? "130px" : "220px"}
+                  placeholder={editing.field === "date" ? "DD/MM/YYYY" : "A name for this date"}
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
                 />
                 <Button
                   size="xs"
                   colorPalette="glaucous"
-                  disabled={displayToIso(dateText) === null}
+                  disabled={editing.field === "date" && displayToIso(draft) === null}
                   onClick={async () => {
+                    const field = editing.field;
                     try {
-                      await editSnapshot(snapshot.id, { date: displayToIso(dateText) });
+                      await editSnapshot(
+                        snapshot.id,
+                        field === "date"
+                          ? { date: displayToIso(draft) }
+                          : { label: draft.trim() || null }
+                      );
                       setEditing(null);
                     } catch (error) {
-                      reportFailure("Date not saved", error);
+                      reportFailure(field === "date" ? "Date not saved" : "Name not saved", error);
                     }
                   }}
                 >
@@ -126,11 +133,21 @@ export function SnapshotTable() {
               size="xs"
               variant="outline"
               onClick={() => {
-                setEditing(snapshot.id);
-                setDateText(isoToDisplay(snapshot.date));
+                setEditing({ id: snapshot.id, field: "date" });
+                setDraft(isoToDisplay(snapshot.date));
               }}
             >
               Set date
+            </Button>
+            <Button
+              size="xs"
+              variant="outline"
+              onClick={() => {
+                setEditing({ id: snapshot.id, field: "label" });
+                setDraft(snapshot.label ?? "");
+              }}
+            >
+              Rename
             </Button>
             <Button
               size="xs"
