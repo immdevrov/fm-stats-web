@@ -1,6 +1,7 @@
 import { getDB, wrapError, generateSnapshotId } from './connection';
 import { _getStoredActiveSnapshot, setActiveSnapshotId } from './settings';
 import { PLAYER_FIELDS, pack, unpack } from './pack';
+import { applyCustomPosition, loadCustomPositions } from './custom-positions';
 import { sortSnapshots, newestSnapshot } from '../../utils/snapshot-order';
 import type { Player } from '../../types/types';
 import type { Snapshot, PlayerHistoryEntry } from '../../types/snapshot';
@@ -65,7 +66,10 @@ export async function getSnapshotRoster(snapshotId: string): Promise<Player[]> {
     const snapshot = await db.get('snapshots', snapshotId);
     if (!snapshot) return [];
     const rows = await db.getAll('playerSnapshots', rosterRange(snapshotId));
-    return rows.map((row) => unpack(row.u, row.v, snapshot.fields));
+    const byUid = await loadCustomPositions();
+    return rows.map((row) =>
+      applyCustomPosition(unpack(row.u, row.v, snapshot.fields), byUid)
+    );
   } catch (error) {
     throw wrapError('get snapshot roster', error);
   }
@@ -112,12 +116,16 @@ export async function getPlayerHistory(uid: number): Promise<PlayerHistoryEntry[
     const db = await getDB();
     const rows = await db.getAllFromIndex('playerSnapshots', 'by-uid', uid);
     const snapshots = new Map((await db.getAll('snapshots')).map((s) => [s.id, s]));
+    const byUid = await loadCustomPositions();
 
     const entries: PlayerHistoryEntry[] = [];
     for (const row of rows) {
       const snapshot = snapshots.get(row.s);
       if (!snapshot) continue;
-      entries.push({ snapshot, player: unpack(row.u, row.v, snapshot.fields) });
+      entries.push({
+        snapshot,
+        player: applyCustomPosition(unpack(row.u, row.v, snapshot.fields), byUid),
+      });
     }
 
     const order = new Map(sortSnapshots([...snapshots.values()]).map((s, i) => [s.id, i]));

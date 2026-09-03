@@ -1,28 +1,13 @@
 import { getDB, wrapError } from './connection';
 import { getActiveSnapshotId, getSnapshotRoster, getSnapshotPlayer } from './snapshots';
+import { withCustomPositions } from './custom-positions';
 import type { Player } from '../../types/types';
 import type { PlayerPositions } from '../../fields/positions';
-
-async function withCustomPositions(players: Player[]): Promise<Player[]> {
-  if (players.length === 0) return players;
-  const db = await getDB();
-  const annotations = await db.getAll('playerAnnotations');
-  const byUid = new Map(
-    annotations
-      .filter((a) => a.customPosition)
-      .map((a) => [a.uid, a.customPosition as PlayerPositions])
-  );
-  if (byUid.size === 0) return players;
-  return players.map((player) => {
-    const customPosition = byUid.get(player.UID);
-    return customPosition ? { ...player, CustomPosition: customPosition } : player;
-  });
-}
 
 async function activeRoster(): Promise<Player[]> {
   const snapshotId = await getActiveSnapshotId();
   if (!snapshotId) return [];
-  return await withCustomPositions(await getSnapshotRoster(snapshotId));
+  return await getSnapshotRoster(snapshotId);
 }
 
 export async function getAllPlayers(): Promise<Player[]> {
