@@ -116,3 +116,18 @@ test('a compared player missing from the active snapshot is shown, not dropped',
   await page.reload();
   await expect(page.getByText('Not in this date’s data')).toBeVisible();
 });
+
+test('the only snapshot cannot be deleted, and says why', async ({ page }) => {
+  await page.goto('/import');
+  await seedSnapshots(page, [MID], MID.id);
+  await page.goto('/import');
+
+  const only = page.getByRole('button', { name: 'Delete' });
+  await expect(only).toBeDisabled();
+  await only.hover();
+  await expect(page.getByText('This is your only data.')).toBeVisible();
+
+  await seedSnapshots(page, [MID, NEW], MID.id);
+  await page.goto('/import');
+  await expect(page.getByRole('button', { name: 'Delete' }).first()).toBeEnabled();
+});

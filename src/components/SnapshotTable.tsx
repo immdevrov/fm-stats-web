@@ -5,6 +5,7 @@ import { displayToIso, isoToDisplay } from "../utils/import-date";
 import { db } from "../services/db";
 import { toaster } from "./ui/toaster";
 import { ConfirmDialog } from "./ui/confirm-dialog";
+import { Tooltip } from "./ui/tooltip";
 
 function reportFailure(title: string, error: unknown) {
   toaster.create({
@@ -149,15 +150,22 @@ export function SnapshotTable() {
             >
               Rename
             </Button>
-            <Button
-              size="xs"
-              variant="outline"
-              colorPalette="spicyPaprika"
-              disabled={snapshots.length === 1}
-              onClick={() => setPendingDelete(snapshot.id)}
+            <Tooltip
+              content="This is your only data. Import below as New save to clear everything."
+              disabled={snapshots.length > 1}
             >
-              Delete
-            </Button>
+              <Box>
+                <Button
+                  size="xs"
+                  variant="outline"
+                  colorPalette="spicyPaprika"
+                  disabled={snapshots.length === 1}
+                  onClick={() => setPendingDelete(snapshot.id)}
+                >
+                  Delete
+                </Button>
+              </Box>
+            </Tooltip>
           </HStack>
         </HStack>
       ))}
