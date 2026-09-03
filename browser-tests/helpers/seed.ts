@@ -246,3 +246,55 @@ export async function seedCompareList(page: Page, uids: number[]) {
     { dbName: DB_NAME, dbVersion: DB_VERSION, uids }
   );
 }
+
+export async function seedSettings(page: Page, entries: Record<string, unknown>) {
+  await page.evaluate(
+    ({ dbName, dbVersion, entries }) => {
+      return new Promise<void>((resolve, reject) => {
+        const request = indexedDB.open(dbName, dbVersion);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          const db = request.result;
+          const tx = db.transaction(['settings'], 'readwrite');
+          for (const [key, value] of Object.entries(entries)) {
+            tx.objectStore('settings').put({ key, value });
+          }
+          tx.oncomplete = () => {
+            db.close();
+            resolve();
+          };
+          tx.onerror = () => {
+            db.close();
+            reject(tx.error);
+          };
+        };
+      });
+    },
+    { dbName: DB_NAME, dbVersion: DB_VERSION, entries }
+  );
+}
+
+export async function seedList(page: Page, list: { id: string; name: string; uids: number[] }) {
+  await page.evaluate(
+    ({ dbName, dbVersion, list }) => {
+      return new Promise<void>((resolve, reject) => {
+        const request = indexedDB.open(dbName, dbVersion);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          const db = request.result;
+          const tx = db.transaction(['playerLists'], 'readwrite');
+          tx.objectStore('playerLists').put({ ...list, order: 0, createdAt: new Date() });
+          tx.oncomplete = () => {
+            db.close();
+            resolve();
+          };
+          tx.onerror = () => {
+            db.close();
+            reject(tx.error);
+          };
+        };
+      });
+    },
+    { dbName: DB_NAME, dbVersion: DB_VERSION, list }
+  );
+}

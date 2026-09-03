@@ -84,7 +84,7 @@ export function PlannerToolbar({
         {missing > 0 && (
           <HStack gap={2}>
             <Text fontSize="sm" color="spicyPaprika.500">
-              {missing} not in this date&rsquo;s data
+              {missing} no longer in the squad
             </Text>
             <Button size="xs" variant="outline" disabled={!isNewest} onClick={() => removeMissing(presentUids)}>
               Remove missing

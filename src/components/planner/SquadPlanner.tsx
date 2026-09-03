@@ -22,8 +22,8 @@ export function SquadPlanner({ club, players }: { club: string; players: Player[
   }, [allPlayers, lists]);
 
   const presentUids = useMemo(
-    () => new Set((allPlayers ?? []).map((player) => player.UID)),
-    [allPlayers]
+    () => new Set([...players, ...listed].map((player) => player.UID)),
+    [players, listed]
   );
 
   useEffect(() => {

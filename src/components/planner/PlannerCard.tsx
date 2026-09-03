@@ -42,6 +42,7 @@ export function PlannerCard({
   const expiring = Boolean(horizon && player?.Expires && player.Expires <= horizon);
 
   const { elsewhere, firstChoiceCount } = placementFacts(placements, planned.uid, slot.id);
+  const departed = Boolean(player && myClub && player.Club !== myClub && memberships.length === 0);
 
   const positions = effectivePlayer ? formatPositions(getEffectivePosition(effectivePlayer)) : "";
   const trailing = player
@@ -68,7 +69,7 @@ export function PlannerCard({
             p="7px 8px"
             pl={memberships.length > 0 ? "6px" : "8px"}
             cursor="pointer"
-            opacity={player ? 1 : 0.5}
+            opacity={player && !departed ? 1 : 0.5}
           >
             <Text
               flexShrink={0}
@@ -132,6 +133,19 @@ export function PlannerCard({
                 <Tooltip content="Unwanted">
                   <Text as="span" color="spicyPaprika.500" fontSize="sm" lineHeight="1">
                     &#8856;
+                  </Text>
+                </Tooltip>
+              )}
+              {departed && (
+                <Tooltip content={`No longer at ${myClub} — now at ${player!.Club}`}>
+                  <Text
+                    as="span"
+                    color="spicyPaprika.500"
+                    fontSize="sm"
+                    lineHeight="1"
+                    aria-label="No longer in the squad"
+                  >
+                    &#8594;
                   </Text>
                 </Tooltip>
               )}
