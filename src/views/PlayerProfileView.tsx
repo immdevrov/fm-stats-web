@@ -69,6 +69,8 @@ export function PlayerProfileView() {
   }, [uid]);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function loadPlayer() {
       if (!playerId) {
         setError("No player ID specified");
@@ -84,8 +86,10 @@ export function PlayerProfileView() {
 
       try {
         const playerData = await db.getPlayer(uid);
+        if (cancelled) return;
         if (!playerData) {
           const annotation = await db.getAnnotation(uid);
+          if (cancelled) return;
           if (!annotation) {
             setPlayer(null);
             setMissingIdentity(null);
@@ -107,13 +111,17 @@ export function PlayerProfileView() {
         setMissingIdentity(null);
         setPlayer(playerData);
       } catch (err) {
+        if (cancelled) return;
         setError(err instanceof Error ? err.message : "Failed to load player");
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     }
 
     loadPlayer();
+    return () => {
+      cancelled = true;
+    };
   }, [playerId, uid, activeId]);
 
   if (isLoading) {

@@ -179,7 +179,7 @@ export async function getActiveSnapshotId(): Promise<string | null> {
     if (stored && all.some((snapshot) => snapshot.id === stored)) return stored;
 
     const fallback = newestSnapshot(all)?.id ?? null;
-    await setActiveSnapshotId(fallback);
+    await setActiveSnapshotId(fallback).catch(() => undefined);
     return fallback;
   } catch (error) {
     throw wrapError('get active snapshot', error);
