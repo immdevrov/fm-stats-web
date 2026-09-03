@@ -15,6 +15,8 @@ import { useState, useEffect, useMemo, useCallback, useTransition, useRef } from
 import { Link } from "react-router-dom";
 import { db } from "../services/db";
 import { useCompare } from "../contexts/CompareContext";
+import { useRoster } from "../contexts/SnapshotContext";
+import { RosterErrorNotice } from "../components/RosterErrorNotice";
 import type { Player, LeagueRanking } from "../types/types";
 import { Table, type Column, type SortDirection } from "../components/ui/table";
 import { PlayerStatusControl } from "../components/PlayerStatusControl";
@@ -285,6 +287,7 @@ function ColumnFilterPopover({
 }
 
 export function ScoutingView() {
+  const { players: rosterPlayers, error: rosterError } = useRoster();
   const [allPlayers, setAllPlayers] = useState<Player[]>([]);
   const [leagueRankings, setLeagueRankings] = useState<LeagueRanking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -321,13 +324,12 @@ export function ScoutingView() {
   const statGroups = useMemo(() => getStatGroupsForRole(roleConfig.key), [roleConfig.key]);
 
   useEffect(() => {
+    if (rosterPlayers === null) return;
+    const roster: Player[] = rosterPlayers;
     async function loadData() {
       try {
-        const [players, rankings] = await Promise.all([
-          db.getAllPlayers(),
-          db.getLeagueRankings(),
-        ]);
-        setAllPlayers(players);
+        const rankings = await db.getLeagueRankings();
+        setAllPlayers(roster);
         setLeagueRankings(rankings);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load data");
@@ -336,7 +338,7 @@ export function ScoutingView() {
       }
     }
     loadData();
-  }, []);
+  }, [rosterPlayers]);
 
   useEffect(() => {
     if (allPlayers.length === 0 || leagueRankings.length === 0) return;
@@ -650,6 +652,8 @@ export function ScoutingView() {
       </CTable.Row>
     );
   }, [columns, columnFiltersRaw, setColumnFilter]);
+
+  if (rosterError) return <RosterErrorNotice error={rosterError} />;
 
   if (isLoading) {
     return (

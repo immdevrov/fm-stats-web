@@ -17,6 +17,7 @@ import {
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useCompare } from "../contexts/CompareContext";
+import { useRoster, useSnapshots } from "../contexts/SnapshotContext";
 import { db } from "../services/db";
 import type { Player, LeagueRanking } from "../types/types";
 import type { PlayerPosition, PlayerPositions } from "../fields/positions";
@@ -31,30 +32,45 @@ import {
   extractGoalkeeperStats,
 } from "../types/stat-categories";
 import { formatWage, displayDate, formatPositions, getEffectivePosition, getPercentile, getColumn } from "../utils/utils";
-import { ROLE_CONFIG, STAT_LABELS, INVERTED_STATS, type RoleConfig } from "../roles";
+import { ROLE_CONFIG, INVERTED_STATS, type RoleConfig } from "../roles";
+import {
+  getComparisonCohort,
+  calculateRolePercentiles,
+  type StatPercentile,
+} from "../utils/role-percentiles";
 import { PercentileBar } from "../components/PercentileBar";
 import { SimilarPlayers } from "../components/SimilarPlayers";
 import { PlayerStatusControl } from "../components/PlayerStatusControl";
 import { PricingFields } from "../components/PricingFields";
+import { PlayerHistory } from "../components/PlayerHistory";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
+
+interface MissingIdentity {
+  name: string;
+  club: string;
+}
 
 export function PlayerProfileView() {
   const { playerId } = useParams<{ playerId: string }>();
   const navigate = useNavigate();
+  const uid = playerId ? parseInt(playerId, 10) : NaN;
   const [player, setPlayer] = useState<Player | null>(null);
+  const [missingIdentity, setMissingIdentity] = useState<MissingIdentity | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  useDocumentTitle(player ? `Player: ${player.Name}` : "Player");
+  const { players: allPlayers } = useRoster();
+  const { activeId } = useSnapshots();
+  useDocumentTitle(player ? `Player: ${player.Name}` : missingIdentity ? missingIdentity.name : "Player");
 
   const reloadPlayer = useCallback(async () => {
-    if (!playerId) return;
-    const uid = parseInt(playerId, 10);
     if (isNaN(uid)) return;
     const updated = await db.getPlayer(uid);
     if (updated) setPlayer(updated);
-  }, [playerId]);
+  }, [uid]);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function loadPlayer() {
       if (!playerId) {
         setError("No player ID specified");
@@ -62,31 +78,51 @@ export function PlayerProfileView() {
         return;
       }
 
+      if (isNaN(uid)) {
+        setError("Invalid player ID");
+        setIsLoading(false);
+        return;
+      }
+
       try {
-        const uid = parseInt(playerId, 10);
-        if (isNaN(uid)) {
-          setError("Invalid player ID");
-          setIsLoading(false);
-          return;
-        }
-
         const playerData = await db.getPlayer(uid);
+        if (cancelled) return;
         if (!playerData) {
-          setError("Player not found");
+          const annotation = await db.getAnnotation(uid);
+          if (cancelled) return;
+          if (!annotation) {
+            setPlayer(null);
+            setMissingIdentity(null);
+            setError("Player not found");
+            setIsLoading(false);
+            return;
+          }
+          setError(null);
+          setMissingIdentity({
+            name: annotation.lastKnownName ?? "Unknown player",
+            club: annotation.lastKnownClub ?? "",
+          });
+          setPlayer(null);
           setIsLoading(false);
           return;
         }
 
+        setError(null);
+        setMissingIdentity(null);
         setPlayer(playerData);
       } catch (err) {
+        if (cancelled) return;
         setError(err instanceof Error ? err.message : "Failed to load player");
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     }
 
     loadPlayer();
-  }, [playerId]);
+    return () => {
+      cancelled = true;
+    };
+  }, [playerId, uid, activeId]);
 
   if (isLoading) {
     return (
@@ -101,7 +137,7 @@ export function PlayerProfileView() {
     );
   }
 
-  if (error || !player) {
+  if (error || (!player && !missingIdentity)) {
     return (
       <Box minH="100vh" p={8}>
         <Container maxW="container.xl">
@@ -118,20 +154,55 @@ export function PlayerProfileView() {
     );
   }
 
+  if (missingIdentity) {
+    return (
+      <Box minH="100vh" p={3}>
+        <Container maxW="container.xl">
+          <VStack align="stretch" gap={3}>
+            <Box borderWidth="1px" borderRadius="md" p={2}>
+              <Heading size="lg" color="fg.emphasized">
+                {missingIdentity.name}
+              </Heading>
+              {missingIdentity.club && (
+                <Text color="fg.muted" fontSize="sm">
+                  {missingIdentity.club}
+                </Text>
+              )}
+              <Text color="fg.muted" fontSize="sm" mt={1}>
+                Not in the selected date's data.
+              </Text>
+            </Box>
+            <PlayerHistory uid={uid} roleKey={null} />
+          </VStack>
+        </Container>
+      </Box>
+    );
+  }
+
+  if (!player) return null;
+
   return (
     <Box minH="100vh" p={3}>
       <Container maxW="container.xl">
         <HStack align="start" gap={3}>
-          <PlayerInfoColumn player={player} onPlayerUpdate={reloadPlayer} />
+          <PlayerInfoColumn player={player} onPlayerUpdate={reloadPlayer} allPlayers={allPlayers} />
 
-          <ComparisonColumn player={player} />
+          <ComparisonColumn player={player} allPlayers={allPlayers} />
         </HStack>
       </Container>
     </Box>
   );
 }
 
-function PlayerInfoColumn({ player, onPlayerUpdate }: { player: Player; onPlayerUpdate: () => Promise<void> }) {
+function PlayerInfoColumn({
+  player,
+  onPlayerUpdate,
+  allPlayers,
+}: {
+  player: Player;
+  onPlayerUpdate: () => Promise<void>;
+  allPlayers: Player[] | null;
+}) {
   const isGoalkeeper = getEffectivePosition(player).some((pos) => pos.type === "GK");
 
   return (
@@ -141,7 +212,7 @@ function PlayerInfoColumn({ player, onPlayerUpdate }: { player: Player; onPlayer
       <PlayingTimeSection player={player} />
 
       {isGoalkeeper ? (
-        <GoalkeeperStatsSection player={player} />
+        <GoalkeeperStatsSection player={player} allPlayers={allPlayers} />
       ) : (
         <OutfieldStatsSection player={player} />
       )}
@@ -525,16 +596,17 @@ function OutfieldStatsSection({ player }: { player: Player }) {
   );
 }
 
-function GoalkeeperStatsSection({ player }: { player: Player }) {
+function GoalkeeperStatsSection({ player, allPlayers }: { player: Player; allPlayers: Player[] | null }) {
   const gkStats = extractGoalkeeperStats(player);
   const [shotStoppingRank, setShotStoppingRank] = useState<number | null>(null);
 
   useEffect(() => {
+    if (allPlayers === null) return;
     const gkConfig = ROLE_CONFIG.find((r) => r.key === "GK");
     if (!gkConfig) return;
 
-    Promise.all([db.getAllPlayers(), db.getLeagueRankings()]).then(
-      ([allPlayers, leagueRankings]) => {
+    db.getLeagueRankings().then(
+      (leagueRankings) => {
         const cohort = getComparisonCohort(gkConfig.RoleClass, allPlayers, leagueRankings);
         if (cohort.length === 0) return;
 
@@ -564,7 +636,7 @@ function GoalkeeperStatsSection({ player }: { player: Player }) {
         setShotStoppingRank(getPercentile(rank, allRanks));
       }
     );
-  }, [player]);
+  }, [player, allPlayers]);
 
   return (
     <StatSection
@@ -609,59 +681,12 @@ function formatPercent(value: number): string {
   return `${value.toFixed(1)}%`;
 }
 
-interface StatPercentile {
-  statKey: string;
-  label: string;
-  value: number;
-  percentile: number;
-}
-
 function getPlayerRoles(player: Player): RoleConfig[] {
   return ROLE_CONFIG.filter(({ RoleClass }) => RoleClass.isRole(player));
 }
 
-function getComparisonCohort(
-  RoleClass: RoleConfig["RoleClass"],
-  allPlayers: Player[],
-  leagueRankings: LeagueRanking[],
-  sameLeagueOnly?: string
-): Record<string, unknown>[] {
-  const rankedLeagues = new Set(
-    leagueRankings.filter((r) => r.rank < 999).map((r) => r.league)
-  );
-
-  return allPlayers
-    .filter(
-      (p) =>
-        RoleClass.isRole(p) &&
-        rankedLeagues.has(p.Division) &&
-        p.Mins >= 900 &&
-        (!sameLeagueOnly || p.Division === sameLeagueOnly)
-    )
-    .map((p) => new RoleClass(p) as unknown as Record<string, unknown>);
-}
-
-function calculateRolePercentiles(
-  playerRole: Record<string, unknown>,
-  cohort: Record<string, unknown>[],
-  statKeys: string[]
-): StatPercentile[] {
-  return statKeys.map((key) => {
-    const playerValue = playerRole[key] as number;
-    const cohortValues = getColumn(cohort, key) as number[];
-
-    return {
-      statKey: key,
-      label: STAT_LABELS[key] ?? key,
-      value: playerValue,
-      percentile: getPercentile(playerValue, cohortValues),
-    };
-  });
-}
-
-function ComparisonColumn({ player }: { player: Player }) {
+function ComparisonColumn({ player, allPlayers }: { player: Player; allPlayers: Player[] | null }) {
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
-  const [allPlayers, setAllPlayers] = useState<Player[]>([]);
   const [leagueRankings, setLeagueRankings] = useState<LeagueRanking[]>([]);
   const [percentiles, setPercentiles] = useState<StatPercentile[]>([]);
   const [cohortSize, setCohortSize] = useState(0);
@@ -671,13 +696,11 @@ function ComparisonColumn({ player }: { player: Player }) {
   const applicableRoles = useMemo(() => getPlayerRoles(player), [player]);
 
   useEffect(() => {
-    Promise.all([db.getAllPlayers(), db.getLeagueRankings()]).then(
-      ([players, rankings]) => {
-        setAllPlayers(players);
-        setLeagueRankings(rankings);
-      }
-    );
-  }, []);
+    if (allPlayers === null) return;
+    db.getLeagueRankings().then((rankings) => {
+      setLeagueRankings(rankings);
+    });
+  }, [allPlayers]);
 
   useEffect(() => {
     if (applicableRoles.length > 0 && !selectedRole) {
@@ -686,7 +709,7 @@ function ComparisonColumn({ player }: { player: Player }) {
   }, [applicableRoles, selectedRole]);
 
   useEffect(() => {
-    if (!selectedRole || !allPlayers.length) return;
+    if (!selectedRole || !allPlayers || !allPlayers.length) return;
 
     const roleConfig = ROLE_CONFIG.find((r) => r.key === selectedRole);
     if (!roleConfig) return;
@@ -809,6 +832,10 @@ function ComparisonColumn({ player }: { player: Player }) {
           targetPercentiles={targetPercentiles}
         />
       )}
+
+      <Box mt={3}>
+        <PlayerHistory uid={player.UID} roleKey={selectedRole} />
+      </Box>
     </Box>
   );
 }

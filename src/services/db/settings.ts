@@ -3,6 +3,7 @@ import type { SquadPlan } from '../../types/planner';
 
 const MY_CLUB = 'myClub';
 const SQUAD_PLAN = 'squadPlan';
+const ACTIVE_SNAPSHOT = 'activeSnapshot';
 
 async function _get(key: string): Promise<unknown> {
   try {
@@ -42,11 +43,25 @@ function isSquadPlan(value: unknown): value is SquadPlan {
   return typeof plan.formationId === 'string' && Array.isArray(plan.slots);
 }
 
+const HORIZON_PRESETS = new Set(['now', 'season', '1y', '2y']);
+
 export async function getSquadPlan(): Promise<SquadPlan | null> {
   const value = await _get(SQUAD_PLAN);
-  return isSquadPlan(value) ? value : null;
+  if (!isSquadPlan(value)) return null;
+  return HORIZON_PRESETS.has(value.horizon as string)
+    ? value
+    : { ...value, horizon: null };
 }
 
 export function setSquadPlan(plan: SquadPlan | null): Promise<void> {
   return _set(SQUAD_PLAN, plan, 'save squad plan');
+}
+
+export async function _getStoredActiveSnapshot(): Promise<string | null> {
+  const value = await _get(ACTIVE_SNAPSHOT);
+  return typeof value === 'string' ? value : null;
+}
+
+export function setActiveSnapshotId(id: string | null): Promise<void> {
+  return _set(ACTIVE_SNAPSHOT, id, 'save active snapshot');
 }

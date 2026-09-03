@@ -15,14 +15,21 @@ const MAX_PLAYERS = 3;
 export function CompareProvider({ children }: { children: ReactNode }) {
   const [compareList, setCompareList] = useState<number[]>([]);
   const loaded = useRef(false);
+  const userChanged = useRef(false);
 
   useEffect(() => {
-    Promise.all([db.getCompareList(), db.getAllPlayers()]).then(([uids, players]) => {
-      const validUids = new Set(players.map((p) => p.UID));
-      const cleaned = uids.filter((uid) => validUids.has(uid));
-      setCompareList(cleaned);
-      loaded.current = true;
-    });
+    db
+      .getCompareList()
+      .then((uids) =>
+        // Missing from the active snapshot renders as missing; only a uid in no snapshot at all is stale.
+        Promise.all(uids.map((uid) => db.getPlayerHistory(uid))).then((histories) => {
+          const cleaned = uids.filter((_, index) => histories[index].length > 0);
+          setCompareList((current) => (userChanged.current ? current : cleaned));
+          loaded.current = true;
+        })
+      )
+      // Stays unloaded on a failure on purpose: persisting over a list we could not read would destroy it.
+      .catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -32,6 +39,7 @@ export function CompareProvider({ children }: { children: ReactNode }) {
 
   const addPlayer = useCallback((uid: number): boolean => {
     let added = false;
+    userChanged.current = true;
     setCompareList((prev) => {
       if (prev.length >= MAX_PLAYERS || prev.includes(uid)) return prev;
       added = true;
@@ -41,10 +49,12 @@ export function CompareProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const removePlayer = useCallback((uid: number) => {
+    userChanged.current = true;
     setCompareList((prev) => prev.filter((id) => id !== uid));
   }, []);
 
   const clearAll = useCallback(() => {
+    userChanged.current = true;
     setCompareList([]);
   }, []);
 

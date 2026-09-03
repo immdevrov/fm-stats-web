@@ -18,3 +18,12 @@ export async function saveCompareList(uids: number[]): Promise<void> {
     throw wrapError('save compare list', error);
   }
 }
+
+export async function clearCompareList(): Promise<void> {
+  try {
+    const db = await getDB();
+    await db.delete('compareList', 'default');
+  } catch (error) {
+    throw wrapError('clear compare list', error);
+  }
+}

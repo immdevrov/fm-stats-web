@@ -1,15 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Box, Button, Container, HStack, Heading, Spinner, Text, VStack } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
-import { db } from "../services/db";
 import { usePlayerNotes, type PlayerIdentity } from "../contexts/PlayerNotesContext";
+import { useRoster } from "../contexts/SnapshotContext";
 import { PlayerStatusControl } from "../components/PlayerStatusControl";
 import { Table, type Column } from "../components/ui/table";
 import { formatWage, displayDate, formatPositions, getEffectivePosition } from "../utils/utils";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import { RosterErrorNotice } from "../components/RosterErrorNotice";
 import type { Player } from "../types/types";
 
 const UNWANTED_TAB = "__unwanted__";
+const NO_PLAYERS: Player[] = [];
 
 interface ListRow extends Record<string, unknown> {
   uid: number;
@@ -39,25 +41,10 @@ export function ListsView() {
     deleteList,
     removeFromList,
   } = usePlayerNotes();
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [playersLoaded, setPlayersLoaded] = useState(false);
-  const [playersError, setPlayersError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function loadPlayers() {
-      try {
-        const loaded = await db.getAllPlayers();
-        setPlayers(loaded);
-      } catch (err) {
-        setPlayersError(err instanceof Error ? err.message : "Failed to load players");
-      } finally {
-        setPlayersLoaded(true);
-      }
-    }
-
-    loadPlayers();
-  }, []);
+  const { players: rosterPlayers, error: playersError } = useRoster();
+  const players = rosterPlayers ?? NO_PLAYERS;
+  const playersLoaded = rosterPlayers !== null;
 
   const playersByUid = useMemo(
     () => new Map(players.map((player) => [player.UID, player])),
@@ -104,6 +91,9 @@ export function ListsView() {
     [uids, playersByUid, annotations]
   );
 
+  const listsError = loadError ?? playersError;
+  if (listsError) return <RosterErrorNotice error={listsError} />;
+
   if (!isLoaded || !playersLoaded) {
     return (
       <Box minH="100vh" p={8}>
@@ -111,20 +101,6 @@ export function ListsView() {
           <VStack gap={8}>
             <Spinner size="lg" colorPalette="glaucous" />
             <Text color="fg.muted">Loading lists...</Text>
-          </VStack>
-        </Container>
-      </Box>
-    );
-  }
-
-  if (loadError || playersError) {
-    return (
-      <Box minH="100vh" p={8}>
-        <Container maxW="container.xl">
-          <VStack gap={4}>
-            <Box p={4} borderRadius="md" bg="red.500" color="white">
-              <Text fontWeight="medium">{loadError ?? playersError}</Text>
-            </Box>
           </VStack>
         </Container>
       </Box>

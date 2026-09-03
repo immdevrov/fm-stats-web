@@ -12,6 +12,8 @@ import {
 } from "@chakra-ui/react";
 import { useState, useEffect, useMemo } from "react";
 import { db } from "../services/db";
+import { useRoster } from "../contexts/SnapshotContext";
+import { RosterErrorNotice } from "../components/RosterErrorNotice";
 import type { Player, LeagueRanking } from "../types/types";
 import {
   ROLE_CONFIG,
@@ -37,6 +39,7 @@ import { buildCohort, computePercentiles, type StatPercentile } from "../utils/c
 import { PercentileBar } from "../components/PercentileBar";
 import { PlayerAutocomplete } from "../components/PlayerAutocomplete";
 import { PlayerStatusBadge } from "../components/PlayerStatusBadge";
+import { usePlayerNotes } from "../contexts/PlayerNotesContext";
 import { useCompare } from "../contexts/CompareContext";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 
@@ -57,7 +60,8 @@ interface PlayerPercentiles {
 export function CompareView() {
   useDocumentTitle("Compare");
   const { compareList, addPlayer, removePlayer } = useCompare();
-  const [allPlayers, setAllPlayers] = useState<Player[]>([]);
+  const { annotations } = usePlayerNotes();
+  const { players: allPlayers, error: rosterError } = useRoster();
   const [leagueRankings, setLeagueRankings] = useState<LeagueRanking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -65,21 +69,25 @@ export function CompareView() {
   const [side, setSide] = useState<Side>("both");
 
   useEffect(() => {
-    Promise.all([db.getAllPlayers(), db.getLeagueRankings()]).then(
-      ([players, rankings]) => {
-        setAllPlayers(players);
-        setLeagueRankings(rankings);
-        setIsLoading(false);
-      }
-    );
-  }, []);
+    if (allPlayers === null) return;
+    db.getLeagueRankings().then((rankings) => {
+      setLeagueRankings(rankings);
+      setIsLoading(false);
+    });
+  }, [allPlayers]);
 
-  const players = useMemo(() => {
-    if (allPlayers.length === 0) return [];
-    return compareList
-      .map((uid) => allPlayers.find((p) => p.UID === uid))
-      .filter((p): p is Player => !!p);
+  const slots = useMemo(() => {
+    if (!allPlayers || allPlayers.length === 0) return [];
+    return compareList.map((uid) => ({
+      uid,
+      player: allPlayers.find((p) => p.UID === uid) ?? null,
+    }));
   }, [compareList, allPlayers]);
+
+  const players = useMemo(
+    () => slots.map((slot) => slot.player).filter((p): p is Player => !!p),
+    [slots]
+  );
 
   useEffect(() => {
     if (players.length === 0) return;
@@ -105,7 +113,7 @@ export function CompareView() {
   }, [selectedRoleIndex]);
 
   const cohort = useMemo(() => {
-    if (allPlayers.length === 0 || leagueRankings.length === 0) return [];
+    if (!allPlayers || allPlayers.length === 0 || leagueRankings.length === 0) return [];
     const RoleClass = getRoleClassForSide(roleConfig, side);
     return buildCohort(allPlayers, RoleClass, leagueRankings);
   }, [allPlayers, leagueRankings, roleConfig, side]);
@@ -128,7 +136,7 @@ export function CompareView() {
 
   const autocompletePool = useMemo(() => {
     const RoleClass = getRoleClassForSide(roleConfig, side);
-    return allPlayers.filter((p) => RoleClass.isRole(p));
+    return (allPlayers ?? []).filter((p) => RoleClass.isRole(p));
   }, [allPlayers, roleConfig, side]);
 
   const excludeUids = useMemo(() => compareList, [compareList]);
@@ -136,6 +144,8 @@ export function CompareView() {
   const handleAddPlayer = (player: Player) => {
     addPlayer(player.UID);
   };
+
+  if (rosterError) return <RosterErrorNotice error={rosterError} />;
 
   if (isLoading) {
     return (
@@ -188,10 +198,30 @@ export function CompareView() {
 
           <SimpleGrid columns={3} gap={3}>
             {Array.from({ length: 3 }, (_, i) => {
-              const player = players[i];
+              const slot = slots[i];
+              const player = slot?.player ?? null;
               return (
                 <Box key={i} borderWidth="1px" borderRadius="md" p={3} minH="80px">
-                  {player ? (
+                  {slot && !player ? (
+                    <VStack align="stretch" gap={1} opacity={0.5}>
+                      <HStack justify="space-between">
+                        <Heading size="sm">
+                          {annotations.get(slot.uid)?.lastKnownName ?? `UID ${slot.uid}`}
+                        </Heading>
+                        <Button
+                          size="xs"
+                          variant="ghost"
+                          colorPalette="red"
+                          onClick={() => removePlayer(slot.uid)}
+                        >
+                          Remove
+                        </Button>
+                      </HStack>
+                      <Text fontSize="xs" color="fg.muted">
+                        Not in this date&rsquo;s data
+                      </Text>
+                    </VStack>
+                  ) : player ? (
                     <VStack align="stretch" gap={1}>
                       <HStack justify="space-between">
                         <HStack gap={2}>

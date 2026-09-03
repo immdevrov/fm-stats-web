@@ -1,10 +1,19 @@
 import { useState } from "react";
-import { Button, HStack, Input, NativeSelect, Text } from "@chakra-ui/react";
+import { Button, HStack, NativeSelect, Text } from "@chakra-ui/react";
 import type { Formation } from "../../formations";
 import { FORMATIONS } from "../../formations";
 import { countSlotsWithoutCover } from "../../utils/planner";
 import { useSquadPlan } from "../../contexts/SquadPlanContext";
+import { useSnapshots } from "../../contexts/SnapshotContext";
+import type { HorizonPreset } from "../../types/planner";
 import { ConfirmDialog } from "../ui/confirm-dialog";
+
+const HORIZON_OPTIONS: Array<{ value: HorizonPreset; label: string }> = [
+  { value: "now", label: "Now" },
+  { value: "season", label: "End of season" },
+  { value: "1y", label: "In one year" },
+  { value: "2y", label: "In two years" },
+];
 
 export function PlannerToolbar({
   formation,
@@ -14,6 +23,7 @@ export function PlannerToolbar({
   presentUids: Set<number>;
 }) {
   const { plan, setFormation, setHorizon, removeMissing } = useSquadPlan();
+  const { active, isNewest } = useSnapshots();
   const [pendingFormation, setPendingFormation] = useState<string | null>(null);
 
   const uncovered = countSlotsWithoutCover(plan, formation.slots.length);
@@ -47,16 +57,22 @@ export function PlannerToolbar({
 
         <HStack gap={1}>
           <Text color="fg.muted" fontSize="sm" whiteSpace="nowrap">
-            Planning for:
+            Contracts as of:
           </Text>
-          <Input
-            type="text"
-            placeholder="DD/MM/YYYY"
-            value={plan?.horizon ?? ""}
-            onChange={(e) => setHorizon(e.target.value || null)}
-            maxW="130px"
-            size="sm"
-          />
+          <NativeSelect.Root size="sm" width="160px" disabled={!active?.date}>
+            <NativeSelect.Field
+              value={plan?.horizon ?? ""}
+              onChange={(e) => setHorizon((e.currentTarget.value || null) as HorizonPreset | null)}
+            >
+              <option value="">No tint</option>
+              {HORIZON_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </NativeSelect.Field>
+            <NativeSelect.Indicator />
+          </NativeSelect.Root>
         </HStack>
 
         <Text fontSize="sm" color="fg.muted">
@@ -68,11 +84,16 @@ export function PlannerToolbar({
         {missing > 0 && (
           <HStack gap={2}>
             <Text fontSize="sm" color="spicyPaprika.500">
-              {missing} not in current data
+              {missing} no longer in the squad
             </Text>
-            <Button size="xs" variant="outline" onClick={() => removeMissing(presentUids)}>
+            <Button size="xs" variant="outline" disabled={!isNewest} onClick={() => removeMissing(presentUids)}>
               Remove missing
             </Button>
+            {!isNewest && (
+              <Text fontSize="sm" color="fg.muted">
+                Only available on the newest data.
+              </Text>
+            )}
           </HStack>
         )}
       </HStack>

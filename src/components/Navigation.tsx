@@ -1,5 +1,6 @@
 import { VStack, Heading, Link as ChakraLink } from "@chakra-ui/react";
 import { Link, useLocation } from "react-router-dom";
+import { SnapshotSwitcher } from "./SnapshotSwitcher";
 
 interface NavItem {
   path: string;
@@ -29,6 +30,8 @@ export function Navigation() {
       >
         FM Jotter
       </Heading>
+
+      <SnapshotSwitcher />
 
       <VStack align="stretch" gap={2}>
         {navItems.map((item) => {

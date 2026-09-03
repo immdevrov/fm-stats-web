@@ -49,9 +49,14 @@ export function CandidatePopover({
         </Text>
       )}
       <VStack align="start" gap={0} flexGrow={1} minW={0}>
-        <Text fontSize="xs" fontWeight="semibold" truncate>
-          {player.Name}
-        </Text>
+        <HStack gap="5px" align="baseline" minW={0} maxW="100%">
+          <Text fontSize="xs" fontWeight="semibold" truncate>
+            {player.Name}
+          </Text>
+          <Text fontSize="10.5px" color="softBlush.800" flexShrink={0}>
+            {player.Age}
+          </Text>
+        </HStack>
         <Text fontSize="10.5px" color="softBlush.800">
           {formatPositions(getEffectivePosition(player))} &middot; {player.Club}
         </Text>

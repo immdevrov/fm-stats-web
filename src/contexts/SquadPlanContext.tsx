@@ -12,24 +12,25 @@ import { db } from "../services/db";
 import { toaster } from "../components/ui/toaster";
 import { getFormation } from "../formations";
 import { buildPlacementIndex, type PlacementIndex } from "../utils/planner";
-import { MAX_DEPTH, type PlannedPlayer, type SquadPlan } from "../types/planner";
+import { MAX_DEPTH, type HorizonPreset, type PlannedPlayer, type SquadPlan } from "../types/planner";
 
 interface SquadPlanContextValue {
   plan: SquadPlan | null;
   isLoaded: boolean;
   placements: PlacementIndex;
   setFormation: (formationId: string) => void;
-  setHorizon: (horizon: string | null) => void;
+  setHorizon: (horizon: HorizonPreset | null) => void;
   place: (slotId: string, player: PlannedPlayer) => void;
   remove: (slotId: string, uid: number) => void;
   makeFirstChoice: (slotId: string, uid: number) => void;
   refreshSnapshots: (byUid: Map<number, { name: string; club: string }>) => void;
   removeMissing: (presentUids: Set<number>) => void;
+  clearPlan: () => void;
 }
 
 const SquadPlanContext = createContext<SquadPlanContextValue | null>(null);
 
-function emptyPlan(formationId: string, horizon: string | null): SquadPlan {
+function emptyPlan(formationId: string, horizon: HorizonPreset | null): SquadPlan {
   const formation = getFormation(formationId);
   return {
     formationId,
@@ -83,8 +84,13 @@ export function SquadPlanProvider({ children }: { children: ReactNode }) {
     setPlanState((current) => emptyPlan(formationId, current?.horizon ?? null));
   }, []);
 
+  const clearPlan = useCallback(() => {
+    userChanged.current = true;
+    setPlanState(null);
+  }, []);
+
   const setHorizon = useCallback(
-    (horizon: string | null) => update((current) => ({ ...current, horizon })),
+    (horizon: HorizonPreset | null) => update((current) => ({ ...current, horizon })),
     [update]
   );
 
@@ -163,6 +169,7 @@ export function SquadPlanProvider({ children }: { children: ReactNode }) {
         makeFirstChoice,
         refreshSnapshots,
         removeMissing,
+        clearPlan,
       }}
     >
       {children}

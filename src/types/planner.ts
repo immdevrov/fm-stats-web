@@ -11,8 +11,10 @@ export interface PlannedSlot {
   players: PlannedPlayer[];
 }
 
+export type HorizonPreset = "now" | "season" | "1y" | "2y";
+
 export interface SquadPlan {
   formationId: string;
-  horizon: string | null;
+  horizon: HorizonPreset | null;
   slots: PlannedSlot[];
 }

@@ -43,7 +43,7 @@ export function omitField<T extends Record<string, any>, K extends keyof T>(
 
 export function parseCustomDate(dateStr: string) {
   const [day, month, year] = dateStr.split("/").map(Number);
-  return new Date(year, month, day);
+  return new Date(year, month - 1, day);
 }
 
 export function displayDate(date: Date) {

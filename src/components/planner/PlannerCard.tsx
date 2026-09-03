@@ -5,8 +5,9 @@ import type { FormationSlot } from "../../formations";
 import type { Player } from "../../types/types";
 import type { PlannedPlayer } from "../../types/planner";
 import { displayDate, formatPositions, getEffectivePosition } from "../../utils/utils";
-import { describeMismatch, parseHorizon, placementFacts, slotLabel } from "../../utils/planner";
+import { describeMismatch, resolveHorizon, placementFacts, slotLabel } from "../../utils/planner";
 import { useSquadPlan } from "../../contexts/SquadPlanContext";
+import { useSnapshots } from "../../contexts/SnapshotContext";
 import { usePlayerNotes } from "../../contexts/PlayerNotesContext";
 import { useMyTeam } from "../../contexts/MyTeamContext";
 import { Tooltip } from "../ui/tooltip";
@@ -24,6 +25,7 @@ export function PlannerCard({
   player: Player | undefined;
 }) {
   const { plan, placements, remove, makeFirstChoice } = useSquadPlan();
+  const { active } = useSnapshots();
   const { annotations, listsFor } = usePlayerNotes();
   const { myClub } = useMyTeam();
   const [showMismatch, setShowMismatch] = useState(false);
@@ -36,10 +38,11 @@ export function PlannerCard({
   const memberships = listsFor(planned.uid);
   const unwanted = annotations.get(planned.uid)?.unwanted === true;
 
-  const horizon = parseHorizon(plan?.horizon ?? null);
+  const horizon = resolveHorizon(active?.date ?? null, plan?.horizon ?? null);
   const expiring = Boolean(horizon && player?.Expires && player.Expires <= horizon);
 
   const { elsewhere, firstChoiceCount } = placementFacts(placements, planned.uid, slot.id);
+  const departed = Boolean(player && myClub && player.Club !== myClub && memberships.length === 0);
 
   const positions = effectivePlayer ? formatPositions(getEffectivePosition(effectivePlayer)) : "";
   const trailing = player
@@ -66,7 +69,7 @@ export function PlannerCard({
             p="7px 8px"
             pl={memberships.length > 0 ? "6px" : "8px"}
             cursor="pointer"
-            opacity={player ? 1 : 0.5}
+            opacity={player && !departed ? 1 : 0.5}
           >
             <Text
               flexShrink={0}
@@ -130,6 +133,19 @@ export function PlannerCard({
                 <Tooltip content="Unwanted">
                   <Text as="span" color="spicyPaprika.500" fontSize="sm" lineHeight="1">
                     &#8856;
+                  </Text>
+                </Tooltip>
+              )}
+              {departed && (
+                <Tooltip content={`No longer at ${myClub} — now at ${player!.Club}`}>
+                  <Text
+                    as="span"
+                    color="spicyPaprika.500"
+                    fontSize="sm"
+                    lineHeight="1"
+                    aria-label="No longer in the squad"
+                  >
+                    &#8594;
                   </Text>
                 </Tooltip>
               )}
