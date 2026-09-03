@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { seedSnapshots } from './helpers/seed';
+import { seedAnnotation, seedSnapshots } from './helpers/seed';
 import { REQUIRED_COLUMNS } from '../src/parser/html-parser';
 
 async function buildExport(): Promise<string> {
@@ -73,4 +73,31 @@ test('the import date is derived from the filename', async ({ page }) => {
     buffer: Buffer.from(await buildExport()),
   });
   await expect(page.getByPlaceholder('DD/MM/YYYY')).toHaveValue('24/01/2035');
+});
+
+async function importOnce(page: import('@playwright/test').Page, mode: 'Same save' | 'New save') {
+  await page.setInputFiles('input[type="file"]', {
+    name: 'emmen_01_05_2036.html',
+    mimeType: 'text/html',
+    buffer: Buffer.from(await buildExport()),
+  });
+  await page.getByText(new RegExp(`^${mode} —`)).click();
+  await page.getByRole('button', { name: mode === 'New save' ? 'Erase and import' : 'Import' }).click();
+  await expect(page.getByText('Import Successful')).toBeVisible();
+}
+
+test('a same-save import keeps annotations and a new-save import erases them', async ({ page }) => {
+  await page.goto('/import');
+  await seedSnapshots(page, [{ id: 'seed', date: '2035-01-24', players: [{ uid: 1, name: 'Test Player' }] }], 'seed');
+  await seedAnnotation(page, { uid: 1, unwanted: true, lastKnownName: 'Test Player' });
+
+  await page.goto('/import');
+  await importOnce(page, 'Same save');
+  await page.goto('/lists');
+  await expect(page.getByRole('button', { name: 'Unwanted (1)' })).toBeVisible();
+
+  await page.goto('/import');
+  await importOnce(page, 'New save');
+  await page.goto('/lists');
+  await expect(page.getByRole('button', { name: 'Unwanted (0)' })).toBeVisible();
 });

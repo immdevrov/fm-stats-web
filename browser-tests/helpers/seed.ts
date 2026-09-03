@@ -193,3 +193,31 @@ export async function seedSnapshots(
     }
   );
 }
+
+export async function seedAnnotation(
+  page: Page,
+  annotation: { uid: number; unwanted?: boolean; note?: string; lastKnownName?: string }
+) {
+  await page.evaluate(
+    ({ dbName, dbVersion, annotation }) => {
+      return new Promise<void>((resolve, reject) => {
+        const request = indexedDB.open(dbName, dbVersion);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          const db = request.result;
+          const tx = db.transaction(['playerAnnotations'], 'readwrite');
+          tx.objectStore('playerAnnotations').put(annotation);
+          tx.oncomplete = () => {
+            db.close();
+            resolve();
+          };
+          tx.onerror = () => {
+            db.close();
+            reject(tx.error);
+          };
+        };
+      });
+    },
+    { dbName: DB_NAME, dbVersion: DB_VERSION, annotation }
+  );
+}
