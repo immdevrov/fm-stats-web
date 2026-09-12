@@ -140,14 +140,19 @@ wrong. That entry is amended to the findings above. The empty
 Per project policy: few, behaviour-only, Playwright, and anything kept as a pin
 is mutation-checked.
 
-One new test. A player present in a single snapshot shows the History block
-with a working *Rank this row*. It is the only user-visible behaviour change in
-the batch. Mutation check: reverting `=== 0` to `<= 1` must fail it.
+One new behaviour test. A player present in a single snapshot shows the History
+block with a working *Rank this row*. It is the only user-visible behaviour
+change in the batch. Mutation check: reverting `=== 0` to `<= 1` must fail it.
 
-No test for the parser change — it is deliberately invisible, so no browser
-test can observe it. `pack.spec.ts` already guards the pack/unpack round trip
-that `null` now travels; confirm it covers a `null` field rather than adding a
-second test beside it.
+*Revised while planning.* This section first said the parser change could not
+be tested, on the grounds that it is invisible and Playwright only sees the UI.
+That is wrong: `browser-tests/pack.spec.ts` already imports and exercises pure
+functions directly — `parseCustomDate`, `findMissingColumns`, `resolveHorizon`,
+`pack`/`unpack` — under the same runner. `transformPlayerStats` is exported and
+belongs beside them. So the parser change gets cases there: `-` and `""` give
+`null` for a rate stat, `-` gives `0` for `Mins` and `Starts`, and a real value
+still parses. Without them the whole point of choosing `null` over `?? 0` —
+that the distinction reaches storage — is asserted and never checked.
 
 Verification: `npm run build` (the `number | null` change is a type change and
 `tsc -b` is what proves nothing reads those fields unguarded) and the existing
