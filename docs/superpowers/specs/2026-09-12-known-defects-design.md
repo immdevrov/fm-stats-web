@@ -68,9 +68,10 @@ and become `number | null`:
 | `exsvPercentage` | `xSv %` | percent-strip |
 | `svPercentage` | `Sv %` | percent-strip |
 
-Percent-strip means `(s) => parseFloat(s.replace("%", ""))` passed *into*
-`processHyphen`, moving the strip inside the hyphen guard rather than in front
-of it.
+Percent-strip turned out to be unnecessary: `parseFloat("82%")` is already `82`,
+so all three take a plain `parseFloat` like the other six. The strip existed only
+because `Number("82%")` is `NaN`. Removing it also removes the `.replace` that
+ran *before* any guard and threw outright on a missing cell.
 
 `Starts` and `Mins` become `processHyphen(..., parseInt) ?? 0` and stay
 `number`. `Mins` keeps its comma strip, inside the guard:
@@ -85,8 +86,34 @@ runs before any guard and would fail on a missing cell.
 `parseFloat("") === NaN`. An empty cell is absent by any reading, so the guard
 should treat `""` as absent too. This is behaviour-preserving downstream in both
 groups — a `?? 0` field goes `NaN → 0` today and `null → 0` after; the nine go
-to `null`, which is the point. It is one condition in one function and it closes
-the last `NaN`-into-storage path, rather than leaving nine fields half-guarded.
+to `null`, which is the point. It is one condition in one function, rather than
+leaving nine fields half-guarded.
+
+One caveat to *rendered output is identical*: the widened guard serves every
+caller, so an empty `Expires`, `Sec. Position`, `Wage`, `Height` or `Weight`
+cell now yields `null` instead of `NaN` or an Invalid Date — a `Height` of
+`" cm"` becomes `"-"`. That is an improvement rather than a regression, and it
+is unreachable if the export always writes `-`, but it is a change and the
+identical-output claim is about the eleven stat fields, not the whole parser.
+
+**Eleven fields, not nine — corrected during review.** Four more carry the same
+defect and are in scope:
+
+- `goals90` (`Gls/90`) and `TckPer90` (`Tck/90`) already parsed through
+  `processHyphen` with no `?? 0`, so they were `number | null` at runtime while
+  `types.ts` declared them `number`. The `as Player` cast hid it. Widening their
+  type removes a pre-existing lie rather than adding one.
+- `OPKPPer90` (`OP-KP/90`) and `xGOP` (`xG-OP`) use a third pattern that neither
+  the nine nor the `?? 0` exclusion covers: `Number(record[...] || 0)`. `"-"` is
+  truthy, so the `|| 0` never fires and the field stores `NaN`. Both are
+  ROLE_CONFIG display stats (`keyPasses`, `xGOverperformance`), so without this a
+  statless player's xA reads honestly as absent while his Key Passes still reads
+  a confident `0.00` on the same screen.
+
+`UID` and `Age` keep their bare `Number()`. They are identity, not evidence: a
+player missing them is a broken row, not an unmeasured one. So this batch does
+not close every `NaN`-into-storage path — it closes every one that feeds a
+displayed statistic.
 
 **Nothing downstream changes.** `safeNumber` accepts `unknown` and already maps
 `null → 0`, and nothing reads the nine outside `extract*Stats()`. Rendered
@@ -117,10 +144,26 @@ protection against a slow function.
 ## 3. PlayerHistory
 
 `src/components/PlayerHistory.tsx:78`. `entries.length <= 1` becomes
-`=== 0`. A player present in one snapshot gets a one-row History table with a
-working *Rank this row* — the mechanism for ranking a player in the snapshot
-where he actually played, currently hidden from exactly the players who most
-need it.
+`=== 0`. A player present in one snapshot gets a one-row History table instead
+of nothing.
+
+**Where the value actually lands — corrected during review.** This section first
+justified the change as unhiding *Rank this row* for the players who most need
+it. That is not what it does, and the distinction matters enough to record.
+
+The button is gated on `roleKey` (`PlayerHistory.tsx:126`). The profile passes a
+real `roleKey` only on its normal branch (`PlayerProfileView.tsx:837`), which
+renders for a player who *is* in the active snapshot — and there the button
+recomputes the same cohort as the percentile bars twenty pixels above it, so it
+adds a roster read and returns what is already on screen. The
+not-in-this-snapshot branch (`:175`) passes `roleKey={null}`, so it shows no
+button at all.
+
+The real gain is that second branch: a player absent from the active snapshot
+but present in one other snapshot previously rendered no history whatsoever, and
+now renders his last known row. Ranking a single-snapshot player where he
+actually played remains unavailable, and belongs on the defects list rather than
+here.
 
 The per-invocation roster load at `:54` is left as is. It is on demand, the
 button unmounts once its row is ranked so the same snapshot cannot be

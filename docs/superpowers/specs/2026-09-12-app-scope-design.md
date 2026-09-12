@@ -151,6 +151,37 @@ him at all. Each invocation also loads a second full roster (`:54`).
 opinion store. **They belong in the import layer.** Until moved, the schema does
 not cleanly express the split.
 
+### Found during round one
+
+Verified while fixing the above; none is scheduled.
+
+**`Wage`, `Height` and `Weight` are typed `number` but parse to `number | null`**
+(`types.ts:7-8,13`; `parseWage`/`parseHeight`/`parseWeight` all return `null` for
+an absent cell, and the `as Player` cast at `html-parser.ts:184` hides it). The
+smell is already visible: `LeaguesView.tsx:70` writes `player.Wage ?? 0`, and
+`PlayerProfileView.tsx:469` renders `{player.Height} cm`, which is `" cm"` for a
+null. Same defect the round-one type widening fixed for eleven stat fields.
+
+**Snapshots now come in two vintages.** Imports before the parser fix store
+`NaN` where later ones store `null`, and an empty cell then stored a real `0`
+(`Number("") === 0`) where it now stores `null` — that last one is not
+recoverable from the stored data. `safeNumber` flattens all three to `0`, so
+nothing notices today, but *minutes beside every bar* must treat `NaN` as absent
+as well as `null`, or old snapshots will read as measured zeroes.
+
+**Ranking a single-snapshot player where he actually played is still
+unavailable.** *Rank this row* is gated on `roleKey` (`PlayerHistory.tsx:126`),
+which the profile supplies only on its in-this-snapshot branch
+(`PlayerProfileView.tsx:837`) — where it recomputes the cohort already shown in
+the bars above it. The not-in-this-snapshot branch (`:175`) passes
+`roleKey={null}` and shows no button. Round one made that branch render its row;
+it did not make it rankable.
+
+**`browser-tests/` is not typechecked.** `tsconfig.app.json` includes only
+`src`, so `npm run build` never checks the specs, and Playwright transpiles
+without checking. A type error in a test file is invisible until it fails at
+runtime.
+
 ## Order of work
 
 1. **Stop lying.** The nine parser fields, the cohort's undisclosed composition,

@@ -809,7 +809,7 @@ function ComparisonColumn({ player, allPlayers }: { player: Player; allPlayers: 
       <VStack align="stretch" gap={1}>
         {cohortSize === 0 ? (
           <Text color="fg.muted" fontSize="sm" py={4}>
-            No comparable players found in {sameLeagueOnly ? "this league" : "ranked leagues"} with 5+ starts.
+            No comparable players found in {sameLeagueOnly ? "this league" : "ranked leagues"} with 900+ mins.
           </Text>
         ) : (
           percentiles.map((stat) => (
