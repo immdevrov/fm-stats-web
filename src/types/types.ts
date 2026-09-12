@@ -21,12 +21,12 @@ export type Player = {
   AssistsPer90: number | null;
   xAPer90: number | null;
   PrPassesPer90: number | null;
-  OPKPPer90: number;
+  OPKPPer90: number | null;
   ChCPer90: number;
   OPCrPercentage: number;
   OPCrsCPer90: number;
   ConvPercentage: number;
-  xGOP: number;
+  xGOP: number | null;
   ShTPer90: number | null;
   ShotsOutsideBoxPer90: number | null;
   goals90: number | null;

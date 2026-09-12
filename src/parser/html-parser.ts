@@ -17,8 +17,6 @@ const createStringProcessor = (str: string) => {
 const processHyphen = createStringProcessor("-");
 const processNA = createStringProcessor("N/A");
 
-const parsePercent = (str: string) => parseFloat(str.replace("%", ""));
-
 const parseWage = (record: Record<string, string>) => {
   const rawWage = record["Wage"];
   const fn = (str: string) =>
@@ -142,16 +140,16 @@ export function transformPlayerStats(rawRecords: Record<string, string>[]): Play
       SecPosition: processHyphen(record["Sec. Position"], parsePositions),
       Starts: processHyphen(record.Starts, (s) => parseInt(s, 10)) ?? 0,
       Mins: processHyphen(record.Mins, (s) => parseInt(s.replace(",", ""), 10)) ?? 0,
-      PasPercentage: processHyphen(record["Pas %"], parsePercent),
+      PasPercentage: processHyphen(record["Pas %"], parseFloat),
       AssistsPer90: processHyphen(record["Asts/90"], parseFloat),
       xAPer90: processHyphen(record["xA/90"], parseFloat),
       PrPassesPer90: processHyphen(record["Pr passes/90"], parseFloat),
-      OPKPPer90: Number(record["OP-KP/90"] || 0),
+      OPKPPer90: processHyphen(record["OP-KP/90"], parseFloat),
       ChCPer90: processHyphen(record["Ch C/90"], parseFloat) ?? 0,
       OPCrPercentage: processHyphen(record["OP-Cr %"], parseFloat) ?? 0,
       OPCrsCPer90: processHyphen(record["OP-Crs C/90"], parseFloat) ?? 0,
       ConvPercentage: processHyphen(record["Conv %"], parseFloat) ?? 0,
-      xGOP: Number(record["xG-OP"] || 0),
+      xGOP: processHyphen(record["xG-OP"], parseFloat),
       ShTPer90: processHyphen(record["ShT/90"], parseFloat),
       ShotsOutsideBoxPer90: processHyphen(record["Shots Outside Box/90"], parseFloat),
       NPxGPer90: processHyphen(record["NP-xG/90"], parseFloat),
@@ -177,8 +175,8 @@ export function transformPlayerStats(rawRecords: Record<string, string>[]): Play
       Svt: processHyphen(record["Svt"], parseFloat) ?? 0,
       Svp: processHyphen(record["Svp"], parseFloat) ?? 0,
       Svh: processHyphen(record["Svh"], parseFloat) ?? 0,
-      exsvPercentage: processHyphen(record["xSv %"], parsePercent),
-      svPercentage: processHyphen(record["Sv %"], parsePercent),
+      exsvPercentage: processHyphen(record["xSv %"], parseFloat),
+      svPercentage: processHyphen(record["Sv %"], parseFloat),
       xGPPer90: processHyphen(record["xGP/90"], parseFloat) ?? 0,
       ConPer90: processHyphen(record["Con/90"], parseFloat) ?? 0,
     } as Player;

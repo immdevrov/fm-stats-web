@@ -192,6 +192,8 @@ test('an absent rate stat parses as null, not as a measured zero', () => {
   expect(parseOne({ 'ShT/90': '-' }).ShTPer90).toBeNull();
   expect(parseOne({ 'Shots Outside Box/90': '-' }).ShotsOutsideBoxPer90).toBeNull();
   expect(parseOne({ 'NP-xG/90': '-' }).NPxGPer90).toBeNull();
+  expect(parseOne({ 'OP-KP/90': '-' }).OPKPPer90).toBeNull();
+  expect(parseOne({ 'xG-OP': '-' }).xGOP).toBeNull();
 });
 
 test('an empty rate stat cell is absent too', () => {
@@ -203,9 +205,10 @@ test('a real rate stat still parses', () => {
   expect(parseOne({ 'xA/90': '0.31' }).xAPer90).toBe(0.31);
 });
 
-test('absent percentage stats parse as null, real ones lose the percent sign', () => {
+test('absent percentage stats parse as null, real ones keep their value', () => {
   expect(parseOne({ 'Pas %': '-' }).PasPercentage).toBeNull();
   expect(parseOne({ 'Pas %': '82%' }).PasPercentage).toBe(82);
+  expect(parseOne({ 'Pas %': '82.5%' }).PasPercentage).toBe(82.5);
   expect(parseOne({ 'Sv %': '-' }).svPercentage).toBeNull();
   expect(parseOne({ 'xSv %': '-' }).exsvPercentage).toBeNull();
 });
