@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test';
-import { parseCustomDate } from '../src/utils/utils';
+import { parseCustomDate, safeNumber } from '../src/utils/utils';
 import { deriveDateFromFilename, displayToIso, isoToDisplay } from '../src/utils/import-date';
 import { PLAYER_FIELDS, pack, unpack } from '../src/services/db/pack';
 import { sortSnapshots, newestSnapshot } from '../src/utils/snapshot-order';
-import { REQUIRED_COLUMNS, findMissingColumns } from '../src/parser/html-parser';
+import { REQUIRED_COLUMNS, findMissingColumns, transformPlayerStats } from '../src/parser/html-parser';
 import { resolveHorizon } from '../src/utils/planner';
 import type { Player } from '../src/types/types';
 import type { Snapshot } from '../src/types/snapshot';
@@ -159,4 +159,68 @@ test('year offsets add whole years to the snapshot date', () => {
 test('an undated snapshot or no preset gives no horizon', () => {
   expect(resolveHorizon(null, 'season')).toBeNull();
   expect(resolveHorizon('2035-01-24', null)).toBeNull();
+});
+
+function rawRecord(overrides: Record<string, string> = {}): Record<string, string> {
+  const record: Record<string, string> = {};
+  for (const column of REQUIRED_COLUMNS) {
+    record[column] = '0';
+  }
+  record.UID = '42';
+  record.Name = 'Test Player';
+  record.Nat = 'ENG';
+  record.Division = 'Premier League';
+  record.Club = 'Test FC';
+  record.Position = 'ST';
+  record['Sec. Position'] = '-';
+  record.Expires = '-';
+  record.Wage = '10000';
+  record.Height = '180 cm';
+  record.Weight = '80 kg';
+  record['Rc Injury'] = '-';
+  return { ...record, ...overrides };
+}
+
+function parseOne(overrides: Record<string, string>) {
+  return transformPlayerStats([rawRecord(overrides)])[0];
+}
+
+test('an absent rate stat parses as null, not as a measured zero', () => {
+  expect(parseOne({ 'xA/90': '-' }).xAPer90).toBeNull();
+  expect(parseOne({ 'Asts/90': '-' }).AssistsPer90).toBeNull();
+  expect(parseOne({ 'Pr passes/90': '-' }).PrPassesPer90).toBeNull();
+  expect(parseOne({ 'ShT/90': '-' }).ShTPer90).toBeNull();
+  expect(parseOne({ 'Shots Outside Box/90': '-' }).ShotsOutsideBoxPer90).toBeNull();
+  expect(parseOne({ 'NP-xG/90': '-' }).NPxGPer90).toBeNull();
+});
+
+test('an empty rate stat cell is absent too', () => {
+  expect(parseOne({ 'xA/90': '' }).xAPer90).toBeNull();
+  expect(parseOne({ 'xA/90': '   ' }).xAPer90).toBeNull();
+});
+
+test('a real rate stat still parses', () => {
+  expect(parseOne({ 'xA/90': '0.31' }).xAPer90).toBe(0.31);
+});
+
+test('absent percentage stats parse as null, real ones lose the percent sign', () => {
+  expect(parseOne({ 'Pas %': '-' }).PasPercentage).toBeNull();
+  expect(parseOne({ 'Pas %': '82%' }).PasPercentage).toBe(82);
+  expect(parseOne({ 'Sv %': '-' }).svPercentage).toBeNull();
+  expect(parseOne({ 'xSv %': '-' }).exsvPercentage).toBeNull();
+});
+
+test('absent minutes and starts are zero, because he did not play', () => {
+  const player = parseOne({ Mins: '-', Starts: '-' });
+  expect(player.Mins).toBe(0);
+  expect(player.Starts).toBe(0);
+});
+
+test('minutes keep their thousands separator', () => {
+  expect(parseOne({ Mins: '1,234' }).Mins).toBe(1234);
+});
+
+test('safeNumber still flattens an absent stat to zero for display', () => {
+  expect(safeNumber(null)).toBe(0);
+  expect(safeNumber(NaN)).toBe(0);
 });

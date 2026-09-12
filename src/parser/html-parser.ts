@@ -7,7 +7,7 @@ const createStringProcessor = (str: string) => {
     s: string | null | undefined,
     processFn: T
   ): ReturnType<T> | null => {
-    if (s === null || s === undefined || s.trim() === str) {
+    if (s === null || s === undefined || s.trim() === "" || s.trim() === str) {
       return null;
     }
     return processFn(s) as ReturnType<T>;
@@ -16,6 +16,8 @@ const createStringProcessor = (str: string) => {
 
 const processHyphen = createStringProcessor("-");
 const processNA = createStringProcessor("N/A");
+
+const parsePercent = (str: string) => parseFloat(str.replace("%", ""));
 
 const parseWage = (record: Record<string, string>) => {
   const rawWage = record["Wage"];
@@ -138,23 +140,21 @@ export function transformPlayerStats(rawRecords: Record<string, string>[]): Play
       Expires: processHyphen(record.Expires, parseCustomDate),
       Position: parsePositions(record.Position),
       SecPosition: processHyphen(record["Sec. Position"], parsePositions),
-      Starts: Number(record.Starts),
-      Mins: Number(
-        typeof record.Mins === "string" ? record.Mins.replace(",", "") : record.Mins
-      ),
-      PasPercentage: Number(record["Pas %"].replace("%", "")),
-      AssistsPer90: Number(record["Asts/90"]),
-      xAPer90: Number(record["xA/90"]),
-      PrPassesPer90: Number(record["Pr passes/90"]),
+      Starts: processHyphen(record.Starts, (s) => parseInt(s, 10)) ?? 0,
+      Mins: processHyphen(record.Mins, (s) => parseInt(s.replace(",", ""), 10)) ?? 0,
+      PasPercentage: processHyphen(record["Pas %"], parsePercent),
+      AssistsPer90: processHyphen(record["Asts/90"], parseFloat),
+      xAPer90: processHyphen(record["xA/90"], parseFloat),
+      PrPassesPer90: processHyphen(record["Pr passes/90"], parseFloat),
       OPKPPer90: Number(record["OP-KP/90"] || 0),
       ChCPer90: processHyphen(record["Ch C/90"], parseFloat) ?? 0,
       OPCrPercentage: processHyphen(record["OP-Cr %"], parseFloat) ?? 0,
       OPCrsCPer90: processHyphen(record["OP-Crs C/90"], parseFloat) ?? 0,
       ConvPercentage: processHyphen(record["Conv %"], parseFloat) ?? 0,
       xGOP: Number(record["xG-OP"] || 0),
-      ShTPer90: Number(record["ShT/90"]),
-      ShotsOutsideBoxPer90: Number(record["Shots Outside Box/90"]),
-      NPxGPer90: Number(record["NP-xG/90"]),
+      ShTPer90: processHyphen(record["ShT/90"], parseFloat),
+      ShotsOutsideBoxPer90: processHyphen(record["Shots Outside Box/90"], parseFloat),
+      NPxGPer90: processHyphen(record["NP-xG/90"], parseFloat),
       goals90: processHyphen(record["Gls/90"], parseFloat),
       GlMst: processHyphen(record["Gl Mst"], parseInt) ?? 0,
       TckPer90: processHyphen(record["Tck/90"], parseFloat),
@@ -177,8 +177,8 @@ export function transformPlayerStats(rawRecords: Record<string, string>[]): Play
       Svt: processHyphen(record["Svt"], parseFloat) ?? 0,
       Svp: processHyphen(record["Svp"], parseFloat) ?? 0,
       Svh: processHyphen(record["Svh"], parseFloat) ?? 0,
-      exsvPercentage: Number(record["xSv %"].replace("%", "")),
-      svPercentage: Number(record["Sv %"].replace("%", "")),
+      exsvPercentage: processHyphen(record["xSv %"], parsePercent),
+      svPercentage: processHyphen(record["Sv %"], parsePercent),
       xGPPer90: processHyphen(record["xGP/90"], parseFloat) ?? 0,
       ConPer90: processHyphen(record["Con/90"], parseFloat) ?? 0,
     } as Player;
