@@ -75,7 +75,7 @@ export function PlayerHistory({ uid, roleKey }: { uid: number; roleKey: string |
   };
 
   if (entries === null) return <Spinner size="sm" colorPalette="glaucous" />;
-  if (entries.length <= 1) return null;
+  if (entries.length === 0) return null;
 
   const statKeys = ROLE_CONFIG.find((role) => role.key === roleKey)?.statKeys ?? [];
 
