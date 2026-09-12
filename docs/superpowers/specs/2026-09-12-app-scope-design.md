@@ -34,9 +34,6 @@ This is a **storage** rule, and it is already in the schema.
 out of a simulation — they still record what happened. They are not a species of
 opinion.
 
-### One correction to make
-
-
 ## The display discipline
 
 Over the top of the storage rule sits one principle that governs presentation:
@@ -81,20 +78,36 @@ notes system and it is poor; this is a gap worth filling.
 use a bare `Number()` (`src/parser/html-parser.ts:145-181`), while ~30
 neighbouring fields go through `processHyphen` — which is itself the evidence
 that the export writes `-`. So does `RcInjury: record["Rc Injury"] !== "-"`.
-`Number("-")` is `NaN`. `getPercentileFromSorted` (`src/utils/utils.ts:141-152`)
-then compares against `NaN`, every comparison is false, it breaks on the first
-element, and returns **percentile 0** — rendered as a red bar at zero printing
-the literal string `NaN`.
+`Number("-")` is `NaN`, and that `NaN` is written to IndexedDB by `pack()`.
 
-**This is currently invisible, and the reason matters:** the import is filtered
-to players *with* minutes, and those players have values in those cells. The
-filter conceals the bug — and the filter is what is being removed. Verify before
-the full import: export one club's squad including youth, parse it, inspect those
-nine fields for a player with no appearances.
+*Corrected 2026-09-12, verified against source.* This entry previously claimed
+the `NaN` renders as a red bar at zero printing the literal string `NaN`, and
+that a second-order comparator hazard was concealed by the import filter. Both
+are wrong. `safeNumber` (`src/utils/utils.ts:9-15`) maps `NaN` to `0`, and every
+consumer of these nine reads them only through `extract*Stats()`
+(`src/types/stat-categories.ts:190,211,219,221,245,246`) — never directly. All
+three cohort builders (`role-percentiles.ts:30`, `comparison-utils.ts:28`,
+`scouting-engine.ts:35`) build columns from role instances, so no `NaN` reaches
+`getPercentileFromSorted`. The comparator hazard is unreachable because
+`safeNumber` sits between the parser and every column, not because of the
+filter; removing the filter will not expose it.
 
-A second-order hazard, currently unreachable: a `NaN` inside a column poisons the
-`(a,b) => a-b` comparator, leaving the array partly unsorted, which makes the
-early `break` wrong for *every other player in that column*.
+**The real defect is quieter.** A statless player's `xA/90` becomes a confident
+`0.00`, indistinguishable from a player measured at zero — the same lie without
+the `NaN` tell. And absent means two different things: for a rate stat it means
+*unmeasured*, for `Starts` and `Mins` it means *zero*. Fusing them at parse time
+destroys the distinction that "minutes beside every bar" depends on.
+
+**The visible-`NaN` risk is real but sits elsewhere.** `Starts` and `Mins` also
+use a bare `Number()` (`html-parser.ts:141-144`) and, unlike the nine, are read
+directly and rendered raw (`PlayerHistory.tsx:116-117`,
+`PlayerProfileView.tsx:492`, `SquadTable.tsx:30`, `PlayersView.tsx:80`).
+
+Also noted: `AssistsPer90` and `ShotsOutsideBoxPer90` are parsed, typed and
+packed but read nowhere.
+
+Verify before the full import: export one club's squad including youth, parse
+it, inspect these eleven fields for a player with no appearances.
 
 **The parser builds a full DOM.** `parseHtmlTable`
 (`src/parser/html-parser.ts:50-99`) uses `DOMParser` then `querySelectorAll`.
