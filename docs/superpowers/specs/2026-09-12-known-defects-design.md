@@ -89,6 +89,13 @@ groups — a `?? 0` field goes `NaN → 0` today and `null → 0` after; the nin
 to `null`, which is the point. It is one condition in one function, rather than
 leaving nine fields half-guarded.
 
+One caveat to *rendered output is identical*: the widened guard serves every
+caller, so an empty `Expires`, `Sec. Position`, `Wage`, `Height` or `Weight`
+cell now yields `null` instead of `NaN` or an Invalid Date — a `Height` of
+`" cm"` becomes `"-"`. That is an improvement rather than a regression, and it
+is unreachable if the export always writes `-`, but it is a change and the
+identical-output claim is about the eleven stat fields, not the whole parser.
+
 **Eleven fields, not nine — corrected during review.** Four more carry the same
 defect and are in scope:
 
