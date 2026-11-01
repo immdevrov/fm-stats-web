@@ -3,6 +3,7 @@ import { Box, HStack, Tabs, Text, VStack } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
 import type { Player } from "../../types/types";
 import { displayDate, formatPositions, getEffectivePosition } from "../../utils/utils";
+import { byAgeDesc } from "../../utils/planner";
 import { useSquadPlan } from "../../contexts/SquadPlanContext";
 import { usePlayerNotes } from "../../contexts/PlayerNotesContext";
 import { useMyTeam } from "../../contexts/MyTeamContext";
@@ -60,7 +61,7 @@ export function CandidatePanel({ squad, listed }: { squad: Player[]; listed: Pla
   const [tab, setTab] = useState("squad");
 
   const unplaced = squad.filter((player) => !placements.has(player.UID));
-  const rows = tab === "squad" ? unplaced : listed;
+  const rows = [...(tab === "squad" ? unplaced : listed)].sort(byAgeDesc);
 
   return (
     <VStack

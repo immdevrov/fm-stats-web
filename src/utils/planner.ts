@@ -12,6 +12,10 @@ export interface Placement {
 
 export type PlacementIndex = Map<number, Placement[]>;
 
+export function byAgeDesc(a: { Age: number; Name: string }, b: { Age: number; Name: string }): number {
+  return b.Age - a.Age || a.Name.localeCompare(b.Name);
+}
+
 function sideMatches(slotSide: PlayerPosition['side'], playerSide: PlayerPosition['side']): boolean {
   if (!slotSide?.length || !playerSide?.length) return true;
   return slotSide.some((side) => playerSide.includes(side));

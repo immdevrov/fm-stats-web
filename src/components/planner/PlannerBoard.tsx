@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { HStack, VStack } from "@chakra-ui/react";
 import type { Formation } from "../../formations";
 import type { Player } from "../../types/types";
+import { byAgeDesc } from "../../utils/planner";
 import { PlannerSlot } from "./PlannerSlot";
 
 export function PlannerBoard({
@@ -18,7 +19,7 @@ export function PlannerBoard({
   const candidates = useMemo(() => {
     const byUid = new Map(listed.map((player) => [player.UID, player]));
     for (const player of squad) byUid.set(player.UID, player);
-    return [...byUid.values()].sort((a, b) => a.Name.localeCompare(b.Name));
+    return [...byUid.values()].sort(byAgeDesc);
   }, [squad, listed]);
 
   const byUid = useMemo(() => new Map(allPlayers.map((p) => [p.UID, p])), [allPlayers]);

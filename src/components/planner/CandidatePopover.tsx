@@ -1,11 +1,15 @@
-import { useState } from "react";
-import { Box, HStack, Popover, Portal, Text, VStack } from "@chakra-ui/react";
+import { useRef, useState } from "react";
+import { Box, HStack, Input, Popover, Portal, Text, VStack } from "@chakra-ui/react";
 import type { FormationSlot } from "../../formations";
 import type { Player } from "../../types/types";
 import { formatPositions, getEffectivePosition } from "../../utils/utils";
 import { matchesSlot } from "../../utils/planner";
 import { useSquadPlan } from "../../contexts/SquadPlanContext";
 import { usePlayerNotes } from "../../contexts/PlayerNotesContext";
+
+function foldName(name: string): string {
+  return name.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+}
 
 export function CandidatePopover({
   slot,
@@ -19,6 +23,8 @@ export function CandidatePopover({
   const { plan, place } = useSquadPlan();
   const { lists } = usePlayerNotes();
   const [isOpen, setIsOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
 
   const inThisSlot = new Set(
     (plan?.slots.find((s) => s.slotId === slot.id)?.players ?? []).map((p) => p.uid)
@@ -26,8 +32,12 @@ export function CandidatePopover({
   const listedUids = new Set(lists.flatMap((list) => list.uids));
 
   const candidates = squad.filter((player) => !inThisSlot.has(player.UID));
-  const matching = candidates.filter((player) => matchesSlot(player, slot));
-  const rest = candidates.filter((player) => !matchesSlot(player, slot));
+  const needle = foldName(query.trim());
+  const shown = needle
+    ? candidates.filter((player) => foldName(player.Name).includes(needle))
+    : candidates;
+  const matching = shown.filter((player) => matchesSlot(player, slot));
+  const rest = shown.filter((player) => !matchesSlot(player, slot));
 
   const row = (player: Player) => (
     <HStack
@@ -65,7 +75,14 @@ export function CandidatePopover({
   );
 
   return (
-    <Popover.Root open={isOpen} onOpenChange={(e) => setIsOpen(e.open)}>
+    <Popover.Root
+      open={isOpen}
+      onOpenChange={(e) => {
+        setIsOpen(e.open);
+        if (!e.open) setQuery("");
+      }}
+      initialFocusEl={() => searchRef.current}
+    >
       <Popover.Trigger asChild>
         <HStack
           justify="center"
@@ -87,6 +104,15 @@ export function CandidatePopover({
       <Portal>
         <Popover.Positioner>
           <Popover.Content width="280px">
+            <Box p={2} borderBottomWidth="1px" borderColor="border.emphasized">
+              <Input
+                ref={searchRef}
+                size="sm"
+                placeholder="Search by name"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </Box>
             <Popover.Body maxH="420px" overflowY="auto" p={2}>
               <VStack align="stretch" gap={0}>
                 {matching.map(row)}
@@ -109,9 +135,9 @@ export function CandidatePopover({
                     {rest.map(row)}
                   </>
                 )}
-                {candidates.length === 0 && (
+                {shown.length === 0 && (
                   <Text fontSize="xs" color="fg.muted" p={2}>
-                    Nobody left to add.
+                    {candidates.length === 0 ? "Nobody left to add." : "No one matches."}
                   </Text>
                 )}
               </VStack>
