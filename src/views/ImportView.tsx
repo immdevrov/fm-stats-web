@@ -245,7 +245,7 @@ export function ImportView() {
                   await notesRefresh();
                   toaster.create({
                     title: "Lists Cleared",
-                    description: "All lists, prices, notes and unwanted flags have been removed.",
+                    description: "All lists, prices, notes, unwanted flags and transfer marks have been removed.",
                     type: "success",
                     duration: 5000,
                   });

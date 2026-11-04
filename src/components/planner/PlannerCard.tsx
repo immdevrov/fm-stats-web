@@ -18,11 +18,13 @@ export function PlannerCard({
   planned,
   rank,
   player,
+  present,
 }: {
   slot: FormationSlot;
   planned: PlannedPlayer;
   rank: number;
   player: Player | undefined;
+  present: boolean;
 }) {
   const { plan, placements, remove, makeFirstChoice } = useSquadPlan();
   const { active } = useSnapshots();
@@ -42,7 +44,9 @@ export function PlannerCard({
   const expiring = Boolean(horizon && player?.Expires && player.Expires <= horizon);
 
   const { elsewhere, firstChoiceCount } = placementFacts(placements, planned.uid, slot.id);
-  const departed = Boolean(player && myClub && player.Club !== myClub && memberships.length === 0);
+  const departed = Boolean(player) && !present;
+  const arriving =
+    annotations.get(planned.uid)?.transfer === "in" && Boolean(player) && player!.Club !== myClub;
 
   const positions = effectivePlayer ? formatPositions(getEffectivePosition(effectivePlayer)) : "";
   const trailing = player
@@ -136,8 +140,21 @@ export function PlannerCard({
                   </Text>
                 </Tooltip>
               )}
+              {arriving && (
+                <Tooltip content="Arriving">
+                  <Text as="span" color="glaucous.500" fontSize="sm" lineHeight="1">
+                    &#8600;
+                  </Text>
+                </Tooltip>
+              )}
               {departed && (
-                <Tooltip content={`No longer at ${myClub} — now at ${player!.Club}`}>
+                <Tooltip
+                  content={
+                    player!.Club === myClub
+                      ? "Marked as leaving"
+                      : `No longer at ${myClub} — now at ${player!.Club}`
+                  }
+                >
                   <Text
                     as="span"
                     color="spicyPaprika.500"

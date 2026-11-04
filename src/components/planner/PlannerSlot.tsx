@@ -13,10 +13,12 @@ export function PlannerSlot({
   slot,
   candidates,
   byUid,
+  presentUids,
 }: {
   slot: FormationSlot;
   candidates: Player[];
   byUid: Map<number, Player>;
+  presentUids: Set<number>;
 }) {
   const { plan } = useSquadPlan();
   const placed = plan?.slots.find((s) => s.slotId === slot.id)?.players ?? [];
@@ -40,6 +42,7 @@ export function PlannerSlot({
           planned={planned}
           rank={rank}
           player={byUid.get(planned.uid)}
+          present={presentUids.has(planned.uid)}
         />
       ))}
 
