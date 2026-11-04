@@ -8,7 +8,7 @@ import {
 } from "react";
 import { db } from "../services/db";
 import type { Player } from "../types/types";
-import type { PlayerAnnotation, PlayerList } from "../types/annotations";
+import type { PlayerAnnotation, PlayerList, TransferMark } from "../types/annotations";
 
 export type PlayerIdentity = Pick<Player, "Name" | "Club">;
 
@@ -27,6 +27,8 @@ interface PlayerNotesContextValue {
   refresh: () => Promise<void>;
   isUnwanted: (uid: number) => boolean;
   toggleUnwanted: (uid: number, player?: PlayerIdentity) => Promise<void>;
+  transferOf: (uid: number) => TransferMark | undefined;
+  setTransfer: (uid: number, transfer: TransferMark | null, player?: PlayerIdentity) => Promise<void>;
   listsFor: (uid: number) => PlayerList[];
   addToList: (listId: string, uid: number, player?: PlayerIdentity) => Promise<void>;
   removeFromList: (listId: string, uid: number) => Promise<void>;
@@ -91,6 +93,19 @@ export function PlayerNotesProvider({ children }: { children: ReactNode }) {
       await Promise.all([refreshAnnotations(), refreshLists()]);
     },
     [annotations, refreshAnnotations, refreshLists]
+  );
+
+  const transferOf = useCallback(
+    (uid: number) => annotations.get(uid)?.transfer,
+    [annotations]
+  );
+
+  const setTransfer = useCallback(
+    async (uid: number, transfer: TransferMark | null, player?: PlayerIdentity) => {
+      await db.setTransfer(uid, transfer, player);
+      await refreshAnnotations();
+    },
+    [refreshAnnotations]
   );
 
   const listsFor = useCallback(
@@ -178,6 +193,8 @@ export function PlayerNotesProvider({ children }: { children: ReactNode }) {
         refresh,
         isUnwanted,
         toggleUnwanted,
+        transferOf,
+        setTransfer,
         listsFor,
         addToList,
         removeFromList,

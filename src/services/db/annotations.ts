@@ -1,6 +1,6 @@
 import { getDB, wrapError } from './connection';
 import type { Player } from '../../types/types';
-import type { PlayerAnnotation, PlayerList } from '../../types/annotations';
+import type { PlayerAnnotation, PlayerList, TransferMark } from '../../types/annotations';
 
 type PlayerIdentity = Pick<Player, 'Name' | 'Club'>;
 
@@ -109,6 +109,29 @@ export async function clearListsAndAnnotations(alsoDropPositions = false): Promi
   }
 }
 
+export async function setTransfer(
+  uid: number,
+  transfer: TransferMark | null,
+  player?: PlayerIdentity
+): Promise<void> {
+  try {
+    const db = await getDB();
+    const tx = db.transaction('playerAnnotations', 'readwrite');
+    const existing = await tx.store.get(uid);
+    await tx.store.put({
+      ...existing,
+      uid,
+      transfer: transfer ?? undefined,
+      unwanted: transfer ? false : existing?.unwanted,
+      lastKnownName: player?.Name ?? existing?.lastKnownName,
+      lastKnownClub: player?.Club ?? existing?.lastKnownClub,
+    });
+    await tx.done;
+  } catch (error) {
+    throw wrapError('set transfer', error);
+  }
+}
+
 export async function setUnwanted(
   uid: number,
   unwanted: boolean,
@@ -125,6 +148,7 @@ export async function setUnwanted(
       ...existing,
       uid,
       unwanted,
+      transfer: unwanted ? undefined : existing?.transfer,
       lastKnownName: player?.Name ?? existing?.lastKnownName,
       lastKnownClub: player?.Club ?? existing?.lastKnownClub,
     });
