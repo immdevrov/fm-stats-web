@@ -1,4 +1,4 @@
-import { Text } from "@chakra-ui/react";
+import { Badge, HStack, Text } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
 import type { Player } from "../types/types";
 import { Table, type Column } from "./ui/table";
@@ -20,8 +20,16 @@ interface SquadRow extends Record<string, unknown> {
   club: string;
 }
 
-export function SquadTable({ players }: { players: Player[] }) {
+export function SquadTable({
+  players,
+  transfers,
+}: {
+  players: Player[];
+  transfers?: { incoming: Set<number>; outgoing: Set<number> };
+}) {
   const { isUnwanted } = usePlayerNotes();
+  const isIncoming = (uid: number) => transfers?.incoming.has(uid) === true;
+  const isOutgoing = (uid: number) => transfers?.outgoing.has(uid) === true;
 
   const data: SquadRow[] = players.map((p) => ({
     name: p.Name,
@@ -52,11 +60,23 @@ export function SquadTable({ players }: { players: Player[] }) {
       key: "name",
       header: "Name",
       render: (value, row) => (
-        <Link to={`/players/${row.uid}`}>
-          <Text color="glaucous.400" _hover={{ textDecoration: "underline" }}>
-            {value as string}
-          </Text>
-        </Link>
+        <HStack gap={2}>
+          <Link to={`/players/${row.uid}`}>
+            <Text color="glaucous.400" _hover={{ textDecoration: "underline" }}>
+              {value as string}
+            </Text>
+          </Link>
+          {isIncoming(row.uid) && (
+            <Badge colorPalette="glaucous" variant="subtle" size="sm">
+              IN · from {row.club}
+            </Badge>
+          )}
+          {isOutgoing(row.uid) && (
+            <Badge colorPalette="spicyPaprika" variant="subtle" size="sm">
+              OUT
+            </Badge>
+          )}
+        </HStack>
       ),
     },
     { key: "age", header: "Age" },
@@ -84,7 +104,9 @@ export function SquadTable({ players }: { players: Player[] }) {
       columns={columns}
       defaultSortKey="starts"
       defaultSortDirection="desc"
-      rowProps={(row) => (isUnwanted(row.uid) ? { color: "fg.muted", bg: "bg.subtle" } : {})}
+      rowProps={(row) =>
+        isUnwanted(row.uid) || isOutgoing(row.uid) ? { color: "fg.muted", bg: "bg.subtle" } : {}
+      }
     />
   );
 }

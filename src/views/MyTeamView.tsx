@@ -6,7 +6,9 @@ import { SquadTable } from "../components/SquadTable";
 import { SquadPlanner } from "../components/planner/SquadPlanner";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { useMyTeam } from "../contexts/MyTeamContext";
-import { useRoster } from "../contexts/SnapshotContext";
+import { useRoster, useSnapshots } from "../contexts/SnapshotContext";
+import { usePlayerNotes } from "../contexts/PlayerNotesContext";
+import { markedSquad, type MarkedSquad } from "../utils/squad";
 import { RosterErrorNotice } from "../components/RosterErrorNotice";
 
 export function MyTeamView() {
@@ -24,9 +26,27 @@ export function MyTeamView() {
     [allPlayers]
   );
 
-  const players = useMemo(
-    () => (allPlayers && myClub ? allPlayers.filter((p) => p.Club === myClub) : null),
-    [allPlayers, myClub]
+  const { isNewest } = useSnapshots();
+  const { annotations } = usePlayerNotes();
+  const anyMarked = useMemo(
+    () => [...annotations.values()].some((a) => a.transfer),
+    [annotations]
+  );
+
+  const marked = useMemo((): MarkedSquad | null => {
+    if (!allPlayers || !myClub) return null;
+    if (isNewest) return markedSquad(allPlayers, myClub, annotations);
+    const imported = allPlayers.filter((p) => p.Club === myClub);
+    return { imported, incoming: [], outgoing: [], squad: imported };
+  }, [allPlayers, myClub, isNewest, annotations]);
+
+  const transfers = useMemo(
+    () =>
+      marked && {
+        incoming: new Set(marked.incoming.map((p) => p.UID)),
+        outgoing: new Set(marked.outgoing.map((p) => p.UID)),
+      },
+    [marked]
   );
 
   const handlePick = (club: string) => {
@@ -99,9 +119,11 @@ export function MyTeamView() {
               <Heading size="2xl" colorPalette="glaucous" color="fg.emphasized">
                 {myClub}
               </Heading>
-              {players && (
+              {marked && (
                 <Text fontSize="sm" color="fg.muted">
-                  {players.length} players
+                  {marked.squad.length} players
+                  {marked.incoming.length > 0 && ` · +${marked.incoming.length} in`}
+                  {marked.outgoing.length > 0 && ` · −${marked.outgoing.length} out`}
                 </Text>
               )}
             </HStack>
@@ -122,14 +144,20 @@ export function MyTeamView() {
             </Tabs.List>
           </Tabs.Root>
 
-          {players === null ? (
+          {!isNewest && anyMarked && (
+            <Text fontSize="sm" color="fg.muted">
+              Transfer marks apply to the newest snapshot only.
+            </Text>
+          )}
+
+          {marked === null || transfers === null ? (
             <Spinner size="lg" colorPalette="glaucous" alignSelf="center" />
           ) : isPlanner ? (
-            <SquadPlanner club={myClub} players={players} />
-          ) : players.length === 0 ? (
+            <SquadPlanner club={myClub} players={marked.squad} />
+          ) : marked.imported.length === 0 ? (
             <Text color="fg.muted">{myClub} is not in the current data.</Text>
           ) : (
-            <SquadTable players={players} />
+            <SquadTable players={[...marked.imported, ...marked.incoming]} transfers={transfers} />
           )}
         </VStack>
       </Container>

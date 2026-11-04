@@ -196,7 +196,13 @@ export async function seedSnapshots(
 
 export async function seedAnnotation(
   page: Page,
-  annotation: { uid: number; unwanted?: boolean; note?: string; lastKnownName?: string }
+  annotation: {
+    uid: number;
+    unwanted?: boolean;
+    transfer?: 'in' | 'out';
+    note?: string;
+    lastKnownName?: string;
+  }
 ) {
   await page.evaluate(
     ({ dbName, dbVersion, annotation }) => {
