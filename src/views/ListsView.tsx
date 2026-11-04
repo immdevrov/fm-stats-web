@@ -1,8 +1,11 @@
 import { useMemo, useState } from "react";
-import { Box, Button, Container, HStack, Heading, Spinner, Text, VStack } from "@chakra-ui/react";
+import { Badge, Box, Button, Container, HStack, Heading, Spinner, Text, VStack } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
 import { usePlayerNotes, type PlayerIdentity } from "../contexts/PlayerNotesContext";
-import { useRoster } from "../contexts/SnapshotContext";
+import { useRoster, useSnapshots } from "../contexts/SnapshotContext";
+import { useMyTeam } from "../contexts/MyTeamContext";
+import { isTransferDone } from "../utils/squad";
+import type { TransferMark } from "../types/annotations";
 import { PlayerStatusControl } from "../components/PlayerStatusControl";
 import { Table, type Column } from "../components/ui/table";
 import { formatWage, displayDate, formatPositions, getEffectivePosition } from "../utils/utils";
@@ -11,6 +14,7 @@ import { RosterErrorNotice } from "../components/RosterErrorNotice";
 import type { Player } from "../types/types";
 
 const UNWANTED_TAB = "__unwanted__";
+const TRANSFER_TABS: Record<string, TransferMark> = { __arriving__: "in", __leaving__: "out" };
 const NO_PLAYERS: Player[] = [];
 
 interface ListRow extends Record<string, unknown> {
@@ -26,6 +30,7 @@ interface ListRow extends Record<string, unknown> {
   wageDemand: number | null;
   expires: Date | null;
   note: string;
+  done: boolean;
   identity?: PlayerIdentity;
 }
 
@@ -40,7 +45,10 @@ export function ListsView() {
     renameList,
     deleteList,
     removeFromList,
+    setTransfer,
   } = usePlayerNotes();
+  const { myClub } = useMyTeam();
+  const { isNewest } = useSnapshots();
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const { players: rosterPlayers, error: playersError } = useRoster();
   const players = rosterPlayers ?? NO_PLAYERS;
@@ -53,14 +61,18 @@ export function ListsView() {
 
   const currentTab = activeTab ?? lists[0]?.id ?? UNWANTED_TAB;
   const isUnwantedTab = currentTab === UNWANTED_TAB;
+  const transferTab: TransferMark | undefined = TRANSFER_TABS[currentTab];
   const activeList = lists.find((list) => list.id === currentTab);
 
   const uids = useMemo(() => {
     if (isUnwantedTab) {
       return [...annotations.values()].filter((a) => a.unwanted).map((a) => a.uid);
     }
+    if (transferTab) {
+      return [...annotations.values()].filter((a) => a.transfer === transferTab).map((a) => a.uid);
+    }
     return activeList?.uids ?? [];
-  }, [isUnwantedTab, annotations, activeList]);
+  }, [isUnwantedTab, transferTab, annotations, activeList]);
 
   const rows: ListRow[] = useMemo(
     () =>
@@ -85,10 +97,13 @@ export function ListsView() {
           wageDemand: annotation?.wageDemand ?? null,
           expires: player?.Expires ?? null,
           note: annotation?.note ?? "",
+          done: Boolean(
+            transferTab && isNewest && myClub && isTransferDone(transferTab, player?.Club, myClub)
+          ),
           identity,
         };
       }),
-    [uids, playersByUid, annotations]
+    [uids, playersByUid, annotations, transferTab, isNewest, myClub]
   );
 
   const listsError = loadError ?? playersError;
@@ -151,6 +166,21 @@ export function ListsView() {
     { key: "note", header: "Note", render: (v) => (v as string) || "" },
   ];
 
+  if (transferTab) {
+    columns.push({
+      key: "done",
+      header: "Done",
+      render: (v) =>
+        v ? (
+          <Badge colorPalette="glaucous" variant="subtle" size="sm">
+            Done
+          </Badge>
+        ) : (
+          ""
+        ),
+    });
+  }
+
   if (!isUnwantedTab && activeList) {
     columns.push({
       key: "missing",
@@ -191,6 +221,14 @@ export function ListsView() {
     }
   };
 
+  const doneCount = rows.filter((row) => row.done).length;
+
+  const handleClearDone = async () => {
+    for (const row of rows.filter((r) => r.done)) {
+      await setTransfer(row.uid, null);
+    }
+  };
+
   const handleRemoveMissing = async () => {
     if (!activeList) return;
     for (const row of rows.filter((r) => r.missing)) {
@@ -226,6 +264,19 @@ export function ListsView() {
             >
               Unwanted ({[...annotations.values()].filter((a) => a.unwanted).length})
             </Button>
+            {Object.entries(TRANSFER_TABS).map(([tab, mark]) => (
+              <Button
+                key={tab}
+                size="sm"
+                variant={currentTab === tab ? "solid" : "outline"}
+                colorPalette={mark === "in" ? "glaucous" : "spicyPaprika"}
+                onClick={() => setActiveTab(tab)}
+              >
+                {`${mark === "in" ? "Arriving" : "Leaving"} (${
+                  [...annotations.values()].filter((a) => a.transfer === mark).length
+                })`}
+              </Button>
+            ))}
             <Button size="sm" variant="ghost" onClick={handleCreate}>
               + New list
             </Button>
@@ -257,6 +308,25 @@ export function ListsView() {
               Ruled out, or a deal that proved impossible. They still count in every percentile
               cohort — nothing here is removed from the database.
             </Text>
+          )}
+
+          {transferTab && (
+            <HStack gap={2} flexWrap="wrap">
+              <Text fontSize="sm" color="fg.muted">
+                Agreed or planned moves. /my-team and the planner treat these as already done
+                until an import shows them.
+              </Text>
+              {doneCount > 0 && (
+                <Button size="xs" variant="outline" disabled={!isNewest} onClick={handleClearDone}>
+                  Clear done
+                </Button>
+              )}
+              {doneCount > 0 && !isNewest && (
+                <Text fontSize="sm" color="fg.muted">
+                  Only available on the newest data.
+                </Text>
+              )}
+            </HStack>
           )}
 
           {rows.length === 0 ? (
