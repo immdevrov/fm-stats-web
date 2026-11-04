@@ -7,6 +7,24 @@ export function PlayerStatusBadge({ uid }: { uid: number }) {
   const unwanted = annotations.get(uid)?.unwanted === true;
   const note = annotations.get(uid)?.note;
   const memberships = listsFor(uid);
+  const transfer = annotations.get(uid)?.transfer;
+
+  if (transfer) {
+    const label = transfer === "in" ? "Arriving" : "Leaving";
+    return (
+      <Tooltip content={note ? `${label} — ${note}` : label}>
+        <Text
+          as="span"
+          color={transfer === "in" ? "glaucous.500" : "spicyPaprika.500"}
+          fontSize="md"
+          lineHeight="1"
+          aria-label={label}
+        >
+          {transfer === "in" ? "↘" : "↗"}
+        </Text>
+      </Tooltip>
+    );
+  }
 
   if (unwanted) {
     return (

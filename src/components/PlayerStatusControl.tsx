@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Box, Button, Checkbox, Input, Popover, Portal, VStack, Text } from "@chakra-ui/react";
 import { PlayerStatusBadge } from "./PlayerStatusBadge";
 import { usePlayerNotes, type PlayerIdentity } from "../contexts/PlayerNotesContext";
+import { useMyTeam } from "../contexts/MyTeamContext";
+import type { TransferMark } from "../types/annotations";
 
 export function PlayerStatusControl({
   uid,
@@ -10,12 +12,33 @@ export function PlayerStatusControl({
   uid: number;
   player?: PlayerIdentity;
 }) {
-  const { lists, listsFor, addToList, removeFromList, createList, isUnwanted, toggleUnwanted } =
-    usePlayerNotes();
+  const {
+    lists,
+    listsFor,
+    addToList,
+    removeFromList,
+    createList,
+    isUnwanted,
+    toggleUnwanted,
+    transferOf,
+    setTransfer,
+  } = usePlayerNotes();
+  const { myClub } = useMyTeam();
   const [isOpen, setIsOpen] = useState(false);
   const [newListName, setNewListName] = useState("");
 
   const unwanted = isUnwanted(uid);
+  const transfer = transferOf(uid);
+  const transferAction: { label: string; value: TransferMark | null } | null =
+    transfer === "in"
+      ? { label: "Clear arriving", value: null }
+      : transfer === "out"
+        ? { label: "Clear leaving", value: null }
+        : myClub
+          ? player?.Club === myClub
+            ? { label: "Mark as leaving", value: "out" }
+            : { label: "Mark as arriving", value: "in" }
+          : null;
   const memberIds = new Set(listsFor(uid).map((list) => list.id));
 
   const handleCreate = async () => {
@@ -71,6 +94,16 @@ export function PlayerStatusControl({
                 >
                   {unwanted ? "Clear unwanted" : "Mark as unwanted"}
                 </Button>
+                {transferAction && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    colorPalette="glaucous"
+                    onClick={() => setTransfer(uid, transferAction.value, player)}
+                  >
+                    {transferAction.label}
+                  </Button>
+                )}
               </VStack>
             </Popover.Body>
           </Popover.Content>
