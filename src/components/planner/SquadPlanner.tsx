@@ -10,7 +10,7 @@ import { PlannerToolbar } from "./PlannerToolbar";
 import { CandidatePanel } from "./CandidatePanel";
 
 export function SquadPlanner({ club, players }: { club: string; players: Player[] }) {
-  const { lists } = usePlayerNotes();
+  const { lists, annotations } = usePlayerNotes();
   const { plan, isLoaded, setFormation, refreshSnapshots } = useSquadPlan();
   const { players: allPlayers } = useRoster();
   const { isNewest } = useSnapshots();
@@ -18,8 +18,11 @@ export function SquadPlanner({ club, players }: { club: string; players: Player[
   const listed = useMemo(() => {
     if (!allPlayers) return [];
     const uids = new Set(lists.flatMap((list) => list.uids));
-    return allPlayers.filter((player) => uids.has(player.UID));
-  }, [allPlayers, lists]);
+    return allPlayers.filter(
+      (player) =>
+        uids.has(player.UID) && !(isNewest && annotations.get(player.UID)?.transfer === "out")
+    );
+  }, [allPlayers, lists, annotations, isNewest]);
 
   const presentUids = useMemo(
     () => new Set([...players, ...listed].map((player) => player.UID)),
@@ -69,7 +72,13 @@ export function SquadPlanner({ club, players }: { club: string; players: Player[
     <VStack align="stretch" gap={4}>
       <PlannerToolbar formation={formation} presentUids={presentUids} />
       <HStack align="stretch" gap={6}>
-        <PlannerBoard formation={formation} squad={players} listed={listed} allPlayers={allPlayers} />
+        <PlannerBoard
+          formation={formation}
+          squad={players}
+          listed={listed}
+          allPlayers={allPlayers}
+          presentUids={presentUids}
+        />
         <CandidatePanel squad={players} listed={listed} />
       </HStack>
     </VStack>

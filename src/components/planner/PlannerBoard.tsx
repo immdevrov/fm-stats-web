@@ -10,11 +10,13 @@ export function PlannerBoard({
   squad,
   listed,
   allPlayers,
+  presentUids,
 }: {
   formation: Formation;
   squad: Player[];
   listed: Player[];
   allPlayers: Player[];
+  presentUids: Set<number>;
 }) {
   const candidates = useMemo(() => {
     const byUid = new Map(listed.map((player) => [player.UID, player]));
@@ -43,7 +45,13 @@ export function PlannerBoard({
           {formation.slots
             .filter((slot) => slot.row === row)
             .map((slot) => (
-              <PlannerSlot key={slot.id} slot={slot} candidates={candidates} byUid={byUid} />
+              <PlannerSlot
+                key={slot.id}
+                slot={slot}
+                candidates={candidates}
+                byUid={byUid}
+                presentUids={presentUids}
+              />
             ))}
         </HStack>
       ))}
