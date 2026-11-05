@@ -1,4 +1,5 @@
 import type { FormationSlot } from '../formations';
+import { isPlayableCell, sameCell, type Cell } from '../formations/grid';
 import type { PlayerPosition, PlayerPositions } from '../fields/positions';
 import type { HorizonPreset, SquadPlan } from '../types/planner';
 import { formatPositions, getEffectivePosition } from './utils';
@@ -94,4 +95,20 @@ export function resolveHorizon(
   if (preset === '1y') return new Date(year + 1, month - 1, day);
   if (preset === '2y') return new Date(year + 2, month - 1, day);
   return new Date(month > 6 ? year + 1 : year, 5, 30);
+}
+
+export function moveMarker(plan: SquadPlan, slotId: string, cell: Cell): SquadPlan {
+  const moving = plan.slots.find((slot) => slot.slotId === slotId);
+  if (!moving || moving.cell.row === 'GK') return plan;
+  if (cell.row === 'GK' || !isPlayableCell(cell) || sameCell(moving.cell, cell)) return plan;
+
+  const origin = moving.cell;
+  return {
+    ...plan,
+    slots: plan.slots.map((slot) => {
+      if (slot.slotId === slotId) return { ...slot, cell };
+      if (sameCell(slot.cell, cell)) return { ...slot, cell: origin };
+      return slot;
+    }),
+  };
 }

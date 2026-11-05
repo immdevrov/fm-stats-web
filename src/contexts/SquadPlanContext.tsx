@@ -11,7 +11,8 @@ import {
 import { db } from "../services/db";
 import { toaster } from "../components/ui/toaster";
 import { getPreset } from "../formations";
-import { buildPlacementIndex, type PlacementIndex } from "../utils/planner";
+import type { Cell } from "../formations/grid";
+import { buildPlacementIndex, moveMarker as moveMarkerIn, type PlacementIndex } from "../utils/planner";
 import { MAX_DEPTH, type HorizonPreset, type PlannedPlayer, type SquadPlan } from "../types/planner";
 
 interface SquadPlanContextValue {
@@ -19,6 +20,7 @@ interface SquadPlanContextValue {
   isLoaded: boolean;
   placements: PlacementIndex;
   applyPreset: (presetId: string) => void;
+  moveMarker: (slotId: string, cell: Cell) => void;
   setHorizon: (horizon: HorizonPreset | null) => void;
   place: (slotId: string, player: PlannedPlayer) => void;
   remove: (slotId: string, uid: number) => void;
@@ -82,6 +84,11 @@ export function SquadPlanProvider({ children }: { children: ReactNode }) {
     userChanged.current = true;
     setPlanState((current) => emptyPlan(presetId, current?.horizon ?? null));
   }, []);
+
+  const moveMarker = useCallback(
+    (slotId: string, cell: Cell) => update((current) => moveMarkerIn(current, slotId, cell)),
+    [update]
+  );
 
   const clearPlan = useCallback(() => {
     userChanged.current = true;
@@ -162,6 +169,7 @@ export function SquadPlanProvider({ children }: { children: ReactNode }) {
         isLoaded,
         placements,
         applyPreset,
+        moveMarker,
         setHorizon,
         place,
         remove,
