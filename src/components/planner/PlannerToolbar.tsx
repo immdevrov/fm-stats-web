@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button, HStack, NativeSelect, Text } from "@chakra-ui/react";
-import { PRESETS, presetFor, type FormationSlot } from "../../formations";
+import { PRESETS, getPreset, shapeName, type FormationSlot } from "../../formations";
 import { countSlotsWithoutCover } from "../../utils/planner";
 import { useSquadPlan } from "../../contexts/SquadPlanContext";
 import { useSnapshots } from "../../contexts/SnapshotContext";
@@ -31,10 +31,7 @@ export function PlannerToolbar({
     .flatMap((slot) => slot.players)
     .filter((player) => !presentUids.has(player.uid)).length;
 
-  const currentPresetId = presetFor(slots.map((slot) => slot.cell))?.id ?? "custom";
-
   const handleSelect = (id: string) => {
-    if (id === currentPresetId) return;
     if (hasPlacements) setPendingFormation(id);
     else applyPreset(id);
   };
@@ -42,16 +39,15 @@ export function PlannerToolbar({
   return (
     <>
       <HStack gap={4} flexWrap="wrap" align="center">
-        <NativeSelect.Root size="sm" width="140px">
+        <Text fontSize="sm" fontWeight="semibold" whiteSpace="nowrap">
+          Shape: {shapeName(slots.map((slot) => slot.cell))}
+        </Text>
+        <NativeSelect.Root size="sm" width="160px">
           <NativeSelect.Field
-            value={currentPresetId}
+            value=""
             onChange={(e) => handleSelect(e.currentTarget.value)}
           >
-            {currentPresetId === "custom" && (
-              <option value="custom" disabled>
-                Custom
-              </option>
-            )}
+            <option value="">Apply preset…</option>
             {PRESETS.map((option) => (
               <option key={option.id} value={option.id}>
                 {option.name}
@@ -111,11 +107,11 @@ export function PlannerToolbar({
           applyPreset(value);
           setPendingFormation(null);
         }}
-        title="Change formation?"
+        title="Apply preset?"
         message="Every player on the board will be removed. There is only one board, so this cannot be undone."
         options={
           pendingFormation
-            ? [{ label: `Switch to ${pendingFormation}`, value: pendingFormation }]
+            ? [{ label: `Apply ${getPreset(pendingFormation)?.name ?? pendingFormation}`, value: pendingFormation }]
             : []
         }
       />

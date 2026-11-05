@@ -24,7 +24,7 @@ export function PlannerSlot({
   const placed = plan?.slots.find((s) => s.slotId === slot.id)?.players ?? [];
 
   return (
-    <VStack flex="1 1 0" maxW="210px" align="stretch" gap="6px">
+    <VStack w="100%" maxW="210px" justifySelf="center" align="stretch" gap="6px">
       <Text
         fontSize="9.5px"
         fontWeight="bold"

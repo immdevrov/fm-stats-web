@@ -11,15 +11,13 @@ export interface Cell {
 
 export const GK_CELL: Cell = { row: 'GK', col: 2 };
 
-const ROW_POSITION_TYPE = { D: 'D', DM: 'DM', M: 'M', AM: 'AM', ST: 'ST' } as const;
-
 export function cellPosition(cell: Cell): PlayerPosition {
   if (cell.row === 'GK') return { type: 'GK' };
   const wide = cell.col === 0 ? 'L' : cell.col === 4 ? 'R' : null;
   if (cell.row === 'DM') {
     return wide ? { type: 'WB', side: [wide] } : { type: 'DM', side: ['C'] };
   }
-  return { type: ROW_POSITION_TYPE[cell.row], side: [wide ?? 'C'] };
+  return { type: cell.row, side: [wide ?? 'C'] };
 }
 
 export function isPlayableCell(cell: Cell): boolean {

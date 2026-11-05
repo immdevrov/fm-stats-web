@@ -1,10 +1,14 @@
 import { useMemo } from "react";
-import { HStack, VStack } from "@chakra-ui/react";
+import { Box, Grid } from "@chakra-ui/react";
 import type { FormationSlot } from "../../formations";
-import { OUTFIELD_ROWS, type GridRow } from "../../formations/grid";
+import { GK_CELL, OUTFIELD_ROWS, cellKey } from "../../formations/grid";
 import type { Player } from "../../types/types";
 import { byAgeDesc } from "../../utils/planner";
+import { BoardCell } from "./BoardCell";
 import { PlannerSlot } from "./PlannerSlot";
+
+const COLUMNS = [0, 1, 2, 3, 4];
+const ROWS_TOP_DOWN = [...OUTFIELD_ROWS].reverse();
 
 export function PlannerBoard({
   slots,
@@ -27,38 +31,46 @@ export function PlannerBoard({
 
   const byUid = useMemo(() => new Map(allPlayers.map((p) => [p.UID, p])), [allPlayers]);
 
-  const rows = ([...OUTFIELD_ROWS].reverse() as GridRow[])
-    .concat("GK")
-    .filter((row) => slots.some((slot) => slot.cell.row === row));
+  const slotAt = useMemo(() => new Map(slots.map((slot) => [cellKey(slot.cell), slot])), [slots]);
+
+  const renderSlot = (slot: FormationSlot) => (
+    <PlannerSlot
+      key={slot.id}
+      slot={slot}
+      candidates={candidates}
+      byUid={byUid}
+      presentUids={presentUids}
+    />
+  );
+
+  const gkSlot = slotAt.get(cellKey(GK_CELL));
 
   return (
-    <VStack
+    <Grid
       flexGrow={1}
       minW={0}
-      align="stretch"
-      gap="20px"
+      gridTemplateColumns="repeat(5, minmax(0, 1fr))"
+      columnGap="12px"
+      rowGap="20px"
+      alignItems="stretch"
       bg="bg.subtle"
       borderWidth="1px"
       borderColor="border.emphasized"
       borderRadius="md"
       p="18px 16px"
     >
-      {rows.map((row) => (
-        <HStack key={row} justify="center" gap="12px" align="stretch">
-          {slots
-            .filter((slot) => slot.cell.row === row)
-            .sort((a, b) => a.cell.col - b.cell.col)
-            .map((slot) => (
-              <PlannerSlot
-                key={slot.id}
-                slot={slot}
-                candidates={candidates}
-                byUid={byUid}
-                presentUids={presentUids}
-              />
-            ))}
-        </HStack>
-      ))}
-    </VStack>
+      {ROWS_TOP_DOWN.flatMap((row) =>
+        COLUMNS.map((col) => {
+          const cell = { row, col };
+          const slot = slotAt.get(cellKey(cell));
+          return slot ? renderSlot(slot) : <BoardCell key={cellKey(cell)} cell={cell} />;
+        })
+      )}
+      {gkSlot && (
+        <Box gridColumn={GK_CELL.col + 1}>
+          {renderSlot(gkSlot)}
+        </Box>
+      )}
+    </Grid>
   );
 }
