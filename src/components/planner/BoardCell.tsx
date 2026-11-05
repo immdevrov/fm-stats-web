@@ -13,7 +13,7 @@ export function BoardCell({ cell }: { cell: Cell }) {
     disabled: !playable || !markerDrag,
   });
 
-  if (!playable) return <Box aria-hidden h="100%" minH="36px" />;
+  if (!playable) return <Box aria-hidden h="100%" minH="24px" />;
 
   return (
     <Box
@@ -21,10 +21,10 @@ export function BoardCell({ cell }: { cell: Cell }) {
       role="group"
       aria-label={`Empty ${formatPositions([cellPosition(cell)])}`}
       h="100%"
-      minH="36px"
+      minH="24px"
       borderWidth="1px"
       borderStyle="dashed"
-      borderColor={isOver ? "glaucous.500" : markerDrag ? "border.emphasized" : "border.muted"}
+      borderColor={isOver ? "glaucous.500" : markerDrag ? "border.emphasized" : "transparent"}
       outline={isOver ? "2px solid" : undefined}
       outlineColor="glaucous.500"
       borderRadius="md"

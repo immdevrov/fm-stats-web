@@ -102,9 +102,10 @@ export function CandidatePopover({
           borderStyle="dashed"
           borderColor="border.emphasized"
           borderRadius="md"
-          p="10px"
+          p="2px"
           color="softBlush.700"
           fontSize="xs"
+          lineHeight="1.4"
           cursor="pointer"
           _hover={{ bg: "bg.muted" }}
         >

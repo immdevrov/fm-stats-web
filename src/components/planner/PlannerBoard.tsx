@@ -122,13 +122,13 @@ export function PlannerBoard({
           minW={0}
           gridTemplateColumns="repeat(5, minmax(0, 1fr))"
           columnGap="12px"
-          rowGap="20px"
+          rowGap="10px"
           alignItems="stretch"
           bg="bg.subtle"
           borderWidth="1px"
           borderColor="border.emphasized"
           borderRadius="md"
-          p="18px 16px"
+          p="10px 12px"
         >
           {ROWS_TOP_DOWN.flatMap((row) =>
             COLUMNS.map((col) => {
