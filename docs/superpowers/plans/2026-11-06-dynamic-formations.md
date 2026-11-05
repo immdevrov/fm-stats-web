@@ -123,6 +123,7 @@ Switches the data model without changing how the board looks much. After this ta
 
 **Files:**
 
+- Modify: `browser-tests/helpers/seed.ts` — optional `position` on `seedSnapshots` players
 - Modify: `package.json` / `package-lock.json` — `npm install @dnd-kit/core@^6.3.1`
 - Modify: `src/utils/planner.ts` — `moveMarker`
 - Modify: `src/contexts/SquadPlanContext.tsx` — expose `moveMarker`
@@ -144,14 +145,14 @@ Switches the data model without changing how the board looks much. After this ta
 **Definition of done:**
 
 - Seeded legacy 4-4-2 plan with player `Winger` (position `M (L)`) in slot `M-L`. Dragging the `Move M (L) marker` grip onto `Empty AM (L)`:
-  - the slot header now reads `AM (L)` and `Winger` is still in it, now shown out of position (card has the `⚠` tooltip trigger / mismatch text `left side only` is NOT expected — he is an M, so text is `not an AM (L)`);
+  - the slot header now reads `AM (L)` and `Winger` is still in it, now out of position: his card shows the mismatch text `not an AM (L)`;
   - toolbar reads `Shape: 4-3-1-2`;
   - after `page.reload()` both still hold.
 - Dropping on an occupied cell swaps the two markers (covered by `moveMarker`'s contract; not separately tested).
 
 **Verify:** `npm run build && npm run lint && npx playwright test browser-tests/planner-drag.spec.ts browser-tests/planner-departures.spec.ts` → all pass
 
-- [ ] **Step 1: Failing test** — `planner-drag.spec.ts`, test `dragging a marker carries its stack to the new cell`. Seed with `seedSnapshots` / `seedSettings` from `browser-tests/helpers/seed.ts` (as `planner-departures.spec.ts` does): club `Test FC`, player uid 1 `Winger` at `Test FC` with `Position: [{ type: 'M', side: ['L'] }]` (check `seedSnapshots`' player shape and extend the helper only if it cannot set `Position`), legacy plan `{ formationId: '4-4-2', horizon: null, slots: [{ slotId: 'M-L', players: [{ uid: 1, name: 'Winger', club: 'Test FC' }] }] }`. Drag with `page.mouse`: `down` on the grip's box centre, `move` a few px to activate, `move` to the target cell's centre with `{ steps: 10 }`, `up`. Assert as in Definition of done. Run it: it must fail (no grip yet).
+- [ ] **Step 1: Failing test** — `planner-drag.spec.ts`, test `dragging a marker carries its stack to the new cell`. Seed with `seedSnapshots` / `seedSettings` from `browser-tests/helpers/seed.ts` (as `planner-departures.spec.ts` does): club `Test FC`, player uid 1 `Winger` at `Test FC` with `Position: [{ type: 'M', side: ['L'] }]` (`seedSnapshots` cannot set positions today — every player is `ST`; add an optional `position?: PlayerPositions` to its player entries, defaulting to the current `[{ type: 'ST' }]`), legacy plan `{ formationId: '4-4-2', horizon: null, slots: [{ slotId: 'M-L', players: [{ uid: 1, name: 'Winger', club: 'Test FC' }] }] }`. Drag with `page.mouse`: `down` on the grip's box centre, `move` a few px to activate, `move` to the target cell's centre with `{ steps: 10 }`, `up`. Assert as in Definition of done. Run it: it must fail (no grip yet).
 - [ ] **Step 2: Install dnd-kit, implement `moveMarker` and the drag layer**
 - [ ] **Step 3: Mutation-check** — make `moveMarker` return `plan` unchanged; the test must fail; restore. Make the provider not persist (skip `db.setSquadPlan`) — the reload assertion must fail; restore.
 - [ ] **Step 4: Verify and commit** — `git commit -m "drag position markers on the planner grid"`
