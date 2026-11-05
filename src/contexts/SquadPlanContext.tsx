@@ -10,15 +10,26 @@ import {
 } from "react";
 import { db } from "../services/db";
 import { toaster } from "../components/ui/toaster";
-import { getFormation } from "../formations";
-import { buildPlacementIndex, type PlacementIndex } from "../utils/planner";
+import { getPreset, type Preset } from "../formations";
+import type { Cell } from "../formations/grid";
+import {
+  buildPlacementIndex,
+  moveCard as moveCardIn,
+  moveMarker as moveMarkerIn,
+  type PlacementIndex,
+} from "../utils/planner";
 import { MAX_DEPTH, type HorizonPreset, type PlannedPlayer, type SquadPlan } from "../types/planner";
 
 interface SquadPlanContextValue {
   plan: SquadPlan | null;
   isLoaded: boolean;
   placements: PlacementIndex;
-  setFormation: (formationId: string) => void;
+  applyPreset: (presetId: string) => void;
+  moveMarker: (slotId: string, cell: Cell) => void;
+  moveCard: (
+    from: { slotId: string; uid: number },
+    to: { slotId: string; index: number | null }
+  ) => void;
   setHorizon: (horizon: HorizonPreset | null) => void;
   place: (slotId: string, player: PlannedPlayer) => void;
   remove: (slotId: string, uid: number) => void;
@@ -30,12 +41,10 @@ interface SquadPlanContextValue {
 
 const SquadPlanContext = createContext<SquadPlanContextValue | null>(null);
 
-function emptyPlan(formationId: string, horizon: HorizonPreset | null): SquadPlan {
-  const formation = getFormation(formationId);
+function emptyPlan(preset: Preset, horizon: HorizonPreset | null): SquadPlan {
   return {
-    formationId,
     horizon,
-    slots: (formation?.slots ?? []).map((slot) => ({ slotId: slot.id, players: [] })),
+    slots: preset.slots.map((slot) => ({ slotId: slot.id, cell: slot.cell, players: [] })),
   };
 }
 
@@ -79,10 +88,23 @@ export function SquadPlanProvider({ children }: { children: ReactNode }) {
     [update]
   );
 
-  const setFormation = useCallback((formationId: string) => {
+  const applyPreset = useCallback((presetId: string) => {
+    const preset = getPreset(presetId);
+    if (!preset) return;
     userChanged.current = true;
-    setPlanState((current) => emptyPlan(formationId, current?.horizon ?? null));
+    setPlanState((current) => emptyPlan(preset, current?.horizon ?? null));
   }, []);
+
+  const moveMarker = useCallback(
+    (slotId: string, cell: Cell) => update((current) => moveMarkerIn(current, slotId, cell)),
+    [update]
+  );
+
+  const moveCard = useCallback(
+    (from: { slotId: string; uid: number }, to: { slotId: string; index: number | null }) =>
+      update((current) => moveCardIn(current, from, to)),
+    [update]
+  );
 
   const clearPlan = useCallback(() => {
     userChanged.current = true;
@@ -162,7 +184,9 @@ export function SquadPlanProvider({ children }: { children: ReactNode }) {
         plan,
         isLoaded,
         placements,
-        setFormation,
+        applyPreset,
+        moveMarker,
+        moveCard,
         setHorizon,
         place,
         remove,

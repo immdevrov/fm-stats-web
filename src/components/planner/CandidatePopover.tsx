@@ -1,10 +1,12 @@
 import { useRef, useState } from "react";
+import { useDroppable } from "@dnd-kit/core";
 import { Box, HStack, Input, Popover, Portal, Text, VStack } from "@chakra-ui/react";
 import type { FormationSlot } from "../../formations";
 import type { Player } from "../../types/types";
 import { formatPositions, getEffectivePosition } from "../../utils/utils";
 import { matchesSlot } from "../../utils/planner";
 import { useSquadPlan } from "../../contexts/SquadPlanContext";
+import { useDragKind } from "./dragKind";
 import { usePlayerNotes } from "../../contexts/PlayerNotesContext";
 
 function foldName(name: string): string {
@@ -25,6 +27,12 @@ export function CandidatePopover({
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
+  const cardDrag = useDragKind() === "card";
+  const { setNodeRef: setAddRef, isOver } = useDroppable({
+    id: `add:${slot.id}`,
+    data: { kind: "add", slotId: slot.id },
+    disabled: !cardDrag,
+  });
 
   const inThisSlot = new Set(
     (plan?.slots.find((s) => s.slotId === slot.id)?.players ?? []).map((p) => p.uid)
@@ -85,6 +93,9 @@ export function CandidatePopover({
     >
       <Popover.Trigger asChild>
         <HStack
+          ref={setAddRef}
+          outline={isOver ? "2px solid" : undefined}
+          outlineColor="glaucous.500"
           justify="center"
           gap="6px"
           borderWidth="1px"

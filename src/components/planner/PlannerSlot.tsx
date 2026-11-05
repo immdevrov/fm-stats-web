@@ -1,4 +1,7 @@
-import { Text, VStack } from "@chakra-ui/react";
+import { chakra, HStack, Text, VStack } from "@chakra-ui/react";
+import { useDraggable, useDroppable } from "@dnd-kit/core";
+import { LuGripVertical } from "react-icons/lu";
+import { cellKey } from "../../formations/grid";
 import type { FormationSlot } from "../../formations";
 import type { Player } from "../../types/types";
 import { slotLabel } from "../../utils/planner";
@@ -6,6 +9,7 @@ import { useSquadPlan } from "../../contexts/SquadPlanContext";
 import { MAX_DEPTH } from "../../types/planner";
 import { PlannerCard } from "./PlannerCard";
 import { CandidatePopover } from "./CandidatePopover";
+import { useDragKind } from "./dragKind";
 
 const EMPTY_LABEL = ["Nobody", "No cover", "Add"];
 
@@ -21,19 +25,65 @@ export function PlannerSlot({
   presentUids: Set<number>;
 }) {
   const { plan } = useSquadPlan();
+  const markerDrag = useDragKind() === "marker";
+  const isGk = slot.cell.row === "GK";
+  const { setNodeRef: setDropRef, isOver } = useDroppable({
+    id: `cell:${cellKey(slot.cell)}`,
+    data: { kind: "cell", cell: slot.cell },
+    disabled: !markerDrag || isGk,
+  });
+  const {
+    attributes,
+    listeners,
+    setNodeRef: setGripRef,
+  } = useDraggable({
+    id: `marker:${slot.id}`,
+    data: { kind: "marker", slotId: slot.id },
+    disabled: isGk,
+  });
   const placed = plan?.slots.find((s) => s.slotId === slot.id)?.players ?? [];
 
   return (
-    <VStack flex="1 1 0" maxW="210px" align="stretch" gap="6px">
-      <Text
-        fontSize="9.5px"
-        fontWeight="bold"
-        letterSpacing="0.07em"
-        color="softBlush.700"
-        textTransform="uppercase"
-      >
-        {slotLabel(slot)}
-      </Text>
+    <VStack
+      ref={setDropRef}
+      data-slot-id={slot.id}
+      w="100%"
+      maxW="210px"
+      justifySelf="center"
+      align="stretch"
+      gap="6px"
+      outline={markerDrag && !isGk ? "2px dashed" : undefined}
+      outlineColor={isOver ? "glaucous.500" : "border.emphasized"}
+      outlineOffset="2px"
+      borderRadius="md"
+    >
+      <HStack gap="4px">
+        {!isGk && (
+          <chakra.button
+            type="button"
+            ref={setGripRef}
+            aria-label={`Move ${slotLabel(slot)} marker`}
+            cursor="grab"
+            touchAction="none"
+            display="inline-flex"
+            color="softBlush.700"
+            {...attributes}
+            tabIndex={-1}
+            {...listeners}
+          >
+            <LuGripVertical size={12} />
+          </chakra.button>
+        )}
+        <Text
+          fontSize="9.5px"
+          fontWeight="bold"
+          letterSpacing="0.07em"
+          color="softBlush.700"
+          textTransform="uppercase"
+        >
+          {slotLabel(slot)}
+        </Text>
+      </HStack>
 
       {placed.map((planned, rank) => (
         <PlannerCard

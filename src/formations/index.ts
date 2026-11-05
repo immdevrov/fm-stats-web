@@ -1,154 +1,123 @@
 import type { PlayerPosition } from '../fields/positions';
+import type { SquadPlan } from '../types/planner';
+import { OUTFIELD_ROWS, GK_CELL, cellKey, cellPosition, type Cell } from './grid';
 
 export interface FormationSlot {
   id: string;
+  cell: Cell;
   position: PlayerPosition;
-  row: number;
 }
 
-export interface Formation {
+export interface Preset {
   id: string;
   name: string;
-  slots: FormationSlot[];
+  slots: Array<{ id: string; cell: Cell }>;
 }
 
-const GK: FormationSlot = { id: 'GK', position: { type: 'GK' }, row: 0 };
+type PresetSlot = Preset['slots'][number];
 
-function back4(row: number): FormationSlot[] {
-  return [
-    { id: 'D-L', position: { type: 'D', side: ['L'] }, row },
-    { id: 'D-C-1', position: { type: 'D', side: ['C'] }, row },
-    { id: 'D-C-2', position: { type: 'D', side: ['C'] }, row },
-    { id: 'D-R', position: { type: 'D', side: ['R'] }, row },
-  ];
-}
+const slot = (id: string, row: Cell['row'], col: number): PresetSlot => ({ id, cell: { row, col } });
 
-function back3(row: number): FormationSlot[] {
-  return [
-    { id: 'D-C-1', position: { type: 'D', side: ['C'] }, row },
-    { id: 'D-C-2', position: { type: 'D', side: ['C'] }, row },
-    { id: 'D-C-3', position: { type: 'D', side: ['C'] }, row },
-  ];
-}
+const GK = slot('GK', GK_CELL.row, GK_CELL.col);
 
-export const FORMATIONS: Formation[] = [
-  {
-    id: '4-4-2',
-    name: '4-4-2',
-    slots: [
-      GK,
-      ...back4(1),
-      { id: 'M-L', position: { type: 'M', side: ['L'] }, row: 2 },
-      { id: 'M-C-1', position: { type: 'M', side: ['C'] }, row: 2 },
-      { id: 'M-C-2', position: { type: 'M', side: ['C'] }, row: 2 },
-      { id: 'M-R', position: { type: 'M', side: ['R'] }, row: 2 },
-      { id: 'ST-C-1', position: { type: 'ST', side: ['C'] }, row: 3 },
-      { id: 'ST-C-2', position: { type: 'ST', side: ['C'] }, row: 3 },
-    ],
-  },
-  {
-    id: '4-4-1-1',
-    name: '4-4-1-1',
-    slots: [
-      GK,
-      ...back4(1),
-      { id: 'M-L', position: { type: 'M', side: ['L'] }, row: 2 },
-      { id: 'M-C-1', position: { type: 'M', side: ['C'] }, row: 2 },
-      { id: 'M-C-2', position: { type: 'M', side: ['C'] }, row: 2 },
-      { id: 'M-R', position: { type: 'M', side: ['R'] }, row: 2 },
-      { id: 'AM-C', position: { type: 'AM', side: ['C'] }, row: 3 },
-      { id: 'ST-C', position: { type: 'ST', side: ['C'] }, row: 4 },
-    ],
-  },
-  {
-    id: '4-2-3-1',
-    name: '4-2-3-1',
-    slots: [
-      GK,
-      ...back4(1),
-      { id: 'DM-C-1', position: { type: 'DM', side: ['C'] }, row: 2 },
-      { id: 'DM-C-2', position: { type: 'DM', side: ['C'] }, row: 2 },
-      { id: 'AM-L', position: { type: 'AM', side: ['L'] }, row: 3 },
-      { id: 'AM-C', position: { type: 'AM', side: ['C'] }, row: 3 },
-      { id: 'AM-R', position: { type: 'AM', side: ['R'] }, row: 3 },
-      { id: 'ST-C', position: { type: 'ST', side: ['C'] }, row: 4 },
-    ],
-  },
-  {
-    id: '4-1-4-1',
-    name: '4-1-4-1',
-    slots: [
-      GK,
-      ...back4(1),
-      { id: 'DM-C', position: { type: 'DM', side: ['C'] }, row: 2 },
-      { id: 'M-L', position: { type: 'M', side: ['L'] }, row: 3 },
-      { id: 'M-C-1', position: { type: 'M', side: ['C'] }, row: 3 },
-      { id: 'M-C-2', position: { type: 'M', side: ['C'] }, row: 3 },
-      { id: 'M-R', position: { type: 'M', side: ['R'] }, row: 3 },
-      { id: 'ST-C', position: { type: 'ST', side: ['C'] }, row: 4 },
-    ],
-  },
-  {
-    id: '4-3-3',
-    name: '4-3-3',
-    slots: [
-      GK,
-      ...back4(1),
-      { id: 'M-C-1', position: { type: 'M', side: ['C'] }, row: 2 },
-      { id: 'M-C-2', position: { type: 'M', side: ['C'] }, row: 2 },
-      { id: 'M-C-3', position: { type: 'M', side: ['C'] }, row: 2 },
-      { id: 'AM-L', position: { type: 'AM', side: ['L'] }, row: 3 },
-      { id: 'ST-C', position: { type: 'ST', side: ['C'] }, row: 3 },
-      { id: 'AM-R', position: { type: 'AM', side: ['R'] }, row: 3 },
-    ],
-  },
-  {
-    id: '3-5-2',
-    name: '3-5-2',
-    slots: [
-      GK,
-      ...back3(1),
-      { id: 'WB-L', position: { type: 'WB', side: ['L'] }, row: 2 },
-      { id: 'M-C-1', position: { type: 'M', side: ['C'] }, row: 2 },
-      { id: 'M-C-2', position: { type: 'M', side: ['C'] }, row: 2 },
-      { id: 'M-C-3', position: { type: 'M', side: ['C'] }, row: 2 },
-      { id: 'WB-R', position: { type: 'WB', side: ['R'] }, row: 2 },
-      { id: 'ST-C-1', position: { type: 'ST', side: ['C'] }, row: 3 },
-      { id: 'ST-C-2', position: { type: 'ST', side: ['C'] }, row: 3 },
-    ],
-  },
-  {
-    id: '5-3-2',
-    name: '5-3-2',
-    slots: [
-      GK,
-      { id: 'WB-L', position: { type: 'WB', side: ['L'] }, row: 1 },
-      ...back3(1),
-      { id: 'WB-R', position: { type: 'WB', side: ['R'] }, row: 1 },
-      { id: 'M-C-1', position: { type: 'M', side: ['C'] }, row: 2 },
-      { id: 'M-C-2', position: { type: 'M', side: ['C'] }, row: 2 },
-      { id: 'M-C-3', position: { type: 'M', side: ['C'] }, row: 2 },
-      { id: 'ST-C-1', position: { type: 'ST', side: ['C'] }, row: 3 },
-      { id: 'ST-C-2', position: { type: 'ST', side: ['C'] }, row: 3 },
-    ],
-  },
-  {
-    id: '3-4-3',
-    name: '3-4-3',
-    slots: [
-      GK,
-      ...back3(1),
-      { id: 'M-L', position: { type: 'M', side: ['L'] }, row: 2 },
-      { id: 'M-C-1', position: { type: 'M', side: ['C'] }, row: 2 },
-      { id: 'M-C-2', position: { type: 'M', side: ['C'] }, row: 2 },
-      { id: 'M-R', position: { type: 'M', side: ['R'] }, row: 2 },
-      { id: 'AM-L', position: { type: 'AM', side: ['L'] }, row: 3 },
-      { id: 'ST-C', position: { type: 'ST', side: ['C'] }, row: 3 },
-      { id: 'AM-R', position: { type: 'AM', side: ['R'] }, row: 3 },
-    ],
-  },
+const back4 = (): PresetSlot[] => [
+  slot('D-L', 'D', 0),
+  slot('D-C-1', 'D', 1),
+  slot('D-C-2', 'D', 3),
+  slot('D-R', 'D', 4),
 ];
 
-export function getFormation(id: string): Formation | undefined {
-  return FORMATIONS.find((formation) => formation.id === id);
+const back3 = (): PresetSlot[] => [
+  slot('D-C-1', 'D', 1),
+  slot('D-C-2', 'D', 2),
+  slot('D-C-3', 'D', 3),
+];
+
+const mid4 = (): PresetSlot[] => [
+  slot('M-L', 'M', 0),
+  slot('M-C-1', 'M', 1),
+  slot('M-C-2', 'M', 3),
+  slot('M-R', 'M', 4),
+];
+
+const mid3 = (): PresetSlot[] => [
+  slot('M-C-1', 'M', 1),
+  slot('M-C-2', 'M', 2),
+  slot('M-C-3', 'M', 3),
+];
+
+const front3 = (): PresetSlot[] => [
+  slot('AM-L', 'AM', 0),
+  slot('ST-C', 'ST', 2),
+  slot('AM-R', 'AM', 4),
+];
+
+const preset = (id: string, slots: PresetSlot[]): Preset => ({ id, name: id, slots });
+
+export const PRESETS: Preset[] = [
+  preset('4-4-2', [GK, ...back4(), ...mid4(), slot('ST-C-1', 'ST', 1), slot('ST-C-2', 'ST', 3)]),
+  preset('4-4-1-1', [GK, ...back4(), ...mid4(), slot('AM-C', 'AM', 2), slot('ST-C', 'ST', 2)]),
+  preset('4-2-3-1', [
+    GK,
+    ...back4(),
+    slot('DM-C-1', 'DM', 1),
+    slot('DM-C-2', 'DM', 3),
+    slot('AM-L', 'AM', 0),
+    slot('AM-C', 'AM', 2),
+    slot('AM-R', 'AM', 4),
+    slot('ST-C', 'ST', 2),
+  ]),
+  preset('4-1-4-1', [
+    GK,
+    ...back4(),
+    slot('DM-C', 'DM', 2),
+    slot('M-L', 'M', 0),
+    slot('M-C-1', 'M', 1),
+    slot('M-C-2', 'M', 3),
+    slot('M-R', 'M', 4),
+    slot('ST-C', 'ST', 2),
+  ]),
+  preset('4-3-3', [GK, ...back4(), ...mid3(), ...front3()]),
+  preset('3-5-2', [
+    GK,
+    ...back3(),
+    slot('WB-L', 'DM', 0),
+    slot('WB-R', 'DM', 4),
+    ...mid3(),
+    slot('ST-C-1', 'ST', 1),
+    slot('ST-C-2', 'ST', 3),
+  ]),
+  preset('3-4-3', [GK, ...back3(), ...mid4(), ...front3()]),
+];
+
+const LEGACY_ALIASES: Record<string, string> = { '5-3-2': '3-5-2' };
+
+export function getPreset(id: string): Preset | undefined {
+  const resolved = LEGACY_ALIASES[id] ?? id;
+  return PRESETS.find((candidate) => candidate.id === resolved);
+}
+
+export function boardSlots(plan: SquadPlan): FormationSlot[] {
+  return plan.slots.map((planned) => ({
+    id: planned.slotId,
+    cell: planned.cell,
+    position: cellPosition(planned.cell),
+  }));
+}
+
+export function presetFor(cells: Cell[]): Preset | undefined {
+  const keys = new Set(cells.map(cellKey));
+  return PRESETS.find(
+    (candidate) =>
+      candidate.slots.length === cells.length &&
+      candidate.slots.every((s) => keys.has(cellKey(s.cell)))
+  );
+}
+
+export function shapeName(cells: Cell[]): string {
+  const matched = presetFor(cells);
+  if (matched) return matched.name;
+  return OUTFIELD_ROWS.map((row) => cells.filter((cell) => cell.row === row).length)
+    .filter((count) => count > 0)
+    .join('-');
 }

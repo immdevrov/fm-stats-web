@@ -1,6 +1,7 @@
 import type { FormationSlot } from '../formations';
+import { isPlayableCell, sameCell, type Cell } from '../formations/grid';
 import type { PlayerPosition, PlayerPositions } from '../fields/positions';
-import type { HorizonPreset, SquadPlan } from '../types/planner';
+import { MAX_DEPTH, type HorizonPreset, type PlannedPlayer, type SquadPlan } from '../types/planner';
 import { formatPositions, getEffectivePosition } from './utils';
 
 export type PositionedPlayer = { Position: PlayerPositions; CustomPosition?: PlayerPositions };
@@ -94,4 +95,64 @@ export function resolveHorizon(
   if (preset === '1y') return new Date(year + 1, month - 1, day);
   if (preset === '2y') return new Date(year + 2, month - 1, day);
   return new Date(month > 6 ? year + 1 : year, 5, 30);
+}
+
+export function moveMarker(plan: SquadPlan, slotId: string, cell: Cell): SquadPlan {
+  const moving = plan.slots.find((slot) => slot.slotId === slotId);
+  if (!moving || moving.cell.row === 'GK') return plan;
+  if (cell.row === 'GK' || !isPlayableCell(cell) || sameCell(moving.cell, cell)) return plan;
+
+  const origin = moving.cell;
+  return {
+    ...plan,
+    slots: plan.slots.map((slot) => {
+      if (slot.slotId === slotId) return { ...slot, cell };
+      if (sameCell(slot.cell, cell)) return { ...slot, cell: origin };
+      return slot;
+    }),
+  };
+}
+
+export function moveCard(
+  plan: SquadPlan,
+  from: { slotId: string; uid: number },
+  to: { slotId: string; index: number | null }
+): SquadPlan {
+  const source = plan.slots.find((slot) => slot.slotId === from.slotId);
+  const target = plan.slots.find((slot) => slot.slotId === to.slotId);
+  const fromIndex = source?.players.findIndex((p) => p.uid === from.uid) ?? -1;
+  if (!source || !target || fromIndex < 0) return plan;
+  const moved = source.players[fromIndex];
+
+  let nextSource: PlannedPlayer[];
+  let nextTarget: PlannedPlayer[];
+
+  if (source === target) {
+    const without = source.players.filter((_, i) => i !== fromIndex);
+    const at = to.index === null ? without.length : Math.min(to.index, without.length);
+    nextSource = [...without.slice(0, at), moved, ...without.slice(at)];
+    if (nextSource.every((p, i) => p === source.players[i])) return plan;
+    nextTarget = nextSource;
+  } else if (target.players.some((p) => p.uid === from.uid)) {
+    return plan;
+  } else if (target.players.length < MAX_DEPTH) {
+    const at = to.index ?? target.players.length;
+    nextSource = source.players.filter((_, i) => i !== fromIndex);
+    nextTarget = [...target.players.slice(0, at), moved, ...target.players.slice(at)];
+  } else {
+    if (to.index === null) return plan;
+    const displaced = target.players[to.index];
+    if (!displaced || source.players.some((p) => p.uid === displaced.uid)) return plan;
+    nextSource = source.players.map((p, i) => (i === fromIndex ? displaced : p));
+    nextTarget = target.players.map((p, i) => (i === to.index ? moved : p));
+  }
+
+  return {
+    ...plan,
+    slots: plan.slots.map((slot) => {
+      if (slot === source) return { ...slot, players: nextSource };
+      if (slot === target) return { ...slot, players: nextTarget };
+      return slot;
+    }),
+  };
 }

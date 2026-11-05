@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test';
+import type { PlayerPositions } from '../../src/fields/positions';
 import { DB_VERSION } from '../../src/services/db/connection';
 import { PLAYER_FIELDS } from '../../src/services/db/pack';
 
@@ -132,7 +133,7 @@ export async function seedSnapshots(
   snapshots: Array<{
     id: string;
     date: string | null;
-    players: Array<{ uid: number; name: string; club?: string }>;
+    players: Array<{ uid: number; name: string; club?: string; position?: PlayerPositions }>;
   }>,
   activeId?: string
 ) {
@@ -188,6 +189,7 @@ export async function seedSnapshots(
         players: snapshot.players.map((p) => ({
           ...makePlayer(p.uid, p.name),
           Club: p.club ?? 'Test FC',
+          Position: p.position ?? [{ type: 'ST' }],
         })),
       })),
     }

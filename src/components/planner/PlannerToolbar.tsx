@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Button, HStack, NativeSelect, Text } from "@chakra-ui/react";
-import type { Formation } from "../../formations";
-import { FORMATIONS } from "../../formations";
+import { PRESETS, getPreset, shapeName, type FormationSlot } from "../../formations";
 import { countSlotsWithoutCover } from "../../utils/planner";
 import { useSquadPlan } from "../../contexts/SquadPlanContext";
 import { useSnapshots } from "../../contexts/SnapshotContext";
@@ -16,37 +15,40 @@ const HORIZON_OPTIONS: Array<{ value: HorizonPreset; label: string }> = [
 ];
 
 export function PlannerToolbar({
-  formation,
+  slots,
   presentUids,
 }: {
-  formation: Formation;
+  slots: FormationSlot[];
   presentUids: Set<number>;
 }) {
-  const { plan, setFormation, setHorizon, removeMissing } = useSquadPlan();
+  const { plan, applyPreset, setHorizon, removeMissing } = useSquadPlan();
   const { active, isNewest } = useSnapshots();
-  const [pendingFormation, setPendingFormation] = useState<string | null>(null);
+  const [pendingPreset, setPendingPreset] = useState<string | null>(null);
 
-  const uncovered = countSlotsWithoutCover(plan, formation.slots.length);
+  const uncovered = countSlotsWithoutCover(plan, slots.length);
   const hasPlacements = (plan?.slots ?? []).some((slot) => slot.players.length > 0);
   const missing = (plan?.slots ?? [])
     .flatMap((slot) => slot.players)
     .filter((player) => !presentUids.has(player.uid)).length;
 
   const handleSelect = (id: string) => {
-    if (id === formation.id) return;
-    if (hasPlacements) setPendingFormation(id);
-    else setFormation(id);
+    if (hasPlacements) setPendingPreset(id);
+    else applyPreset(id);
   };
 
   return (
     <>
       <HStack gap={4} flexWrap="wrap" align="center">
-        <NativeSelect.Root size="sm" width="140px">
+        <Text fontSize="sm" fontWeight="semibold" whiteSpace="nowrap">
+          Shape: {shapeName(slots.map((slot) => slot.cell))}
+        </Text>
+        <NativeSelect.Root size="sm" width="160px">
           <NativeSelect.Field
-            value={formation.id}
+            value=""
             onChange={(e) => handleSelect(e.currentTarget.value)}
           >
-            {FORMATIONS.map((option) => (
+            <option value="">Apply preset…</option>
+            {PRESETS.map((option) => (
               <option key={option.id} value={option.id}>
                 {option.name}
               </option>
@@ -99,17 +101,17 @@ export function PlannerToolbar({
       </HStack>
 
       <ConfirmDialog
-        isOpen={pendingFormation !== null}
-        onClose={() => setPendingFormation(null)}
+        isOpen={pendingPreset !== null}
+        onClose={() => setPendingPreset(null)}
         onConfirm={(value) => {
-          setFormation(value);
-          setPendingFormation(null);
+          applyPreset(value);
+          setPendingPreset(null);
         }}
-        title="Change formation?"
+        title="Apply preset?"
         message="Every player on the board will be removed. There is only one board, so this cannot be undone."
         options={
-          pendingFormation
-            ? [{ label: `Switch to ${pendingFormation}`, value: pendingFormation }]
+          pendingPreset
+            ? [{ label: `Apply ${getPreset(pendingPreset)?.name ?? pendingPreset}`, value: pendingPreset }]
             : []
         }
       />
