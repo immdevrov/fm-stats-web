@@ -101,7 +101,7 @@ Switches the data model without changing how the board looks much. After this ta
 **Interfaces:**
 
 - Consumes: `boardSlots`, `shapeName`, `PRESETS`, `cellPosition`, `isPlayableCell`, `cellKey`, `OUTFIELD_ROWS`, `GK_CELL`, `applyPreset` from Task 1.
-- Produces: `BoardCell({ cell }: { cell: Cell })` — renders an empty cell with `aria-label={`Empty ${formatPositions([cellPosition(cell)])}`}` for playable cells (e.g. `Empty AM (L)`); renders an inert placeholder for unplayable cells. Task 3 adds droppable behaviour inside this component.
+- Produces: `BoardCell({ cell }: { cell: Cell })` — renders an empty cell with `aria-label={`Empty ${formatPositions([cellPosition(cell)])}`}` for playable cells (e.g. `Empty AM(L)`); renders an inert placeholder for unplayable cells. Task 3 adds droppable behaviour inside this component.
 
 **Definition of done:**
 
@@ -144,8 +144,8 @@ Switches the data model without changing how the board looks much. After this ta
 
 **Definition of done:**
 
-- Seeded legacy 4-4-2 plan with player `Winger` (position `M (L)`) in slot `M-L`. Dragging the `Move M (L) marker` grip onto `Empty AM (L)`:
-  - the slot header now reads `AM (L)` and `Winger` is still in it, now out of position: his card shows the mismatch text `not an AM (L)`;
+- Seeded legacy 4-4-2 plan with player `Winger` (position `M (L)`) in slot `M-L`. Dragging the `Move M(L) marker` grip onto `Empty AM(L)`:
+  - the slot header now reads `AM(L)` and `Winger` is still in it, now out of position: his card shows the mismatch text `not an AM(L)`;
   - toolbar reads `Shape: 4-3-1-2`;
   - after `page.reload()` both still hold.
 - Dropping on an occupied cell swaps the two markers (covered by `moveMarker`'s contract; not separately tested).
