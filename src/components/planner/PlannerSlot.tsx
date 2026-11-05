@@ -48,10 +48,8 @@ export function PlannerSlot({
       ref={setDropRef}
       data-slot-id={slot.id}
       w="100%"
-      maxW="210px"
-      justifySelf="center"
       align="stretch"
-      gap="6px"
+      gap="3px"
       outline={markerDrag && !isGk ? "2px dashed" : undefined}
       outlineColor={isOver ? "glaucous.500" : "border.emphasized"}
       outlineOffset="2px"
@@ -78,6 +76,7 @@ export function PlannerSlot({
           fontSize="9.5px"
           fontWeight="bold"
           letterSpacing="0.07em"
+          lineHeight="1.4"
           color="softBlush.700"
           textTransform="uppercase"
         >

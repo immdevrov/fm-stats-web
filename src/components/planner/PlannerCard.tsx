@@ -119,7 +119,7 @@ export function PlannerCard({
               borderLeftColor={memberships.length > 0 ? "glaucous.500" : undefined}
               borderRadius="md"
               bg={mismatch ? "spicyPaprika.50" : "bg.canvas"}
-              p="7px 8px"
+              p="4px 8px"
               pl={memberships.length > 0 ? "6px" : "8px"}
               cursor="pointer"
               opacity={player && !departed ? 1 : 0.5}
@@ -140,7 +140,14 @@ export function PlannerCard({
                 {rank + 1}
               </Text>
 
-              <VStack align="stretch" gap="2px" flexGrow={1} minW={0} opacity={unwanted ? 0.5 : 1}>
+              <VStack
+                align="stretch"
+                gap="1px"
+                lineHeight="1.3"
+                flexGrow={1}
+                minW={0}
+                opacity={unwanted ? 0.5 : 1}
+              >
                 <HStack gap="5px" align="baseline">
                   <Text
                     fontSize="12.5px"
