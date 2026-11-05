@@ -34,20 +34,32 @@ export function PlannerBoard({
   allPlayers: Player[];
   presentUids: Set<number>;
 }) {
-  const { moveMarker } = useSquadPlan();
+  const { moveMarker, moveCard } = useSquadPlan();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
   const [draggedSlotId, setDraggedSlotId] = useState<string | null>(null);
+  const [draggedCard, setDraggedCard] = useState<string | null>(null);
 
   const onDragStart = ({ active }: DragStartEvent) => {
     const data = active.data.current;
     if (data?.kind === "marker") setDraggedSlotId(data.slotId);
+    if (data?.kind === "card") setDraggedCard(data.name);
   };
 
   const onDragEnd = ({ active, over }: DragEndEvent) => {
     setDraggedSlotId(null);
+    setDraggedCard(null);
     const from = active.data.current;
     const to = over?.data.current;
     if (from?.kind === "marker" && to?.kind === "cell") moveMarker(from.slotId, to.cell);
+    if (from?.kind === "card" && to?.kind === "card") {
+      moveCard(
+        { slotId: from.slotId, uid: from.uid },
+        { slotId: to.slotId, index: to.index }
+      );
+    }
+    if (from?.kind === "card" && to?.kind === "add") {
+      moveCard({ slotId: from.slotId, uid: from.uid }, { slotId: to.slotId, index: null });
+    }
   };
 
   const draggedSlot = slots.find((slot) => slot.id === draggedSlotId);
@@ -80,7 +92,10 @@ export function PlannerBoard({
       collisionDetection={pointerWithin}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
-      onDragCancel={() => setDraggedSlotId(null)}
+      onDragCancel={() => {
+        setDraggedSlotId(null);
+        setDraggedCard(null);
+      }}
     >
       <Grid
         flexGrow={1}
@@ -109,7 +124,7 @@ export function PlannerBoard({
         )}
       </Grid>
       <DragOverlay>
-        {draggedSlot && (
+        {(draggedSlot || draggedCard) && (
           <Box
             display="inline-block"
             px="8px"
@@ -120,7 +135,7 @@ export function PlannerBoard({
             fontSize="11px"
             fontWeight="bold"
           >
-            {slotLabel(draggedSlot)}
+            {draggedCard ?? (draggedSlot && slotLabel(draggedSlot))}
           </Box>
         )}
       </DragOverlay>

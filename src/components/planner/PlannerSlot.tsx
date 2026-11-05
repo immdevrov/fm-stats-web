@@ -1,4 +1,4 @@
-import { Box, HStack, Text, VStack } from "@chakra-ui/react";
+import { chakra, HStack, Text, VStack } from "@chakra-ui/react";
 import { useDndContext, useDraggable, useDroppable } from "@dnd-kit/core";
 import { LuGripVertical } from "react-icons/lu";
 import { cellKey } from "../../formations/grid";
@@ -46,6 +46,7 @@ export function PlannerSlot({
   return (
     <VStack
       ref={setDropRef}
+      data-slot-id={slot.id}
       w="100%"
       maxW="210px"
       justifySelf="center"
@@ -58,8 +59,8 @@ export function PlannerSlot({
     >
       <HStack gap="4px">
         {!isGk && (
-          <Box
-            as="button"
+          <chakra.button
+            type="button"
             ref={setGripRef}
             aria-label={`Move ${slotLabel(slot)} marker`}
             cursor="grab"
@@ -70,7 +71,7 @@ export function PlannerSlot({
             {...listeners}
           >
             <LuGripVertical size={12} />
-          </Box>
+          </chakra.button>
         )}
         <Text
           fontSize="9.5px"

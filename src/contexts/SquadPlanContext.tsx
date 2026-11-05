@@ -12,7 +12,12 @@ import { db } from "../services/db";
 import { toaster } from "../components/ui/toaster";
 import { getPreset } from "../formations";
 import type { Cell } from "../formations/grid";
-import { buildPlacementIndex, moveMarker as moveMarkerIn, type PlacementIndex } from "../utils/planner";
+import {
+  buildPlacementIndex,
+  moveCard as moveCardIn,
+  moveMarker as moveMarkerIn,
+  type PlacementIndex,
+} from "../utils/planner";
 import { MAX_DEPTH, type HorizonPreset, type PlannedPlayer, type SquadPlan } from "../types/planner";
 
 interface SquadPlanContextValue {
@@ -21,6 +26,10 @@ interface SquadPlanContextValue {
   placements: PlacementIndex;
   applyPreset: (presetId: string) => void;
   moveMarker: (slotId: string, cell: Cell) => void;
+  moveCard: (
+    from: { slotId: string; uid: number },
+    to: { slotId: string; index: number | null }
+  ) => void;
   setHorizon: (horizon: HorizonPreset | null) => void;
   place: (slotId: string, player: PlannedPlayer) => void;
   remove: (slotId: string, uid: number) => void;
@@ -87,6 +96,12 @@ export function SquadPlanProvider({ children }: { children: ReactNode }) {
 
   const moveMarker = useCallback(
     (slotId: string, cell: Cell) => update((current) => moveMarkerIn(current, slotId, cell)),
+    [update]
+  );
+
+  const moveCard = useCallback(
+    (from: { slotId: string; uid: number }, to: { slotId: string; index: number | null }) =>
+      update((current) => moveCardIn(current, from, to)),
     [update]
   );
 
@@ -170,6 +185,7 @@ export function SquadPlanProvider({ children }: { children: ReactNode }) {
         placements,
         applyPreset,
         moveMarker,
+        moveCard,
         setHorizon,
         place,
         remove,

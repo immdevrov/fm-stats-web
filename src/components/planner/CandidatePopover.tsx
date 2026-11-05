@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useDndContext, useDroppable } from "@dnd-kit/core";
 import { Box, HStack, Input, Popover, Portal, Text, VStack } from "@chakra-ui/react";
 import type { FormationSlot } from "../../formations";
 import type { Player } from "../../types/types";
@@ -25,6 +26,12 @@ export function CandidatePopover({
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
+  const { active } = useDndContext();
+  const { setNodeRef: setAddRef, isOver } = useDroppable({
+    id: `add:${slot.id}`,
+    data: { kind: "add", slotId: slot.id },
+    disabled: active?.data.current?.kind !== "card",
+  });
 
   const inThisSlot = new Set(
     (plan?.slots.find((s) => s.slotId === slot.id)?.players ?? []).map((p) => p.uid)
@@ -85,6 +92,9 @@ export function CandidatePopover({
     >
       <Popover.Trigger asChild>
         <HStack
+          ref={setAddRef}
+          outline={isOver ? "2px solid" : undefined}
+          outlineColor="glaucous.500"
           justify="center"
           gap="6px"
           borderWidth="1px"
