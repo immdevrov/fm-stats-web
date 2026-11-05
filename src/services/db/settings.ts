@@ -1,6 +1,7 @@
 import { getDB, wrapError } from './connection';
 import type { PlannedSlot, SquadPlan } from '../../types/planner';
 import { getPreset } from '../../formations';
+import { GK_CELL, cellKey, isPlayableCell } from '../../formations/grid';
 
 const MY_CLUB = 'myClub';
 const SQUAD_PLAN = 'squadPlan';
@@ -54,14 +55,27 @@ function isPlannedSlot(value: unknown): boolean {
 function isSquadPlan(value: unknown): value is SquadPlan {
   if (typeof value !== 'object' || value === null) return false;
   const plan = value as Partial<SquadPlan>;
-  return Array.isArray(plan.slots) && plan.slots.every(isPlannedSlot);
+  if (!Array.isArray(plan.slots) || !plan.slots.every(isPlannedSlot)) return false;
+  const keys = new Set(plan.slots.map((slot) => cellKey(slot.cell)));
+  return (
+    keys.size === plan.slots.length &&
+    plan.slots.every((slot) => cellKey(slot.cell) === cellKey(GK_CELL) || isPlayableCell(slot.cell))
+  );
 }
 
 function fromLegacy(value: { formationId: string; slots: unknown[]; horizon?: unknown }): SquadPlan | null {
   const preset = getPreset(value.formationId);
   if (!preset) return null;
   const stored = new Map(
-    (value.slots as Array<Partial<PlannedSlot>>).map((slot) => [slot.slotId, slot.players])
+    value.slots
+      .filter(
+        (slot): slot is Partial<PlannedSlot> =>
+          typeof slot === 'object' &&
+          slot !== null &&
+          typeof (slot as Partial<PlannedSlot>).slotId === 'string' &&
+          Array.isArray((slot as Partial<PlannedSlot>).players)
+      )
+      .map((slot) => [slot.slotId, slot.players])
   );
   return {
     horizon: value.horizon as SquadPlan['horizon'],

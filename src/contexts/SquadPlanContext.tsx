@@ -10,7 +10,7 @@ import {
 } from "react";
 import { db } from "../services/db";
 import { toaster } from "../components/ui/toaster";
-import { getPreset } from "../formations";
+import { getPreset, type Preset } from "../formations";
 import type { Cell } from "../formations/grid";
 import {
   buildPlacementIndex,
@@ -41,11 +41,10 @@ interface SquadPlanContextValue {
 
 const SquadPlanContext = createContext<SquadPlanContextValue | null>(null);
 
-function emptyPlan(presetId: string, horizon: HorizonPreset | null): SquadPlan {
-  const preset = getPreset(presetId);
+function emptyPlan(preset: Preset, horizon: HorizonPreset | null): SquadPlan {
   return {
     horizon,
-    slots: (preset?.slots ?? []).map((slot) => ({ slotId: slot.id, cell: slot.cell, players: [] })),
+    slots: preset.slots.map((slot) => ({ slotId: slot.id, cell: slot.cell, players: [] })),
   };
 }
 
@@ -90,8 +89,10 @@ export function SquadPlanProvider({ children }: { children: ReactNode }) {
   );
 
   const applyPreset = useCallback((presetId: string) => {
+    const preset = getPreset(presetId);
+    if (!preset) return;
     userChanged.current = true;
-    setPlanState((current) => emptyPlan(presetId, current?.horizon ?? null));
+    setPlanState((current) => emptyPlan(preset, current?.horizon ?? null));
   }, []);
 
   const moveMarker = useCallback(

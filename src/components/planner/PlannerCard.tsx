@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Badge, chakra, HStack, Menu, Portal, Text, VStack } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
-import { useDndContext, useDraggable, useDroppable } from "@dnd-kit/core";
+import { useDragKind } from "./dragKind";
+import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { LuGripVertical } from "react-icons/lu";
 import { boardSlots, type FormationSlot } from "../../formations";
 import type { Player } from "../../types/types";
@@ -34,8 +35,7 @@ export function PlannerCard({
   const { myClub } = useMyTeam();
   const [showMismatch, setShowMismatch] = useState(false);
 
-  const { active } = useDndContext();
-  const cardDrag = active?.data.current?.kind === "card";
+  const cardDrag = useDragKind() === "card";
   const { setNodeRef: setDropRef, isOver } = useDroppable({
     id: `card:${slot.id}:${planned.uid}`,
     data: { kind: "card", slotId: slot.id, index: rank },
@@ -101,6 +101,7 @@ export function PlannerCard({
           alignItems="center"
           color="softBlush.700"
           {...attributes}
+          tabIndex={-1}
           {...listeners}
         >
           <LuGripVertical size={12} />

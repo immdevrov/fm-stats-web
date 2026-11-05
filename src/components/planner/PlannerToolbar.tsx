@@ -23,7 +23,7 @@ export function PlannerToolbar({
 }) {
   const { plan, applyPreset, setHorizon, removeMissing } = useSquadPlan();
   const { active, isNewest } = useSnapshots();
-  const [pendingFormation, setPendingFormation] = useState<string | null>(null);
+  const [pendingPreset, setPendingPreset] = useState<string | null>(null);
 
   const uncovered = countSlotsWithoutCover(plan, slots.length);
   const hasPlacements = (plan?.slots ?? []).some((slot) => slot.players.length > 0);
@@ -32,7 +32,7 @@ export function PlannerToolbar({
     .filter((player) => !presentUids.has(player.uid)).length;
 
   const handleSelect = (id: string) => {
-    if (hasPlacements) setPendingFormation(id);
+    if (hasPlacements) setPendingPreset(id);
     else applyPreset(id);
   };
 
@@ -101,17 +101,17 @@ export function PlannerToolbar({
       </HStack>
 
       <ConfirmDialog
-        isOpen={pendingFormation !== null}
-        onClose={() => setPendingFormation(null)}
+        isOpen={pendingPreset !== null}
+        onClose={() => setPendingPreset(null)}
         onConfirm={(value) => {
           applyPreset(value);
-          setPendingFormation(null);
+          setPendingPreset(null);
         }}
         title="Apply preset?"
         message="Every player on the board will be removed. There is only one board, so this cannot be undone."
         options={
-          pendingFormation
-            ? [{ label: `Apply ${getPreset(pendingFormation)?.name ?? pendingFormation}`, value: pendingFormation }]
+          pendingPreset
+            ? [{ label: `Apply ${getPreset(pendingPreset)?.name ?? pendingPreset}`, value: pendingPreset }]
             : []
         }
       />

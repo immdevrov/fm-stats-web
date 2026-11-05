@@ -1,5 +1,5 @@
 import { chakra, HStack, Text, VStack } from "@chakra-ui/react";
-import { useDndContext, useDraggable, useDroppable } from "@dnd-kit/core";
+import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { LuGripVertical } from "react-icons/lu";
 import { cellKey } from "../../formations/grid";
 import type { FormationSlot } from "../../formations";
@@ -9,6 +9,7 @@ import { useSquadPlan } from "../../contexts/SquadPlanContext";
 import { MAX_DEPTH } from "../../types/planner";
 import { PlannerCard } from "./PlannerCard";
 import { CandidatePopover } from "./CandidatePopover";
+import { useDragKind } from "./dragKind";
 
 const EMPTY_LABEL = ["Nobody", "No cover", "Add"];
 
@@ -24,13 +25,12 @@ export function PlannerSlot({
   presentUids: Set<number>;
 }) {
   const { plan } = useSquadPlan();
-  const { active } = useDndContext();
-  const markerDrag = active?.data.current?.kind === "marker";
+  const markerDrag = useDragKind() === "marker";
   const isGk = slot.cell.row === "GK";
   const { setNodeRef: setDropRef, isOver } = useDroppable({
     id: `cell:${cellKey(slot.cell)}`,
     data: { kind: "cell", cell: slot.cell },
-    disabled: !markerDrag,
+    disabled: !markerDrag || isGk,
   });
   const {
     attributes,
@@ -68,6 +68,7 @@ export function PlannerSlot({
             display="inline-flex"
             color="softBlush.700"
             {...attributes}
+            tabIndex={-1}
             {...listeners}
           >
             <LuGripVertical size={12} />

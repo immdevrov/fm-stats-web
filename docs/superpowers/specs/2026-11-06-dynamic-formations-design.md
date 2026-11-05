@@ -103,7 +103,7 @@ No schema change and no version bump — `squadPlan` lives in the schemaless
 a string) and converts it: each stored `slotId` is looked up in that preset to
 get its cell; slots whose id the preset does not know are dropped; preset
 slots the stored plan lacks are added empty. The converted plan is returned
-and written back on the next save. A value that is neither shape is `null`,
+and written back as soon as the provider loads (the save effect fires when `isLoaded` flips). A value that is neither shape is `null`,
 as today.
 
 Every legacy slot keeps the same position it had, so no card changes its

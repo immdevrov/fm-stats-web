@@ -1,12 +1,12 @@
 import { Box } from "@chakra-ui/react";
-import { useDndContext, useDroppable } from "@dnd-kit/core";
+import { useDroppable } from "@dnd-kit/core";
 import { cellKey, cellPosition, isPlayableCell, type Cell } from "../../formations/grid";
 import { formatPositions } from "../../utils/utils";
+import { useDragKind } from "./dragKind";
 
 export function BoardCell({ cell }: { cell: Cell }) {
   const playable = isPlayableCell(cell);
-  const { active } = useDndContext();
-  const markerDrag = active?.data.current?.kind === "marker";
+  const markerDrag = useDragKind() === "marker";
   const { setNodeRef, isOver } = useDroppable({
     id: `cell:${cellKey(cell)}`,
     data: { kind: "cell", cell },

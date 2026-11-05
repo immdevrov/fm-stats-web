@@ -29,6 +29,8 @@ export function SquadPlanner({ club, players }: { club: string; players: Player[
     [players, listed]
   );
 
+  const slots = useMemo(() => (plan ? boardSlots(plan) : []), [plan]);
+
   useEffect(() => {
     // Only the newest snapshot may write back name and club: browsing 2033 must not persist 2033 clubs.
     if (!isLoaded || !plan || !allPlayers || !isNewest) return;
@@ -66,7 +68,6 @@ export function SquadPlanner({ club, players }: { club: string; players: Player[
     );
   }
 
-  const slots = boardSlots(plan);
 
   return (
     <VStack align="stretch" gap={4}>
