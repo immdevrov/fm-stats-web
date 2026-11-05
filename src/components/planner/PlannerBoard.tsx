@@ -1,18 +1,19 @@
 import { useMemo } from "react";
 import { HStack, VStack } from "@chakra-ui/react";
-import type { Formation } from "../../formations";
+import type { FormationSlot } from "../../formations";
+import { OUTFIELD_ROWS, type GridRow } from "../../formations/grid";
 import type { Player } from "../../types/types";
 import { byAgeDesc } from "../../utils/planner";
 import { PlannerSlot } from "./PlannerSlot";
 
 export function PlannerBoard({
-  formation,
+  slots,
   squad,
   listed,
   allPlayers,
   presentUids,
 }: {
-  formation: Formation;
+  slots: FormationSlot[];
   squad: Player[];
   listed: Player[];
   allPlayers: Player[];
@@ -26,7 +27,9 @@ export function PlannerBoard({
 
   const byUid = useMemo(() => new Map(allPlayers.map((p) => [p.UID, p])), [allPlayers]);
 
-  const rows = [...new Set(formation.slots.map((slot) => slot.row))].sort((a, b) => b - a);
+  const rows = ([...OUTFIELD_ROWS].reverse() as GridRow[])
+    .concat("GK")
+    .filter((row) => slots.some((slot) => slot.cell.row === row));
 
   return (
     <VStack
@@ -42,8 +45,9 @@ export function PlannerBoard({
     >
       {rows.map((row) => (
         <HStack key={row} justify="center" gap="12px" align="stretch">
-          {formation.slots
-            .filter((slot) => slot.row === row)
+          {slots
+            .filter((slot) => slot.cell.row === row)
+            .sort((a, b) => a.cell.col - b.cell.col)
             .map((slot) => (
               <PlannerSlot
                 key={slot.id}

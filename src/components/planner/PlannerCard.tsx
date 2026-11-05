@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Badge, HStack, Menu, Portal, Text, VStack } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
-import type { FormationSlot } from "../../formations";
+import { boardSlots, type FormationSlot } from "../../formations";
 import type { Player } from "../../types/types";
 import type { PlannedPlayer } from "../../types/planner";
 import { displayDate, formatPositions, getEffectivePosition } from "../../utils/utils";
@@ -37,6 +37,10 @@ export function PlannerCard({
     player && customPosition ? { ...player, CustomPosition: customPosition } : player;
 
   const mismatch = effectivePlayer ? describeMismatch(effectivePlayer, slot) : null;
+  const elsewhereLabel = (slotId: string) => {
+    const other = plan ? boardSlots(plan).find((s) => s.id === slotId) : undefined;
+    return other ? slotLabel(other) : slotId;
+  };
   const memberships = listsFor(planned.uid);
   const unwanted = annotations.get(planned.uid)?.unwanted === true;
 
@@ -185,7 +189,7 @@ export function PlannerCard({
                   content={
                     firstChoiceCount > 1
                       ? `First choice in ${firstChoiceCount} slots — he cannot start in both`
-                      : `Also in ${elsewhere.map((p) => p.slotId).join(", ")}`
+                      : `Also in ${elsewhere.map((p) => elsewhereLabel(p.slotId)).join(", ")}`
                   }
                 >
                   <Badge

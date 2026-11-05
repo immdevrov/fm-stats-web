@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { Button, Heading, HStack, SimpleGrid, Spinner, Text, VStack } from "@chakra-ui/react";
 import type { Player } from "../../types/types";
-import { FORMATIONS, getFormation } from "../../formations";
+import { PRESETS, boardSlots } from "../../formations";
 import { useSquadPlan } from "../../contexts/SquadPlanContext";
 import { usePlayerNotes } from "../../contexts/PlayerNotesContext";
 import { useRoster, useSnapshots } from "../../contexts/SnapshotContext";
@@ -11,7 +11,7 @@ import { CandidatePanel } from "./CandidatePanel";
 
 export function SquadPlanner({ club, players }: { club: string; players: Player[] }) {
   const { lists, annotations } = usePlayerNotes();
-  const { plan, isLoaded, setFormation, refreshSnapshots } = useSquadPlan();
+  const { plan, isLoaded, applyPreset, refreshSnapshots } = useSquadPlan();
   const { players: allPlayers } = useRoster();
   const { isNewest } = useSnapshots();
 
@@ -41,9 +41,7 @@ export function SquadPlanner({ club, players }: { club: string; players: Player[
     return <Spinner size="lg" colorPalette="glaucous" alignSelf="center" />;
   }
 
-  const formation = plan ? getFormation(plan.formationId) : undefined;
-
-  if (!formation) {
+  if (!plan) {
     return (
       <VStack align="stretch" gap={5}>
         <Heading size="lg" color="fg.emphasized">
@@ -53,12 +51,12 @@ export function SquadPlanner({ club, players }: { club: string; players: Player[
           {club}&rsquo;s board starts empty. Every card is placed by hand.
         </Text>
         <SimpleGrid columns={{ base: 2, md: 4 }} gap={3}>
-          {FORMATIONS.map((option) => (
+          {PRESETS.map((option) => (
             <Button
               key={option.id}
               variant="outline"
               colorPalette="glaucous"
-              onClick={() => setFormation(option.id)}
+              onClick={() => applyPreset(option.id)}
             >
               {option.name}
             </Button>
@@ -68,12 +66,14 @@ export function SquadPlanner({ club, players }: { club: string; players: Player[
     );
   }
 
+  const slots = boardSlots(plan);
+
   return (
     <VStack align="stretch" gap={4}>
-      <PlannerToolbar formation={formation} presentUids={presentUids} />
+      <PlannerToolbar slots={slots} presentUids={presentUids} />
       <HStack align="stretch" gap={6}>
         <PlannerBoard
-          formation={formation}
+          slots={slots}
           squad={players}
           listed={listed}
           allPlayers={allPlayers}

@@ -1,5 +1,6 @@
 import { getDB, wrapError } from './connection';
-import type { SquadPlan } from '../../types/planner';
+import type { PlannedSlot, SquadPlan } from '../../types/planner';
+import { getPreset } from '../../formations';
 
 const MY_CLUB = 'myClub';
 const SQUAD_PLAN = 'squadPlan';
@@ -37,20 +38,57 @@ export function setMyClub(club: string | null): Promise<void> {
   return _set(MY_CLUB, club, 'save my team');
 }
 
+function isPlannedSlot(value: unknown): boolean {
+  if (typeof value !== 'object' || value === null) return false;
+  const slot = value as Partial<PlannedSlot>;
+  return (
+    typeof slot.slotId === 'string' &&
+    typeof slot.cell === 'object' &&
+    slot.cell !== null &&
+    typeof slot.cell.row === 'string' &&
+    typeof slot.cell.col === 'number' &&
+    Array.isArray(slot.players)
+  );
+}
+
 function isSquadPlan(value: unknown): value is SquadPlan {
   if (typeof value !== 'object' || value === null) return false;
   const plan = value as Partial<SquadPlan>;
-  return typeof plan.formationId === 'string' && Array.isArray(plan.slots);
+  return Array.isArray(plan.slots) && plan.slots.every(isPlannedSlot);
+}
+
+function fromLegacy(value: { formationId: string; slots: unknown[]; horizon?: unknown }): SquadPlan | null {
+  const preset = getPreset(value.formationId);
+  if (!preset) return null;
+  const stored = new Map(
+    (value.slots as Array<Partial<PlannedSlot>>).map((slot) => [slot.slotId, slot.players])
+  );
+  return {
+    horizon: value.horizon as SquadPlan['horizon'],
+    slots: preset.slots.map((slot) => ({
+      slotId: slot.id,
+      cell: slot.cell,
+      players: stored.get(slot.id) ?? [],
+    })),
+  };
 }
 
 const HORIZON_PRESETS = new Set(['now', 'season', '1y', '2y']);
 
 export async function getSquadPlan(): Promise<SquadPlan | null> {
   const value = await _get(SQUAD_PLAN);
-  if (!isSquadPlan(value)) return null;
-  return HORIZON_PRESETS.has(value.horizon as string)
-    ? value
-    : { ...value, horizon: null };
+  const isLegacy =
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as { formationId?: unknown }).formationId === 'string' &&
+    Array.isArray((value as { slots?: unknown }).slots);
+  const plan = isLegacy
+    ? fromLegacy(value as { formationId: string; slots: unknown[]; horizon?: unknown })
+    : isSquadPlan(value)
+      ? value
+      : null;
+  if (!plan) return null;
+  return HORIZON_PRESETS.has(plan.horizon as string) ? plan : { ...plan, horizon: null };
 }
 
 export function setSquadPlan(plan: SquadPlan | null): Promise<void> {

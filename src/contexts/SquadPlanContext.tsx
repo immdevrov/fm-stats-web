@@ -10,7 +10,7 @@ import {
 } from "react";
 import { db } from "../services/db";
 import { toaster } from "../components/ui/toaster";
-import { getFormation } from "../formations";
+import { getPreset } from "../formations";
 import { buildPlacementIndex, type PlacementIndex } from "../utils/planner";
 import { MAX_DEPTH, type HorizonPreset, type PlannedPlayer, type SquadPlan } from "../types/planner";
 
@@ -18,7 +18,7 @@ interface SquadPlanContextValue {
   plan: SquadPlan | null;
   isLoaded: boolean;
   placements: PlacementIndex;
-  setFormation: (formationId: string) => void;
+  applyPreset: (presetId: string) => void;
   setHorizon: (horizon: HorizonPreset | null) => void;
   place: (slotId: string, player: PlannedPlayer) => void;
   remove: (slotId: string, uid: number) => void;
@@ -30,12 +30,11 @@ interface SquadPlanContextValue {
 
 const SquadPlanContext = createContext<SquadPlanContextValue | null>(null);
 
-function emptyPlan(formationId: string, horizon: HorizonPreset | null): SquadPlan {
-  const formation = getFormation(formationId);
+function emptyPlan(presetId: string, horizon: HorizonPreset | null): SquadPlan {
+  const preset = getPreset(presetId);
   return {
-    formationId,
     horizon,
-    slots: (formation?.slots ?? []).map((slot) => ({ slotId: slot.id, players: [] })),
+    slots: (preset?.slots ?? []).map((slot) => ({ slotId: slot.id, cell: slot.cell, players: [] })),
   };
 }
 
@@ -79,9 +78,9 @@ export function SquadPlanProvider({ children }: { children: ReactNode }) {
     [update]
   );
 
-  const setFormation = useCallback((formationId: string) => {
+  const applyPreset = useCallback((presetId: string) => {
     userChanged.current = true;
-    setPlanState((current) => emptyPlan(formationId, current?.horizon ?? null));
+    setPlanState((current) => emptyPlan(presetId, current?.horizon ?? null));
   }, []);
 
   const clearPlan = useCallback(() => {
@@ -162,7 +161,7 @@ export function SquadPlanProvider({ children }: { children: ReactNode }) {
         plan,
         isLoaded,
         placements,
-        setFormation,
+        applyPreset,
         setHorizon,
         place,
         remove,

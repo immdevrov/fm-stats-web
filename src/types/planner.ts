@@ -1,3 +1,5 @@
+import type { Cell } from "../formations/grid";
+
 export const MAX_DEPTH = 3;
 
 export interface PlannedPlayer {
@@ -8,13 +10,13 @@ export interface PlannedPlayer {
 
 export interface PlannedSlot {
   slotId: string;
+  cell: Cell;
   players: PlannedPlayer[];
 }
 
 export type HorizonPreset = "now" | "season" | "1y" | "2y";
 
 export interface SquadPlan {
-  formationId: string;
   horizon: HorizonPreset | null;
   slots: PlannedSlot[];
 }
