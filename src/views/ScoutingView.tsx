@@ -9,6 +9,7 @@ import {
   Input,
   Table as CTable,
   Popover as ChakraPopover,
+  NativeSelect,
   Checkbox,
 } from "@chakra-ui/react";
 import { useState, useEffect, useMemo, useCallback, useTransition, useRef } from "react";
@@ -31,8 +32,14 @@ import {
   RightWinger,
   type RoleConfig,
 } from "../roles";
-import { formatWage, displayDate, parseCustomDate } from "../utils/utils";
+import { formatWage, displayDate } from "../utils/utils";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import { useSnapshots } from "../contexts/SnapshotContext";
+import { resolveHorizon } from "../utils/planner";
+import { loadWorkingState, saveWorkingState } from "../utils/scouting-filters";
+import type { Archetype, ColumnFilters, ContractHorizon, ScoutingFilters, Side } from "../types/archetypes";
+import { ArchetypePicker } from "../components/ArchetypePicker";
+import { useArchetypes } from "../contexts/ArchetypeContext";
 
 const STAT_ABBREVIATIONS: Record<string, string> = {
   saveRatio: "SR",
@@ -90,32 +97,13 @@ import {
 
 const PAGE_SIZE = 20;
 const DEBOUNCE_MS = 300;
-const STORAGE_KEY = "scouting-filters";
 
-interface SavedFilters {
-  selectedRoleIndex: number;
-  side: Side;
-  contractBefore: string;
-  columnFilters: Record<string, { min?: string; max?: string }>;
-  excludeInjuries: boolean;
-  excludedLeagues: string[];
-  sortKey: string;
-  sortDirection: SortDirection;
-}
-
-function loadFilters(): Partial<SavedFilters> {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch { /* ignore */ }
-  return {};
-}
-
-function saveFilters(filters: SavedFilters) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(filters));
-  } catch { /* ignore */ }
-}
+const CONTRACT_OPTIONS: { value: ContractHorizon | ""; label: string }[] = [
+  { value: "", label: "Any contract" },
+  { value: "season", label: "By end of season" },
+  { value: "1y", label: "Within a year" },
+  { value: "2y", label: "Within two years" },
+];
 
 function useDebouncedValue<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -125,8 +113,6 @@ function useDebouncedValue<T>(value: T, delay: number): T {
   }, [value, delay]);
   return debounced;
 }
-
-type Side = "both" | "left" | "right";
 
 function getPercentileColor(value: number): string {
   if (value < 30) return "red.500";
@@ -254,6 +240,7 @@ function ColumnFilterPopover({
           minW="20px"
           h="20px"
           fontSize="xs"
+          aria-label={`Filter ${colKey}`}
         >
           f
         </Button>
@@ -297,28 +284,51 @@ export function ScoutingView() {
   const compareSet = useMemo(() => new Set(compareList), [compareList]);
   const { isUnwanted } = usePlayerNotes();
 
-  const [saved] = useState(loadFilters);
+  const { active: activeSnapshot } = useSnapshots();
+  const snapshotDate = activeSnapshot?.date ?? null;
 
-  const [selectedRoleIndex, setSelectedRoleIndex] = useState(saved.selectedRoleIndex ?? 0);
-  const [side, setSide] = useState<Side>(saved.side ?? "both");
+  const [{ filters: saved, activeArchetypeId: savedArchetypeId }] = useState(loadWorkingState);
+  const [activeArchetypeId, setActiveArchetypeId] = useState<string | null>(savedArchetypeId);
+  const { archetypes, isLoaded: archetypesLoaded } = useArchetypes();
 
-  const [contractBeforeRaw, setContractBefore] = useState(saved.contractBefore ?? "");
-  const contractBefore = useDebouncedValue(contractBeforeRaw, DEBOUNCE_MS);
-  const [columnFiltersRaw, setColumnFiltersRaw] = useState<Record<string, { min?: string; max?: string }>>(saved.columnFilters ?? {});
+  const [roleKey, setRoleKey] = useState(saved.roleKey);
+  const [side, setSide] = useState<Side>(saved.side);
+
+  const [contractHorizon, setContractHorizon] = useState<ContractHorizon | null>(saved.contractHorizon);
+  const contractBefore = useMemo(
+    () => resolveHorizon(snapshotDate, contractHorizon),
+    [snapshotDate, contractHorizon]
+  );
+  const [columnFiltersRaw, setColumnFiltersRaw] = useState<ColumnFilters>(saved.columnFilters);
   const columnFilters = useDebouncedValue(columnFiltersRaw, DEBOUNCE_MS);
-  const [excludeInjuries, setExcludeInjuries] = useState(saved.excludeInjuries ?? true);
+  const [excludeInjuries, setExcludeInjuries] = useState(saved.excludeInjuries);
   const [excludedLeagues, setExcludedLeagues] = useState<Set<string>>(new Set(saved.excludedLeagues));
   const [hideUnwanted, setHideUnwanted] = useState(false);
 
-  const [sortKey, setSortKey] = useState<keyof ScoutingRow>((saved.sortKey as keyof ScoutingRow) ?? "name");
-  const [sortDirection, setSortDirection] = useState<SortDirection>(saved.sortDirection ?? "asc");
+  const [sortKey, setSortKey] = useState<keyof ScoutingRow>(saved.sortKey as keyof ScoutingRow);
+  const [sortDirection, setSortDirection] = useState<SortDirection>(saved.sortDirection);
   const [currentPage, setCurrentPage] = useState(1);
 
   const [scoutingData, setScoutingData] = useState<ScoutingRow[]>([]);
   const [cohortSize, setCohortSize] = useState(0);
   const [isPending, startTransition] = useTransition();
 
-  const roleConfig = ROLE_CONFIG[selectedRoleIndex];
+  const currentFilters = useMemo<ScoutingFilters>(
+    () => ({
+      roleKey,
+      side,
+      columnFilters: columnFiltersRaw,
+      contractHorizon,
+      excludeInjuries,
+      excludedLeagues: Array.from(excludedLeagues),
+      sortKey: sortKey as string,
+      sortDirection,
+    }),
+    [roleKey, side, columnFiltersRaw, contractHorizon, excludeInjuries, excludedLeagues, sortKey, sortDirection]
+  );
+
+  const roleIndex = Math.max(0, ROLE_CONFIG.findIndex((rc) => rc.key === roleKey));
+  const roleConfig = ROLE_CONFIG[roleIndex];
   useDocumentTitle(`Scouting: ${roleConfig.name}`);
   const hasSideSelector = roleConfig.key === "FB" || roleConfig.key === "W";
   const statGroups = useMemo(() => getStatGroupsForRole(roleConfig.key), [roleConfig.key]);
@@ -353,17 +363,28 @@ export function ScoutingView() {
   }, [allPlayers, leagueRankings, roleConfig, side, statGroups]);
 
   useEffect(() => {
-    saveFilters({
-      selectedRoleIndex,
-      side,
-      contractBefore: contractBeforeRaw,
-      columnFilters: columnFiltersRaw,
-      excludeInjuries,
-      excludedLeagues: Array.from(excludedLeagues),
-      sortKey: sortKey as string,
-      sortDirection,
-    });
-  }, [selectedRoleIndex, side, contractBeforeRaw, columnFiltersRaw, excludeInjuries, excludedLeagues, sortKey, sortDirection]);
+    saveWorkingState({ filters: currentFilters, activeArchetypeId });
+  }, [currentFilters, activeArchetypeId]);
+
+  useEffect(() => {
+    if (archetypesLoaded && activeArchetypeId && !archetypes.some((a) => a.id === activeArchetypeId)) {
+      setActiveArchetypeId(null);
+    }
+  }, [archetypesLoaded, archetypes, activeArchetypeId]);
+
+  const applyArchetype = useCallback((archetype: Archetype) => {
+    const f = archetype.filters;
+    setRoleKey(f.roleKey);
+    setSide(f.side);
+    setColumnFiltersRaw(f.columnFilters);
+    setContractHorizon(f.contractHorizon);
+    setExcludeInjuries(f.excludeInjuries);
+    setExcludedLeagues(new Set(f.excludedLeagues));
+    setSortKey(f.sortKey as keyof ScoutingRow);
+    setSortDirection(f.sortDirection);
+    setActiveArchetypeId(archetype.id);
+    setCurrentPage(1);
+  }, []);
 
   const availableLeagues = useMemo(() => {
     const leagues = new Set<string>();
@@ -380,11 +401,7 @@ export function ScoutingView() {
       result = result.filter((r) => !r.injuries);
     }
     if (contractBefore) {
-      const parts = contractBefore.split("/");
-      const before = parts.length === 3 ? parseCustomDate(contractBefore) : null;
-      if (before && !isNaN(before.getTime())) {
-        result = result.filter((r) => r.contractExpires && r.contractExpires <= before);
-      }
+      result = result.filter((r) => r.contractExpires && r.contractExpires <= contractBefore);
     }
     if (excludedLeagues.size > 0) {
       result = result.filter((r) => !excludedLeagues.has(r.division));
@@ -472,7 +489,7 @@ export function ScoutingView() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedRoleIndex, side, columnFilters, contractBefore, excludeInjuries, excludedLeagues, sortKey, sortDirection, hideUnwanted]);
+  }, [roleKey, side, columnFilters, contractBefore, excludeInjuries, excludedLeagues, sortKey, sortDirection, hideUnwanted]);
 
   const handleSortChange = useCallback(
     (key: keyof ScoutingRow, direction: SortDirection) => {
@@ -496,13 +513,13 @@ export function ScoutingView() {
   }, []);
 
   const clearFilters = useCallback(() => {
-    setContractBefore("");
+    setContractHorizon(null);
     setColumnFiltersRaw({});
     setExcludeInjuries(true);
     setExcludedLeagues(new Set());
   }, []);
 
-  const hasActiveFilters = contractBeforeRaw !== "" ||
+  const hasActiveFilters = contractHorizon !== null ||
     Object.keys(columnFiltersRaw).length > 0 ||
     !excludeInjuries ||
     excludedLeagues.size > 0;
@@ -689,9 +706,9 @@ export function ScoutingView() {
               <Button
                 key={rc.key}
                 size="sm"
-                variant={selectedRoleIndex === i ? "solid" : "outline"}
-                colorPalette={selectedRoleIndex === i ? "glaucous" : undefined}
-                onClick={() => { setSelectedRoleIndex(i); setSide("both"); }}
+                variant={roleIndex === i ? "solid" : "outline"}
+                colorPalette={roleIndex === i ? "glaucous" : undefined}
+                onClick={() => { setRoleKey(rc.key); setSide("both"); setActiveArchetypeId(null); }}
               >
                 {rc.name}
               </Button>
@@ -712,19 +729,33 @@ export function ScoutingView() {
                 ))}
               </>
             )}
+            <Box ml="auto">
+              <ArchetypePicker
+                filters={currentFilters}
+                activeId={activeArchetypeId}
+                onApply={applyArchetype}
+                onActiveChange={setActiveArchetypeId}
+              />
+            </Box>
           </HStack>
 
           <HStack gap={3} flexWrap="wrap" align="center">
             <HStack gap={1}>
-              <Text color="fg.muted" fontSize="sm" whiteSpace="nowrap">Contract before:</Text>
-              <Input
-                type="text"
-                placeholder="DD/MM/YYYY"
-                value={contractBeforeRaw}
-                onChange={(e) => setContractBefore(e.target.value)}
-                maxW="130px"
-                size="sm"
-              />
+              <Text color="fg.muted" fontSize="sm" whiteSpace="nowrap">Contract expires:</Text>
+              <NativeSelect.Root size="sm" width="170px" disabled={!snapshotDate}>
+                <NativeSelect.Field
+                  aria-label="Contract expires"
+                  value={contractHorizon ?? ""}
+                  onChange={(e) => setContractHorizon((e.currentTarget.value || null) as ContractHorizon | null)}
+                >
+                  {CONTRACT_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </NativeSelect.Field>
+                <NativeSelect.Indicator />
+              </NativeSelect.Root>
             </HStack>
             <HStack gap={1} as="label" cursor="pointer">
               <input

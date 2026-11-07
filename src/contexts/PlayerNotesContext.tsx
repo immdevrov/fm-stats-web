@@ -8,17 +8,11 @@ import {
 } from "react";
 import { db } from "../services/db";
 import { useOnTabReturn } from "../hooks/useOnTabReturn";
+import { generateId } from "../utils/ids";
 import type { Player } from "../types/types";
 import type { PlayerAnnotation, PlayerList, TransferMark } from "../types/annotations";
 
 export type PlayerIdentity = Pick<Player, "Name" | "Club">;
-
-function generateListId(): string {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-  return `list-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-}
 
 interface PlayerNotesContextValue {
   annotations: Map<number, PlayerAnnotation>;
@@ -144,7 +138,7 @@ export function PlayerNotesProvider({ children }: { children: ReactNode }) {
   const createList = useCallback(
     async (name: string) => {
       const list: PlayerList = {
-        id: generateListId(),
+        id: generateId("list"),
         name,
         order: lists.length,
         uids: [],

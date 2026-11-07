@@ -306,3 +306,30 @@ export async function seedList(page: Page, list: { id: string; name: string; uid
     { dbName: DB_NAME, dbVersion: DB_VERSION, list }
   );
 }
+
+export async function seedLeagueRankings(page: Page, leagues: string[]) {
+  await page.evaluate(
+    ({ dbName, dbVersion, leagues }) => {
+      return new Promise<void>((resolve, reject) => {
+        const request = indexedDB.open(dbName, dbVersion);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          const db = request.result;
+          const tx = db.transaction(['leagueRankings'], 'readwrite');
+          const store = tx.objectStore('leagueRankings');
+          store.clear();
+          leagues.forEach((league, index) => store.put({ rank: index + 1, league }));
+          tx.oncomplete = () => {
+            db.close();
+            resolve();
+          };
+          tx.onerror = () => {
+            db.close();
+            reject(tx.error);
+          };
+        };
+      });
+    },
+    { dbName: DB_NAME, dbVersion: DB_VERSION, leagues }
+  );
+}
