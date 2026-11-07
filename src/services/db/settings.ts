@@ -2,10 +2,13 @@ import { getDB, wrapError } from './connection';
 import type { PlannedSlot, SquadPlan } from '../../types/planner';
 import { getPreset } from '../../formations';
 import { GK_CELL, cellKey, isPlayableCell } from '../../formations/grid';
+import { coerceFilters } from '../../utils/scouting-filters';
+import type { Archetype } from '../../types/archetypes';
 
 const MY_CLUB = 'myClub';
 const SQUAD_PLAN = 'squadPlan';
 const ACTIVE_SNAPSHOT = 'activeSnapshot';
+const ARCHETYPES = 'archetypes';
 
 async function _get(key: string): Promise<unknown> {
   try {
@@ -116,4 +119,23 @@ export async function _getStoredActiveSnapshot(): Promise<string | null> {
 
 export function setActiveSnapshotId(id: string | null): Promise<void> {
   return _set(ACTIVE_SNAPSHOT, id, 'save active snapshot');
+}
+
+export async function getArchetypes(): Promise<Archetype[]> {
+  const value = await _get(ARCHETYPES);
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  const result: Archetype[] = [];
+  for (const entry of value) {
+    if (typeof entry !== 'object' || entry === null) continue;
+    const { id, name, filters } = entry as Partial<Archetype>;
+    if (typeof id !== 'string' || !id || typeof name !== 'string' || !name || seen.has(id)) continue;
+    seen.add(id);
+    result.push({ id, name, filters: coerceFilters(filters) });
+  }
+  return result;
+}
+
+export function setArchetypes(archetypes: Archetype[]): Promise<void> {
+  return _set(ARCHETYPES, archetypes, 'save archetypes');
 }
