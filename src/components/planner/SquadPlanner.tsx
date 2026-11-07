@@ -8,6 +8,7 @@ import { useRoster, useSnapshots } from "../../contexts/SnapshotContext";
 import { PlannerBoard } from "./PlannerBoard";
 import { PlannerToolbar } from "./PlannerToolbar";
 import { CandidatePanel } from "./CandidatePanel";
+import { PlannerDnd } from "./PlannerDnd";
 
 export function SquadPlanner({ club, players }: { club: string; players: Player[] }) {
   const { lists, annotations } = usePlayerNotes();
@@ -30,6 +31,11 @@ export function SquadPlanner({ club, players }: { club: string; players: Player[
   );
 
   const slots = useMemo(() => (plan ? boardSlots(plan) : []), [plan]);
+
+  const byUid = useMemo(
+    () => new Map((allPlayers ?? []).map((player) => [player.UID, player])),
+    [allPlayers]
+  );
 
   useEffect(() => {
     // Only the newest snapshot may write back name and club: browsing 2033 must not persist 2033 clubs.
@@ -72,16 +78,18 @@ export function SquadPlanner({ club, players }: { club: string; players: Player[
   return (
     <VStack align="stretch" gap={4}>
       <PlannerToolbar slots={slots} presentUids={presentUids} />
-      <HStack align="stretch" gap={6}>
-        <PlannerBoard
-          slots={slots}
-          squad={players}
-          listed={listed}
-          allPlayers={allPlayers}
-          presentUids={presentUids}
-        />
-        <CandidatePanel squad={players} listed={listed} />
-      </HStack>
+      <PlannerDnd slots={slots} byUid={byUid}>
+        <HStack align="stretch" gap={6}>
+          <PlannerBoard
+            slots={slots}
+            squad={players}
+            listed={listed}
+            byUid={byUid}
+            presentUids={presentUids}
+          />
+          <CandidatePanel squad={players} listed={listed} />
+        </HStack>
+      </PlannerDnd>
     </VStack>
   );
 }

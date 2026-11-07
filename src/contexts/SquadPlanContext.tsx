@@ -16,6 +16,7 @@ import {
   buildPlacementIndex,
   moveCard as moveCardIn,
   moveMarker as moveMarkerIn,
+  placeCandidate as placeCandidateIn,
   type PlacementIndex,
 } from "../utils/planner";
 import { MAX_DEPTH, type HorizonPreset, type PlannedPlayer, type SquadPlan } from "../types/planner";
@@ -30,6 +31,7 @@ interface SquadPlanContextValue {
     from: { slotId: string; uid: number },
     to: { slotId: string; index: number | null }
   ) => void;
+  placeCandidate: (player: PlannedPlayer, to: { slotId: string; index: number | null }) => void;
   setHorizon: (horizon: HorizonPreset | null) => void;
   place: (slotId: string, player: PlannedPlayer) => void;
   remove: (slotId: string, uid: number) => void;
@@ -103,6 +105,12 @@ export function SquadPlanProvider({ children }: { children: ReactNode }) {
   const moveCard = useCallback(
     (from: { slotId: string; uid: number }, to: { slotId: string; index: number | null }) =>
       update((current) => moveCardIn(current, from, to)),
+    [update]
+  );
+
+  const placeCandidate = useCallback(
+    (player: PlannedPlayer, to: { slotId: string; index: number | null }) =>
+      update((current) => placeCandidateIn(current, player, to)),
     [update]
   );
 
@@ -187,6 +195,7 @@ export function SquadPlanProvider({ children }: { children: ReactNode }) {
         applyPreset,
         moveMarker,
         moveCard,
+        placeCandidate,
         setHorizon,
         place,
         remove,

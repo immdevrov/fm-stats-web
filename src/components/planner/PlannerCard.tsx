@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Badge, chakra, HStack, Menu, Portal, Text, VStack } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
-import { useDragKind } from "./dragKind";
+import { usePlayerDrag } from "./dragKind";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { LuGripVertical } from "react-icons/lu";
 import { boardSlots, type FormationSlot } from "../../formations";
@@ -35,11 +35,11 @@ export function PlannerCard({
   const { myClub } = useMyTeam();
   const [showMismatch, setShowMismatch] = useState(false);
 
-  const cardDrag = useDragKind() === "card";
+  const playerDrag = usePlayerDrag();
   const { setNodeRef: setDropRef, isOver } = useDroppable({
     id: `card:${slot.id}:${planned.uid}`,
     data: { kind: "card", slotId: slot.id, index: rank },
-    disabled: !cardDrag,
+    disabled: !playerDrag,
   });
   const {
     attributes,

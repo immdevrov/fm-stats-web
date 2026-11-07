@@ -22,7 +22,10 @@ function sideMatches(slotSide: PlayerPosition['side'], playerSide: PlayerPositio
   return slotSide.some((side) => playerSide.includes(side));
 }
 
-export function matchesSlot(player: PositionedPlayer, slot: FormationSlot): boolean {
+export function matchesSlot(
+  player: PositionedPlayer,
+  slot: Pick<FormationSlot, 'position'>
+): boolean {
   return getEffectivePosition(player).some(
     (position) =>
       position.type === slot.position.type && sideMatches(slot.position.side, position.side)
@@ -154,5 +157,28 @@ export function moveCard(
       if (slot === target) return { ...slot, players: nextTarget };
       return slot;
     }),
+  };
+}
+
+export function placeCandidate(
+  plan: SquadPlan,
+  player: PlannedPlayer,
+  to: { slotId: string; index: number | null }
+): SquadPlan {
+  const target = plan.slots.find((slot) => slot.slotId === to.slotId);
+  if (!target || target.players.some((p) => p.uid === player.uid)) return plan;
+
+  let next: PlannedPlayer[];
+  if (target.players.length < MAX_DEPTH) {
+    const at = to.index ?? target.players.length;
+    next = [...target.players.slice(0, at), player, ...target.players.slice(at)];
+  } else {
+    if (to.index === null || !target.players[to.index]) return plan;
+    next = target.players.map((p, i) => (i === to.index ? player : p));
+  }
+
+  return {
+    ...plan,
+    slots: plan.slots.map((slot) => (slot === target ? { ...slot, players: next } : slot)),
   };
 }

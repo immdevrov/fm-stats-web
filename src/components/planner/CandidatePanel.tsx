@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { Box, HStack, Tabs, Text, VStack } from "@chakra-ui/react";
+import { Box, chakra, HStack, Tabs, Text, VStack } from "@chakra-ui/react";
+import { useDraggable } from "@dnd-kit/core";
+import { LuGripVertical } from "react-icons/lu";
 import { Link } from "react-router-dom";
 import type { Player } from "../../types/types";
 import { displayDate, formatPositions, getEffectivePosition } from "../../utils/utils";
@@ -12,16 +14,39 @@ function CandidateRow({ player }: { player: Player }) {
   const { annotations } = usePlayerNotes();
   const { myClub } = useMyTeam();
   const unwanted = annotations.get(player.UID)?.unwanted === true;
+  const position = annotations.get(player.UID)?.customPosition ?? getEffectivePosition(player);
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `candidate:${player.UID}`,
+    data: { kind: "candidate", uid: player.UID, name: player.Name, club: player.Club },
+  });
 
   return (
     <HStack
-      px={2}
+      pl="2px"
+      pr={2}
       py="6px"
-      gap={2}
+      gap="2px"
       borderRadius="md"
       bg={unwanted ? "bg.muted" : undefined}
       _hover={{ bg: "bg.muted" }}
+      opacity={isDragging ? 0.4 : 1}
     >
+      <chakra.button
+        type="button"
+        ref={setNodeRef}
+        aria-label={`Drag ${player.Name}`}
+        cursor="grab"
+        touchAction="none"
+        display="inline-flex"
+        alignItems="center"
+        alignSelf="stretch"
+        color="softBlush.700"
+        {...attributes}
+        tabIndex={-1}
+        {...listeners}
+      >
+        <LuGripVertical size={12} />
+      </chakra.button>
       <VStack align="stretch" gap={0} flexGrow={1} minW={0} opacity={unwanted ? 0.5 : 1}>
         <HStack gap="5px" align="baseline">
           <Link to={`/players/${player.UID}`}>
@@ -39,7 +64,7 @@ function CandidateRow({ player }: { player: Player }) {
           </Text>
         </HStack>
         <Text fontSize="10.5px" color="softBlush.800" truncate>
-          {formatPositions(getEffectivePosition(player))} &middot;{" "}
+          {formatPositions(position)} &middot;{" "}
           {player.Club !== myClub
             ? player.Club
             : player.Expires
@@ -65,6 +90,8 @@ export function CandidatePanel({ squad, listed }: { squad: Player[]; listed: Pla
 
   return (
     <VStack
+      as="aside"
+      aria-label="Candidates"
       w="300px"
       flexShrink={0}
       align="stretch"
@@ -82,7 +109,7 @@ export function CandidatePanel({ squad, listed }: { squad: Player[]; listed: Pla
         </Tabs.List>
       </Tabs.Root>
 
-      <Box overflowY="auto" p={2}>
+      <Box overflowY="auto" p={2} data-no-autoscroll>
         {rows.length === 0 ? (
           <Text fontSize="xs" color="fg.muted" p={2}>
             {tab === "squad" ? "Everyone is on the board." : "No players on any list yet."}
