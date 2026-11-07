@@ -177,6 +177,7 @@ test('while dragging a player, the positions he can play are marked', async ({ p
   await expect(page.getByLabel('Empty AM(L)')).toHaveAttribute('data-hint', 'match');
   await expect(page.getByLabel('Empty AM(R)')).not.toHaveAttribute('data-hint', 'match');
 
+  await page.keyboard.press('Escape');
   await page.mouse.up();
   await expect(page.locator('[data-slot-id="M-L"]')).not.toHaveAttribute('data-hint', /.*/);
 });

@@ -27,6 +27,9 @@ interface Dragged {
 
 const IDLE: Dragged = { kind: null, slotId: null, uid: null, name: null };
 
+// dnd-kit scrolls an ancestor by the pointer's height alone, so the panel would scroll while dragging over the board.
+const AUTO_SCROLL = { canScroll: (element: Element) => !element.hasAttribute("data-no-autoscroll") };
+
 export function PlannerDnd({
   slots,
   byUid,
@@ -105,6 +108,7 @@ export function PlannerDnd({
     <DndContext
       sensors={sensors}
       collisionDetection={pointerWithin}
+      autoScroll={AUTO_SCROLL}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       accessibility={{ announcements, screenReaderInstructions: { draggable: "" } }}

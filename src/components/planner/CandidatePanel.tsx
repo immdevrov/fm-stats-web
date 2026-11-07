@@ -14,6 +14,7 @@ function CandidateRow({ player }: { player: Player }) {
   const { annotations } = usePlayerNotes();
   const { myClub } = useMyTeam();
   const unwanted = annotations.get(player.UID)?.unwanted === true;
+  const position = annotations.get(player.UID)?.customPosition ?? getEffectivePosition(player);
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `candidate:${player.UID}`,
     data: { kind: "candidate", uid: player.UID, name: player.Name, club: player.Club },
@@ -63,7 +64,7 @@ function CandidateRow({ player }: { player: Player }) {
           </Text>
         </HStack>
         <Text fontSize="10.5px" color="softBlush.800" truncate>
-          {formatPositions(getEffectivePosition(player))} &middot;{" "}
+          {formatPositions(position)} &middot;{" "}
           {player.Club !== myClub
             ? player.Club
             : player.Expires
@@ -108,7 +109,7 @@ export function CandidatePanel({ squad, listed }: { squad: Player[]; listed: Pla
         </Tabs.List>
       </Tabs.Root>
 
-      <Box overflowY="auto" p={2}>
+      <Box overflowY="auto" p={2} data-no-autoscroll>
         {rows.length === 0 ? (
           <Text fontSize="xs" color="fg.muted" p={2}>
             {tab === "squad" ? "Everyone is on the board." : "No players on any list yet."}
