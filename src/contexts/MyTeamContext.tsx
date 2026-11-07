@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from "react";
 import { db } from "../services/db";
 import { toaster } from "../components/ui/toaster";
+import { useOnTabReturn } from "../hooks/useOnTabReturn";
 
 interface MyTeamContextValue {
   myClub: string | null;
@@ -14,14 +15,24 @@ const MyTeamContext = createContext<MyTeamContextValue | null>(null);
 export function MyTeamProvider({ children }: { children: ReactNode }) {
   const [myClub, setMyClubState] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
-  const userChanged = useRef(false);
+  const changes = useRef(0);
 
   useEffect(() => {
     db.getMyClub().then((club) => {
-      setMyClubState((current) => (userChanged.current ? current : club));
+      setMyClubState((current) => (changes.current > 0 ? current : club));
       setIsLoaded(true);
     });
   }, []);
+
+  useOnTabReturn(() => {
+    if (!isLoaded) return;
+    const start = changes.current;
+    db.getMyClub()
+      .then((club) => {
+        if (changes.current === start) setMyClubState(club);
+      })
+      .catch(() => undefined);
+  });
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -36,11 +47,11 @@ export function MyTeamProvider({ children }: { children: ReactNode }) {
   }, [isLoaded, myClub]);
 
   const setMyClub = useCallback((club: string) => {
-    userChanged.current = true;
+    changes.current++;
     setMyClubState(club);
   }, []);
   const clearMyClub = useCallback(() => {
-    userChanged.current = true;
+    changes.current++;
     setMyClubState(null);
   }, []);
 

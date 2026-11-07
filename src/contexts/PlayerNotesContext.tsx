@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import { db } from "../services/db";
+import { useOnTabReturn } from "../hooks/useOnTabReturn";
 import type { Player } from "../types/types";
 import type { PlayerAnnotation, PlayerList, TransferMark } from "../types/annotations";
 
@@ -81,6 +82,10 @@ export function PlayerNotesProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     await Promise.all([refreshAnnotations(), refreshLists()]);
   }, [refreshAnnotations, refreshLists]);
+
+  useOnTabReturn(() => {
+    if (isLoaded && !loadError) refresh().catch(() => undefined);
+  });
 
   const isUnwanted = useCallback(
     (uid: number) => annotations.get(uid)?.unwanted === true,

@@ -10,6 +10,7 @@ import {
 } from "react";
 import { db } from "../services/db";
 import { toaster } from "../components/ui/toaster";
+import { useOnTabReturn } from "../hooks/useOnTabReturn";
 import { getPreset, type Preset } from "../formations";
 import type { Cell } from "../formations/grid";
 import {
@@ -53,14 +54,27 @@ function emptyPlan(preset: Preset, horizon: HorizonPreset | null): SquadPlan {
 export function SquadPlanProvider({ children }: { children: ReactNode }) {
   const [plan, setPlanState] = useState<SquadPlan | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
-  const userChanged = useRef(false);
+  const changes = useRef(0);
 
   useEffect(() => {
     db.getSquadPlan().then((stored) => {
-      setPlanState((current) => (userChanged.current ? current : stored));
+      setPlanState((current) => (changes.current > 0 ? current : stored));
       setIsLoaded(true);
     });
   }, []);
+
+  useOnTabReturn(() => {
+    if (!isLoaded) return;
+    const start = changes.current;
+    db.getSquadPlan()
+      .then((stored) => {
+        if (changes.current !== start) return;
+        setPlanState((current) =>
+          JSON.stringify(current) === JSON.stringify(stored) ? current : stored
+        );
+      })
+      .catch(() => undefined);
+  });
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -75,7 +89,7 @@ export function SquadPlanProvider({ children }: { children: ReactNode }) {
   }, [isLoaded, plan]);
 
   const update = useCallback((fn: (current: SquadPlan) => SquadPlan) => {
-    userChanged.current = true;
+    changes.current++;
     setPlanState((current) => (current ? fn(current) : current));
   }, []);
 
@@ -93,7 +107,7 @@ export function SquadPlanProvider({ children }: { children: ReactNode }) {
   const applyPreset = useCallback((presetId: string) => {
     const preset = getPreset(presetId);
     if (!preset) return;
-    userChanged.current = true;
+    changes.current++;
     setPlanState((current) => emptyPlan(preset, current?.horizon ?? null));
   }, []);
 
@@ -115,7 +129,7 @@ export function SquadPlanProvider({ children }: { children: ReactNode }) {
   );
 
   const clearPlan = useCallback(() => {
-    userChanged.current = true;
+    changes.current++;
     setPlanState(null);
   }, []);
 
