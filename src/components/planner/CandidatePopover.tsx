@@ -6,7 +6,7 @@ import type { Player } from "../../types/types";
 import { formatPositions, getEffectivePosition } from "../../utils/utils";
 import { matchesSlot } from "../../utils/planner";
 import { useSquadPlan } from "../../contexts/SquadPlanContext";
-import { useDragKind } from "./dragKind";
+import { usePlayerDrag } from "./dragKind";
 import { usePlayerNotes } from "../../contexts/PlayerNotesContext";
 
 function foldName(name: string): string {
@@ -27,11 +27,11 @@ export function CandidatePopover({
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
-  const cardDrag = useDragKind() === "card";
+  const playerDrag = usePlayerDrag();
   const { setNodeRef: setAddRef, isOver } = useDroppable({
     id: `add:${slot.id}`,
     data: { kind: "add", slotId: slot.id },
-    disabled: !cardDrag,
+    disabled: !playerDrag,
   });
 
   const inThisSlot = new Set(

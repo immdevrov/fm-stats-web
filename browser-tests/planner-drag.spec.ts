@@ -83,3 +83,100 @@ test('dropping a card on a full slot swaps the two players', async ({ page }) =>
   await expect(full.getByText(/^(A|B)\d$/)).toHaveText(['A1', 'B1', 'A3']);
   await expect(single.getByText(/^(A|B)\d$/)).toHaveText(['A2']);
 });
+
+test('dragging a squad player from the panel onto Add places him', async ({ page }) => {
+  const season = {
+    id: 'snap-2036',
+    date: '2036-05-01',
+    players: [{ uid: 1, name: 'Striker', club: MY_CLUB }],
+  };
+  const plan = { formationId: '4-4-2', horizon: null, slots: [] };
+
+  await page.goto('/import');
+  await seedSnapshots(page, [season], season.id);
+  await seedSettings(page, { myClub: MY_CLUB, squadPlan: plan });
+  await page.goto('/my-team/planner');
+
+  const panel = page.getByRole('complementary', { name: 'Candidates' });
+  const slot = page.locator('[data-slot-id="ST-C-1"]');
+  await expect(panel.getByText('Striker')).toBeVisible();
+
+  await dragTo(page, panel.getByLabel('Drag Striker'), slot.getByText('Nobody'));
+
+  await expect(slot.getByText('Striker')).toBeVisible();
+  await expect(panel.getByText('Striker')).toHaveCount(0);
+  await expect(panel.getByText('Squad · 0 unplaced')).toBeVisible();
+});
+
+test('dropping a panel player on a card in a full slot replaces that card', async ({ page }) => {
+  const names = ['A1', 'A2', 'A3', 'C1'];
+  const season = {
+    id: 'snap-2036',
+    date: '2036-05-01',
+    players: names.map((name, i) => ({ uid: i + 1, name, club: MY_CLUB })),
+  };
+  const plan = {
+    formationId: '4-4-2',
+    horizon: null,
+    slots: [
+      {
+        slotId: 'ST-C-1',
+        players: [1, 2, 3].map((uid) => ({ uid, name: names[uid - 1], club: MY_CLUB })),
+      },
+    ],
+  };
+
+  await page.goto('/import');
+  await seedSnapshots(page, [season], season.id);
+  await seedSettings(page, { myClub: MY_CLUB, squadPlan: plan });
+  await page.goto('/my-team/planner');
+
+  const panel = page.getByRole('complementary', { name: 'Candidates' });
+  const full = page.locator('[data-slot-id="ST-C-1"]');
+  await expect(full.getByText('A2')).toBeVisible();
+
+  await dragTo(page, panel.getByLabel('Drag C1'), full.getByText('A2'));
+
+  await expect(full.getByText(/^(A|C)\d$/)).toHaveText(['A1', 'C1', 'A3']);
+  await expect(panel.getByText('A2')).toBeVisible();
+  await expect(panel.getByText('C1')).toHaveCount(0);
+});
+
+test('while dragging a player, the positions he can play are marked', async ({ page }) => {
+  const season = {
+    id: 'snap-2036',
+    date: '2036-05-01',
+    players: [
+      {
+        uid: 1,
+        name: 'Winger',
+        club: MY_CLUB,
+        position: [
+          { type: 'M', side: ['L'] },
+          { type: 'AM', side: ['L'] },
+        ] as PlayerPositions,
+      },
+    ],
+  };
+  const plan = { formationId: '4-4-2', horizon: null, slots: [] };
+
+  await page.goto('/import');
+  await seedSnapshots(page, [season], season.id);
+  await seedSettings(page, { myClub: MY_CLUB, squadPlan: plan });
+  await page.goto('/my-team/planner');
+
+  const panel = page.getByRole('complementary', { name: 'Candidates' });
+  const grip = await panel.getByLabel('Drag Winger').boundingBox();
+  if (!grip) throw new Error('grip missing');
+  await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(grip.x - 40, grip.y + 40, { steps: 5 });
+
+  await expect(page.locator('[data-slot-id="M-L"]')).toHaveAttribute('data-hint', 'match');
+  await expect(page.locator('[data-slot-id="D-L"]')).toHaveAttribute('data-hint', 'mismatch');
+  await expect(page.getByLabel('Empty AM(L)')).toHaveAttribute('data-hint', 'match');
+  await expect(page.getByLabel('Empty AM(R)')).not.toHaveAttribute('data-hint', 'match');
+
+  await page.mouse.up();
+  await expect(page.locator('[data-slot-id="M-L"]')).not.toHaveAttribute('data-hint', /.*/);
+});

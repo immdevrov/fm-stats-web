@@ -4,12 +4,12 @@ import { LuGripVertical } from "react-icons/lu";
 import { cellKey } from "../../formations/grid";
 import type { FormationSlot } from "../../formations";
 import type { Player } from "../../types/types";
-import { slotLabel } from "../../utils/planner";
+import { matchesSlot, slotLabel } from "../../utils/planner";
 import { useSquadPlan } from "../../contexts/SquadPlanContext";
 import { MAX_DEPTH } from "../../types/planner";
 import { PlannerCard } from "./PlannerCard";
 import { CandidatePopover } from "./CandidatePopover";
-import { useDragKind } from "./dragKind";
+import { useDragKind, useDraggedPlayer, usePlayerDrag } from "./dragKind";
 
 const EMPTY_LABEL = ["Nobody", "No cover", "Add"];
 
@@ -26,6 +26,8 @@ export function PlannerSlot({
 }) {
   const { plan } = useSquadPlan();
   const markerDrag = useDragKind() === "marker";
+  const playerDrag = usePlayerDrag();
+  const dragged = useDraggedPlayer();
   const isGk = slot.cell.row === "GK";
   const { setNodeRef: setDropRef, isOver } = useDroppable({
     id: `cell:${cellKey(slot.cell)}`,
@@ -42,18 +44,23 @@ export function PlannerSlot({
     disabled: isGk,
   });
   const placed = plan?.slots.find((s) => s.slotId === slot.id)?.players ?? [];
+  const hint = playerDrag && dragged ? (matchesSlot(dragged, slot) ? "match" : "mismatch") : undefined;
 
   return (
     <VStack
       ref={setDropRef}
       data-slot-id={slot.id}
+      data-hint={hint}
       w="100%"
       align="stretch"
       gap="3px"
-      outline={markerDrag && !isGk ? "2px dashed" : undefined}
-      outlineColor={isOver ? "glaucous.500" : "border.emphasized"}
+      outline={markerDrag && !isGk ? "2px dashed" : hint === "match" ? "2px solid" : undefined}
+      outlineColor={
+        isOver ? "glaucous.500" : hint === "match" ? "glaucous.300" : "border.emphasized"
+      }
       outlineOffset="2px"
       borderRadius="md"
+      opacity={hint === "mismatch" ? 0.55 : 1}
     >
       <HStack gap="4px">
         {!isGk && (
