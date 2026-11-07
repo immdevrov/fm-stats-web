@@ -37,7 +37,9 @@ import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { useSnapshots } from "../contexts/SnapshotContext";
 import { resolveHorizon } from "../utils/planner";
 import { loadWorkingState, saveWorkingState } from "../utils/scouting-filters";
-import type { ColumnFilters, ContractHorizon, ScoutingFilters, Side } from "../types/archetypes";
+import type { Archetype, ColumnFilters, ContractHorizon, ScoutingFilters, Side } from "../types/archetypes";
+import { ArchetypePicker } from "../components/ArchetypePicker";
+import { useArchetypes } from "../contexts/ArchetypeContext";
 
 const STAT_ABBREVIATIONS: Record<string, string> = {
   saveRatio: "SR",
@@ -238,6 +240,7 @@ function ColumnFilterPopover({
           minW="20px"
           h="20px"
           fontSize="xs"
+          aria-label={`Filter ${colKey}`}
         >
           f
         </Button>
@@ -284,7 +287,9 @@ export function ScoutingView() {
   const { active: activeSnapshot } = useSnapshots();
   const snapshotDate = activeSnapshot?.date ?? null;
 
-  const [{ filters: saved }] = useState(loadWorkingState);
+  const [{ filters: saved, activeArchetypeId: savedArchetypeId }] = useState(loadWorkingState);
+  const [activeArchetypeId, setActiveArchetypeId] = useState<string | null>(savedArchetypeId);
+  const { archetypes, isLoaded: archetypesLoaded } = useArchetypes();
 
   const [roleKey, setRoleKey] = useState(saved.roleKey);
   const [side, setSide] = useState<Side>(saved.side);
@@ -358,8 +363,28 @@ export function ScoutingView() {
   }, [allPlayers, leagueRankings, roleConfig, side, statGroups]);
 
   useEffect(() => {
-    saveWorkingState({ filters: currentFilters, activeArchetypeId: null });
-  }, [currentFilters]);
+    saveWorkingState({ filters: currentFilters, activeArchetypeId });
+  }, [currentFilters, activeArchetypeId]);
+
+  useEffect(() => {
+    if (archetypesLoaded && activeArchetypeId && !archetypes.some((a) => a.id === activeArchetypeId)) {
+      setActiveArchetypeId(null);
+    }
+  }, [archetypesLoaded, archetypes, activeArchetypeId]);
+
+  const applyArchetype = useCallback((archetype: Archetype) => {
+    const f = archetype.filters;
+    setRoleKey(f.roleKey);
+    setSide(f.side);
+    setColumnFiltersRaw(f.columnFilters);
+    setContractHorizon(f.contractHorizon);
+    setExcludeInjuries(f.excludeInjuries);
+    setExcludedLeagues(new Set(f.excludedLeagues));
+    setSortKey(f.sortKey as keyof ScoutingRow);
+    setSortDirection(f.sortDirection);
+    setActiveArchetypeId(archetype.id);
+    setCurrentPage(1);
+  }, []);
 
   const availableLeagues = useMemo(() => {
     const leagues = new Set<string>();
@@ -683,7 +708,7 @@ export function ScoutingView() {
                 size="sm"
                 variant={roleIndex === i ? "solid" : "outline"}
                 colorPalette={roleIndex === i ? "glaucous" : undefined}
-                onClick={() => { setRoleKey(rc.key); setSide("both"); }}
+                onClick={() => { setRoleKey(rc.key); setSide("both"); setActiveArchetypeId(null); }}
               >
                 {rc.name}
               </Button>
@@ -704,6 +729,14 @@ export function ScoutingView() {
                 ))}
               </>
             )}
+            <Box ml="auto">
+              <ArchetypePicker
+                filters={currentFilters}
+                activeId={activeArchetypeId}
+                onApply={applyArchetype}
+                onActiveChange={setActiveArchetypeId}
+              />
+            </Box>
           </HStack>
 
           <HStack gap={3} flexWrap="wrap" align="center">

@@ -110,7 +110,7 @@ dropped.
 
 One control in the scouting toolbar, beside the role tabs.
 
-- **Picker** (`SearchableSelect`-style): every archetype, grouped by role, the
+- **Picker** (a menu): every archetype, grouped by role, the
   current role's group first. Choosing one applies it, switching role tab if
   needed.
 - **No archetype active:** *Save as archetype* — asks for a name.

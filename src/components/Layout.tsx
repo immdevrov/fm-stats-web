@@ -29,7 +29,7 @@ export function Layout() {
                     >
                       <Navigation />
                     </Box>
-  
+
                     <Box flex={1} overflowY="auto">
                       <Outlet />
                     </Box>
