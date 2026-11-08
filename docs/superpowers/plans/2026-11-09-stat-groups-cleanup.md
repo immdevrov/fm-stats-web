@@ -62,7 +62,7 @@
 
 **Interfaces:**
 
-- Produces: `StatGroup.description: string`; `groupTooltip(group: StatGroup): ReactNode`; `Column.headerTooltip?: ReactNode`; `HeatKey.tooltip?: ReactNode`.
+- Produces: `StatGroup.description: string`; `groupTooltip(group: StatGroup): ReactNode`; `Column.headerTooltip?: ReactNode`; `HeatKey.group?: StatGroup`.
 
 **Definition of done:**
 

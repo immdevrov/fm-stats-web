@@ -2,9 +2,24 @@ export interface StatGroup {
   key: string;
   label: string;
   statKeys: string[];
+  description: string;
 }
 
-const ROLE_STAT_GROUPS: Record<string, StatGroup[]> = {
+const GROUP_DESCRIPTIONS = {
+  goalkeeper: "Stopping shots and keeping goals out.",
+  defensive: "Winning the ball back and stopping attacks.",
+  aerial: "Competing for the ball in the air.",
+  passing: "Moving the ball on with passes.",
+  creative: "Setting up chances for others.",
+  attacking: "Getting into scoring positions and finishing.",
+  crossing: "Delivering the ball from wide areas.",
+  movement: "Moving with the ball and without it.",
+  error: "Mistakes that lead to goals; lower is better.",
+} as const;
+
+type GroupDefinition = Omit<StatGroup, "key" | "description"> & { key: keyof typeof GROUP_DESCRIPTIONS };
+
+const ROLE_STAT_GROUPS: Record<string, GroupDefinition[]> = {
   GK: [
     { key: "goalkeeper", label: "Goalkeeper", statKeys: ["saveRatio", "expectedSaveRatio", "savesHeldRatio", "goalsPrevented", "saveRatioOverExpected", "concededPer90", "savesPer90"] },
     { key: "passing", label: "Passing", statKeys: ["passRatio", "progressivePasses"] },
@@ -63,5 +78,8 @@ const ROLE_STAT_GROUPS: Record<string, StatGroup[]> = {
 };
 
 export function getStatGroupsForRole(roleKey: string): StatGroup[] {
-  return ROLE_STAT_GROUPS[roleKey] ?? [];
+  return (ROLE_STAT_GROUPS[roleKey] ?? []).map((group) => ({
+    ...group,
+    description: GROUP_DESCRIPTIONS[group.key],
+  }));
 }

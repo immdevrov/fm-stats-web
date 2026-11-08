@@ -76,7 +76,7 @@ The group header tooltip, today just the label, shows the label, the description
 > **Defensive** — Winning the ball back and stopping attacks.
 > Tackle Ratio · Press Ratio · Pressures · Def. Contributions
 
-One helper builds it from a `StatGroup`; `ScoutingView` and `BriefHeatTable` both use it. `headerTooltip` in `src/components/ui/table.tsx` widens from `string` to `ReactNode`. On the brief page, `heatKeys()` (`src/utils/brief-rows.ts`) flattens groups to `HeatKey { key, abbr, label }`; it gains an optional `tooltip` node for group entries, and `label` stays a string because it also feeds the cell `aria-label`.
+One helper builds it from a `StatGroup`; `ScoutingView` and `BriefHeatTable` both use it. `headerTooltip` in `src/components/ui/table.tsx` widens from `string` to `ReactNode`. On the brief page, `heatKeys()` (`src/utils/brief-rows.ts`) flattens groups to `HeatKey { key, abbr, label }`; it gains an optional `group: StatGroup` for group entries, and `BriefHeatTable` renders the tooltip from it (JSX stays out of the plain `.ts` util); `label` stays a string because it also feeds the cell `aria-label`.
 
 ## Profile and compare views
 

@@ -16,6 +16,7 @@ import { useBriefs } from "../contexts/BriefContext";
 import { Link } from "react-router-dom";
 import { usePlayerNotes } from "../contexts/PlayerNotesContext";
 import { PlayerStatusControl } from "./PlayerStatusControl";
+import { groupTooltip } from "./GroupTooltip";
 import { GradeControl, RemoveMenu, VerdictLine } from "./BriefPickControls";
 import { Table, sortRows, type Column, type SortDirection, type TableRowProps } from "./ui/table";
 import { formatWage, displayDate } from "../utils/utils";
@@ -43,7 +44,7 @@ function heatColumn(heat: HeatKey, subheader?: string): Column<BriefRow> {
     key: heat.key,
     header: heat.abbr,
     subheader,
-    headerTooltip: heat.label,
+    headerTooltip: heat.group ? groupTooltip(heat.group) : heat.label,
     highlighted: !heat.key.startsWith("stat_"),
     render: (value) => (value === null ? "" : String(Math.round(value as number))),
     cellProps: (row) => {

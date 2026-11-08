@@ -8,7 +8,7 @@ export interface Column<T> {
   key: keyof T;
   id?: string;
   header: string;
-  headerTooltip?: string;
+  headerTooltip?: React.ReactNode;
   subheader?: string;
   render?: (value: T[keyof T], row: T) => React.ReactNode;
   cellProps?: (row: T) => React.ComponentProps<typeof ChakraTable.Cell>;

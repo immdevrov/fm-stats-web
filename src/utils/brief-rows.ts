@@ -3,7 +3,7 @@ import type { Player, LeagueRanking } from "../types/types";
 import type { PlayerAnnotation, PlayerList } from "../types/annotations";
 import type { Brief, ContractHorizon, Grade } from "../types/briefs";
 import { STAT_ABBREVIATIONS, GROUP_ABBREVIATIONS, roleClassFor } from "./scouting-columns";
-import { getStatGroupsForRole } from "./stat-group-mapping";
+import { getStatGroupsForRole, type StatGroup } from "./stat-group-mapping";
 import {
   asRole,
   buildCohortRanking,
@@ -21,6 +21,7 @@ export interface HeatKey {
   key: string;
   abbr: string;
   label: string;
+  group?: StatGroup;
 }
 
 export interface BriefRow extends Record<string, unknown> {
@@ -68,6 +69,7 @@ export function heatKeys(roleConfig: RoleConfig): HeatKey[] {
       key: `group_${group.key}`,
       abbr: GROUP_ABBREVIATIONS[group.key] ?? group.key,
       label: group.label,
+      group,
     });
   }
   return keys;

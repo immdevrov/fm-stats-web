@@ -40,6 +40,7 @@ import { useBriefs } from "../contexts/BriefContext";
 
 import { STAT_ABBREVIATIONS, GROUP_ABBREVIATIONS, roleClassFor } from "../utils/scouting-columns";
 import { getStatGroupsForRole } from "../utils/stat-group-mapping";
+import { groupTooltip } from "../components/GroupTooltip";
 import {
   buildScoutingCohort,
   computeScoutingData,
@@ -593,7 +594,7 @@ export function ScoutingView() {
       base.push({
         key: `group_${group.key}` as keyof ScoutingRow,
         header: GROUP_ABBREVIATIONS[group.key] ?? group.key,
-        headerTooltip: group.label,
+        headerTooltip: groupTooltip(group),
         render: (_v, row) => (
           <PercentileCell value={row.groupRatings[group.key]} />
         ),
