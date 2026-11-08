@@ -89,6 +89,8 @@ export function ImportView() {
           await db.clearLeagueRankings();
           await db.clearListsAndAnnotations(true);
           await db.clearCompareList();
+          await db.setMyClub(null);
+          await db.setSquadPlan(null);
         } catch (error) {
           throw new Error(
             `Erasing the old save did not finish (${errorText(error)}). Some of it may still be there and some may be gone — check My Team, snapshots and lists before importing again.`
