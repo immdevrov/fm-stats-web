@@ -3,6 +3,7 @@ import { STAT_ABBREVIATIONS } from '../src/utils/scouting-columns';
 import {
   seedLeagueRankings,
   seedList,
+  readSetting,
   seedPlayersAndCompareList,
   seedSettings,
 } from './helpers/seed';
@@ -48,7 +49,7 @@ async function seedDribblerBrief(
   });
 }
 
-test('a brief page ranks every shortlisted player against the cohort, in list order', async ({ page }) => {
+test('a brief page ranks every shortlisted player against the cohort, in rank order', async ({ page }) => {
   await seedDribblerBrief(page);
   await page.reload();
   await page.goto('/briefs');
@@ -80,4 +81,62 @@ test('adding an out-of-cohort player to a brief list warns, and he does not join
   await expect(eve).toContainText('600 min');
   await expect(eve.getByLabel('Dribbles: 75', { exact: true })).toBeVisible();
   await expect(rows.filter({ hasText: 'Dee Striker' }).getByLabel('Dribbles: 88', { exact: true })).toBeVisible();
+});
+
+type StoredPick = { uid: number; grade?: string; verdict?: string };
+
+async function storedPicks(page: Page): Promise<StoredPick[] | undefined> {
+  const briefs = (await readSetting(page, 'archetypes')) as Array<{ picks?: StoredPick[] }> | null;
+  return briefs?.[0]?.picks;
+}
+
+test('a grade and a verdict survive a reload', async ({ page }) => {
+  await seedDribblerBrief(page);
+  await page.reload();
+  await page.goto('/briefs/b1');
+  const rows = page.locator('tbody').getByRole('row');
+  const bea = rows.filter({ hasText: 'Bea Striker' });
+  await bea.getByRole('button', { name: 'Grade B' }).click();
+  await bea.getByRole('button', { name: 'Verdict for Bea Striker' }).click();
+  await page.getByRole('textbox', { name: 'Verdict for Bea Striker' }).fill('Quick but raw');
+  await page.keyboard.press('Enter');
+  await expect
+    .poll(async () => (await storedPicks(page))?.find((p) => p.uid === 2))
+    .toMatchObject({ grade: 'B', verdict: 'Quick but raw' });
+
+  await page.reload();
+  const beaAfter = page.locator('tbody').getByRole('row').filter({ hasText: 'Bea Striker' });
+  await expect(beaAfter.getByRole('button', { name: 'Grade B' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(beaAfter).toContainText('Quick but raw');
+  const dee = page.locator('tbody').getByRole('row').filter({ hasText: 'Dee Striker' });
+  await expect(dee.getByRole('button', { name: 'No grade' })).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('a player removed from the shortlist loses his pick', async ({ page }) => {
+  await seedDribblerBrief(page);
+  await page.reload();
+  await page.goto('/briefs/b1');
+  const rows = page.locator('tbody').getByRole('row');
+  const dee = rows.filter({ hasText: 'Dee Striker' });
+  await dee.getByRole('button', { name: 'Grade A' }).click();
+  await dee.getByRole('button', { name: 'Verdict for Dee Striker' }).click();
+  await page.getByRole('textbox', { name: 'Verdict for Dee Striker' }).fill('Plan B');
+  await page.keyboard.press('Enter');
+  await expect(dee.getByRole('button', { name: 'Grade A' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByText('Plan B')).toBeVisible();
+  await expect.poll(async () => (await storedPicks(page))?.some((p) => p.uid === 4)).toBe(true);
+
+  await dee.getByRole('button', { name: 'Remove Dee Striker' }).click();
+  await page.getByRole('menuitem', { name: 'Remove from shortlist' }).click();
+  await expect(rows).toHaveCount(1);
+  await expect.poll(async () => (await storedPicks(page))?.some((p) => p.uid === 4) ?? false).toBe(false);
+
+  await page.goto('/players/4');
+  await page.getByRole('button', { name: 'Player status' }).click();
+  await page.getByText('Dribbler targets').click();
+  await page.goto('/briefs/b1');
+  await expect(rows).toHaveCount(2);
+  await expect(rows.nth(1)).toContainText('Dee Striker');
+  await expect(rows.nth(1).getByRole('button', { name: 'No grade' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByText('Plan B')).toHaveCount(0);
 });

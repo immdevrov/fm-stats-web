@@ -17,6 +17,13 @@ export function orderedShortlist(picks: BriefPick[] | undefined, listUids: numbe
   return ordered;
 }
 
+function withField<K extends "grade" | "verdict">(pick: BriefPick, key: K, value: BriefPick[K]): BriefPick {
+  const copy = { ...pick };
+  if (value === undefined) delete copy[key];
+  else copy[key] = value;
+  return copy;
+}
+
 function edit(
   picks: BriefPick[] | undefined,
   listUids: number[],
@@ -63,11 +70,4 @@ export function prunePicks(picks: BriefPick[], memberUids: number[]): BriefPick[
   const members = new Set(memberUids);
   const kept = picks.filter((pick) => members.has(pick.uid));
   return kept.length === picks.length ? undefined : kept;
-}
-
-function withField<K extends "grade" | "verdict">(pick: BriefPick, key: K, value: BriefPick[K]): BriefPick {
-  const copy = { ...pick };
-  if (value === undefined) delete copy[key];
-  else copy[key] = value;
-  return copy;
 }

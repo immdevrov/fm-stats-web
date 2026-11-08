@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
-import { Badge, Button, Checkbox, HStack, Text, VStack } from "@chakra-ui/react";
+import { Badge, Checkbox, HStack, Text, VStack } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
 import { usePlayerNotes } from "../contexts/PlayerNotesContext";
 import { PlayerStatusControl } from "./PlayerStatusControl";
+import { GradeControl, RemoveMenu, VerdictLine } from "./BriefPickControls";
 import { Table, type Column } from "./ui/table";
 import { formatWage, displayDate } from "../utils/utils";
 import {
@@ -56,7 +57,7 @@ export function BriefHeatTable({
   roster: Player[];
   rankings: LeagueRanking[];
 }) {
-  const { annotations, removeFromList } = usePlayerNotes();
+  const { annotations } = usePlayerNotes();
   const [allStats, setAllStats] = useState(false);
 
   const rows = useMemo(
@@ -73,31 +74,36 @@ export function BriefHeatTable({
     const base: Column<BriefRow>[] = [
       { key: "index", header: "#", firstSortDirection: "asc" },
       {
+        key: "grade",
+        header: "Grade",
+        firstSortDirection: "asc",
+        render: (_v, row) => <GradeControl brief={brief} list={list} row={row} />,
+      },
+      {
         key: "name",
         header: "Player",
         render: (_v, row) => (
-          <HStack gap={2} flexWrap="wrap">
-            <PlayerStatusControl uid={row.uid} player={row.identity} />
-            {row.absent ? (
-              <Text fontSize="sm">{row.name}</Text>
-            ) : (
-              <Link to={`/players/${row.uid}`}>
-                <Text color="glaucous.400" _hover={{ textDecoration: "underline" }} fontSize="sm">
-                  {row.name}
-                </Text>
-              </Link>
-            )}
-            {row.tags.map((tag) => (
-              <Badge key={tag} size="sm" variant="outline">
-                {tag}
-              </Badge>
-            ))}
-            {row.absent && (
-              <Button size="2xs" variant="outline" onClick={() => removeFromList(list.id, row.uid)}>
-                Remove
-              </Button>
-            )}
-          </HStack>
+          <VStack gap={0} align="stretch">
+            <HStack gap={2} flexWrap="wrap">
+              <PlayerStatusControl uid={row.uid} player={row.identity} />
+              {row.absent ? (
+                <Text fontSize="sm">{row.name}</Text>
+              ) : (
+                <Link to={`/players/${row.uid}`}>
+                  <Text color="glaucous.400" _hover={{ textDecoration: "underline" }} fontSize="sm">
+                    {row.name}
+                  </Text>
+                </Link>
+              )}
+              {row.tags.map((tag) => (
+                <Badge key={tag} size="sm" variant="outline">
+                  {tag}
+                </Badge>
+              ))}
+              <RemoveMenu list={list} row={row} />
+            </HStack>
+            <VerdictLine brief={brief} list={list} row={row} />
+          </VStack>
         ),
       },
       { key: "age", header: "Age" },
@@ -124,7 +130,7 @@ export function BriefHeatTable({
       }
     }
     return base;
-  }, [brief, list.id, allStats, removeFromList]);
+  }, [brief, list, allStats]);
 
   return (
     <VStack gap={3} align="stretch">
@@ -138,7 +144,8 @@ export function BriefHeatTable({
         columns={columns}
         defaultSortKey="index"
         defaultSortDirection="asc"
-        rowProps={(row) => (row.absent ? { opacity: 0.6 } : {})}
+        getRowKey={(row) => row.uid}
+        rowProps={(row) => ({ className: "group", ...(row.absent ? { opacity: 0.6 } : {}) })}
       />
     </VStack>
   );
