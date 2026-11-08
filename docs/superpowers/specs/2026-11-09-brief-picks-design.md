@@ -49,37 +49,58 @@ A pick with neither grade nor verdict is still a valid entry — it carries rank
 `orderedShortlist(picks, listUids)` (pure, in `src/utils/brief-picks.ts`):
 the list's uids that have a pick, in pick order, followed by the list's uids
 that have none, in list order. Uids in `picks` that are not on the list are
-ignored here (they are pruned, below). This is the only definition of the
-rank; the `#` column shows the position in it, 1-based.
+ignored here. This is the only definition of the rank. `buildBriefRows` takes
+the brief's picks and builds its rows in this order; `BriefRow.index` is the
+1-based position in it (today it is list position), so the `#` column and the
+default sort show the rank.
+
+**Every pick write materialises the order first.** Grading, editing a verdict
+and dropping all start from `orderedShortlist(picks, listUids)`, turn it into
+one entry per list member (keeping existing grade/verdict, empty entries for
+the rest), and only then apply the edit. Otherwise grading an unpicked player
+would append him to `picks` and jump him above every other unpicked player.
+The helpers live in `brief-picks.ts` (`setGrade`, `setVerdict`, `moveTo`, each
+`(picks, listUids, …) → BriefPick[]`). Materialising also drops any stale
+entry for a non-member.
 
 ### Pruning — off the shortlist means gone
 
 A player who leaves the shortlist loses his rank, grade and verdict for that
 brief. Pinned again later, he comes back fresh at the bottom.
 
-A player can leave the list from many places (the status menu, `/lists`,
-marking him unwanted anywhere, the brief page itself), so pruning is not done
-at each removal site. `BriefProvider` (mounted inside `PlayerNotesProvider`)
-runs one reconciling effect: when briefs have loaded **and** notes have loaded
-without error, each brief's `picks` are filtered to the uids of its linked list
-(`linkedListOf`); a brief with no linked list, or whose list is gone, keeps no
-picks. It writes only when something actually changed, and writes through the
-same `change` path as every other mutation.
+A player can leave a list from many places (the status menu, `/lists`, marking
+him unwanted anywhere, the brief page itself). Pruning is tied to **this tab's
+own list mutations**, never to a re-read:
 
-Never prune on a notes load error or before notes load — unknown is not
-missing, as with `linkedListOf`.
+- `PlayerNotesContext` exposes `onListsChanged(listener) → unsubscribe`. Its
+  local mutations that can take a uid off a list — `removeFromList`,
+  `toggleUnwanted`, the new `setUnwanted` — call the listeners with the
+  freshly read lists once they are saved. The tab-return `refresh()` and the
+  initial load do not.
+- `BriefProvider` (mounted inside `PlayerNotesProvider`) subscribes and, for
+  each brief whose linked list is among those lists, filters `picks` to that
+  list's uids, through the normal `change` path, only if something changed.
+  A brief whose list is not found is left alone.
+- The three ways a link really goes away drop picks explicitly: `setList`
+  drops them whenever the list id changes (a new shortlist is a fresh
+  judgement; linking the same list again is a no-op), and `unlinkList` and
+  `unlinkAll` drop them.
+
+Why not an effect over `lists`: both providers re-read on tab return, in
+either order. An effect would prune this tab's stale briefs against fresh
+lists (or fresh briefs against stale lists) and save the result over the other
+tab's work. With the subscription, a tab return never writes; the other tab
+already pruned and saved, and this tab picks that up with its briefs re-read.
 
 Consequences, all intended:
-- Changing a brief's linked list keeps picks only for players on both lists.
-- Deleting a linked list (`unlinkList`) clears that brief's picks.
-- *New save* clears every list, so every brief's picks go with them;
-  `unlinkAll` also drops `picks` explicitly so it does not depend on the
-  effect running. *Same save* touches neither.
-
-Accepted risk: with two tabs open, a tab-return re-read of briefs can land
-before the re-read of lists, and the effect could prune a pick made in the
-other tab for a player this tab does not yet see on the list. Rare, and the
-cost is one lost grade.
+- Changing a brief's linked list clears its picks.
+- Deleting a linked list clears that brief's picks (via `unlinkList`).
+- *New save* clears every brief's picks via `unlinkAll`; *Same save* touches
+  neither.
+- A stale entry can survive only if a list mutation happened in a tab whose
+  briefs failed to load. It is invisible (`orderedShortlist` ignores
+  non-members) and disappears at the next pick write; pinning him again
+  before that would bring his old pick back. Accepted.
 
 ### Not a filter
 
@@ -108,10 +129,21 @@ unchanged.
 - Sorted by anything else (or `#` descending), the grips are gone and the line
   says *Sorted by {column header} — sort by rank to reorder*, where *sort by
   rank* is a link that resets the sort to `#` ascending.
-- A drop writes the whole displayed order back as `picks` (players without a
-  pick get an empty entry), so the rank is stored from the first drag on.
+- A drop writes the materialised order (see *Storage*), so the rank is stored
+  from the first drag on.
 - Uses `@dnd-kit/core` (already a dependency, used by the planner) with a
   pointer sensor and an activation distance so clicks on the row still work.
+  `@dnd-kit/sortable` is not added, so rows do not shift live while dragging:
+  the dragged row dims and the row under the pointer gets a glaucous outline;
+  the move happens on drop.
+- `Table` (`src/components/ui/table.tsx`) needs three small additions, none of
+  which change its existing users: a `getRowKey` prop (rows are keyed by index
+  today, which would leave per-row state — an open verdict input, a menu, drag
+  hooks — on the wrong player after a reorder); a `rowComponent` prop so a row
+  can be a component calling `useDroppable`; and its sort comparator exported
+  as `sortRows(data, key, direction)`, because `BriefHeatTable` switches to
+  controlled sorting (it must know the sort to show the cue) and controlled
+  mode does not sort.
 - Players missing from the snapshot are dimmed as today and drag like anyone
   else.
 
@@ -119,7 +151,8 @@ unchanged.
 
 A narrow column right after `#`: a compact A / B / C / – control; one click
 sets the grade, `–` clears it. Editable on any snapshot — picks are taste, not
-snapshot data.
+snapshot data. The column sorts like any other (A first; ungraded last), which
+the table gives for free.
 
 ### Verdict
 
@@ -133,9 +166,11 @@ the input has focus), so unjudged rows stay clean.
 Each row gets a remove control (an icon button with a menu) offering:
 
 - **Remove from shortlist** — `removeFromList(list.id, uid)`.
-- **Remove and mark unwanted** — `setUnwanted(uid, true)` with the row's
-  identity, which (as today) also takes him off every other list. Once
-  unwanted, scouting dims him and disables his pin.
+- **Remove and mark unwanted** — a new non-toggling
+  `setUnwanted(uid, true, player)` on `PlayerNotesContext` (only
+  `toggleUnwanted` exists today, which would un-mark a player who is already
+  unwanted), with the row's identity. `db.setUnwanted` already takes him off
+  every list. Once unwanted, scouting dims him and disables his pin.
 
 This replaces the *Remove* button absent rows have today; absent rows get the
 same two options (marking unwanted uses the annotation's last-known
@@ -146,8 +181,7 @@ and be re-pinned, coming back fresh.
 
 ## Out of scope
 
-- Showing picks on `/briefs` (e.g. top pick per brief); sorting or filtering
-  by grade.
+- Showing picks on `/briefs` (e.g. top pick per brief); filtering by grade.
 - Dominance (dropped).
 - Drag on `/scouting` or `/lists`.
 - Keyboard reordering.
