@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Locator, type Page } from '@playwright/test';
 import { STAT_ABBREVIATIONS } from '../src/utils/scouting-columns';
 import {
   seedLeagueRankings,
@@ -139,4 +139,43 @@ test('a player removed from the shortlist loses his pick', async ({ page }) => {
   await expect(rows.nth(1)).toContainText('Dee Striker');
   await expect(rows.nth(1).getByRole('button', { name: 'No grade' })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByText('Plan B')).toHaveCount(0);
+});
+
+async function dragTo(page: Page, grip: Locator, target: Locator) {
+  const from = await grip.boundingBox();
+  if (!from) throw new Error('grip missing');
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(from.x + from.width / 2 + 10, from.y + from.height / 2 + 10);
+  const live = await target.boundingBox();
+  if (!live) throw new Error('target vanished');
+  await page.mouse.move(live.x + live.width / 2, live.y + live.height / 2, { steps: 10 });
+  await page.mouse.up();
+}
+
+test('dragging a row reorders the shortlist and survives a reload; sorting turns dragging off', async ({ page }) => {
+  await seedDribblerBrief(page, [], [4, 2, 1]);
+  await page.reload();
+  await page.goto('/briefs/b1');
+  const rows = page.locator('tbody').getByRole('row');
+  await expect(page.getByText('Drag rows to reorder.')).toBeVisible();
+  await expect(rows).toHaveCount(3);
+  await expect(rows.nth(0)).toContainText('Dee Striker');
+
+  await dragTo(page, page.getByLabel('Drag Ann Striker'), rows.filter({ hasText: 'Dee Striker' }));
+  await expect(rows.nth(0)).toContainText('Ann Striker');
+  await expect(rows.nth(1)).toContainText('Dee Striker');
+  await expect(rows.nth(2)).toContainText('Bea Striker');
+  await expect.poll(async () => (await storedPicks(page))?.map((p) => p.uid)).toEqual([1, 4, 2]);
+
+  await page.reload();
+  await expect(rows.nth(0)).toContainText('Ann Striker');
+  await expect(rows.nth(1)).toContainText('Dee Striker');
+  await expect(rows.nth(2)).toContainText('Bea Striker');
+
+  await page.getByRole('columnheader', { name: 'Age', exact: true }).click();
+  await expect(page.getByLabel('Drag Ann Striker')).toHaveCount(0);
+  await expect(page.getByText('Sorted by Age')).toBeVisible();
+  await page.getByRole('button', { name: 'sort by rank' }).click();
+  await expect(page.getByText('Drag rows to reorder.')).toBeVisible();
 });

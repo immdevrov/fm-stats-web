@@ -1,10 +1,23 @@
 import { useMemo, useState } from "react";
-import { Badge, Checkbox, HStack, Text, VStack } from "@chakra-ui/react";
+import { Badge, Button, Checkbox, chakra, HStack, Table as ChakraTable, Text, VStack } from "@chakra-ui/react";
+import {
+  DndContext,
+  PointerSensor,
+  pointerWithin,
+  useDndContext,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { LuGripVertical } from "react-icons/lu";
+import { useBriefs } from "../contexts/BriefContext";
 import { Link } from "react-router-dom";
 import { usePlayerNotes } from "../contexts/PlayerNotesContext";
 import { PlayerStatusControl } from "./PlayerStatusControl";
 import { GradeControl, RemoveMenu, VerdictLine } from "./BriefPickControls";
-import { Table, type Column } from "./ui/table";
+import { Table, sortRows, type Column, type SortDirection, type TableRowProps } from "./ui/table";
 import { formatWage, displayDate } from "../utils/utils";
 import {
   briefRoleConfig,
@@ -46,6 +59,44 @@ function heatColumn(heat: HeatKey, subheader?: string): Column<BriefRow> {
   };
 }
 
+function DragGrip({ uid, name }: { uid: number; name: string }) {
+  const { attributes, listeners, setNodeRef } = useDraggable({ id: uid });
+  return (
+    <chakra.button
+      type="button"
+      ref={setNodeRef}
+      aria-label={`Drag ${name}`}
+      cursor="grab"
+      touchAction="none"
+      display="inline-flex"
+      alignItems="center"
+      color="fg.muted"
+      mr={1}
+      {...attributes}
+      tabIndex={-1}
+      {...listeners}
+    >
+      <LuGripVertical size={12} />
+    </chakra.button>
+  );
+}
+
+function BriefDragRow({ row, ...rest }: TableRowProps<BriefRow>) {
+  const { setNodeRef, isOver } = useDroppable({ id: row.uid });
+  const { active } = useDndContext();
+  const dragging = active?.id === row.uid;
+  return (
+    <ChakraTable.Row
+      {...rest}
+      ref={setNodeRef}
+      {...(dragging ? { opacity: 0.4 } : {})}
+      {...(isOver && !dragging
+        ? { outline: "2px solid", outlineColor: "glaucous.400", outlineOffset: "-2px" }
+        : {})}
+    />
+  );
+}
+
 export function BriefHeatTable({
   brief,
   list,
@@ -58,7 +109,12 @@ export function BriefHeatTable({
   rankings: LeagueRanking[];
 }) {
   const { annotations } = usePlayerNotes();
+  const { movePick } = useBriefs();
   const [allStats, setAllStats] = useState(false);
+  const [sortKey, setSortKey] = useState<keyof BriefRow>("index");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const rankMode = sortKey === "index" && sortDirection === "asc";
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
   const rows = useMemo(
     () => buildBriefRows(brief, list, roster, rankings, annotations),
@@ -72,7 +128,17 @@ export function BriefHeatTable({
     const isGroup = (heat: HeatKey) => heat.key.startsWith("group_");
 
     const base: Column<BriefRow>[] = [
-      { key: "index", header: "#", firstSortDirection: "asc" },
+      {
+        key: "index",
+        header: "#",
+        firstSortDirection: "asc",
+        render: (v, row) => (
+          <>
+            {rankMode && <DragGrip uid={row.uid} name={row.name} />}
+            {String(v)}
+          </>
+        ),
+      },
       {
         key: "grade",
         header: "Grade",
@@ -130,23 +196,68 @@ export function BriefHeatTable({
       }
     }
     return base;
-  }, [brief, list, allStats]);
+  }, [brief, list, allStats, rankMode]);
+
+  const sortHeader = columns.find((c) => c.key === sortKey)?.header;
+  const sortedRows = useMemo(() => sortRows(rows, sortKey, sortDirection), [rows, sortKey, sortDirection]);
+
+  const onDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!over || over.id === active.id) return;
+    const target = rows.find((r) => r.uid === over.id);
+    if (!target) return;
+    movePick(brief.id, list.uids, Number(active.id), target.index - 1);
+  };
 
   return (
     <VStack gap={3} align="stretch">
-      <Checkbox.Root checked={allStats} onCheckedChange={(e) => setAllStats(e.checked === true)}>
-        <Checkbox.HiddenInput />
-        <Checkbox.Control />
-        <Checkbox.Label>All stats</Checkbox.Label>
-      </Checkbox.Root>
-      <Table<BriefRow>
-        data={rows}
-        columns={columns}
-        defaultSortKey="index"
-        defaultSortDirection="asc"
-        getRowKey={(row) => row.uid}
-        rowProps={(row) => ({ className: "group", ...(row.absent ? { opacity: 0.6 } : {}) })}
-      />
+      <HStack gap={4} flexWrap="wrap">
+        <Checkbox.Root checked={allStats} onCheckedChange={(e) => setAllStats(e.checked === true)}>
+          <Checkbox.HiddenInput />
+          <Checkbox.Control />
+          <Checkbox.Label>All stats</Checkbox.Label>
+        </Checkbox.Root>
+        <Text fontSize="sm" color="fg.muted">
+          {rankMode ? (
+            "Drag rows to reorder."
+          ) : (
+            <>
+              {`Sorted by ${sortHeader} — `}
+              <Button
+                variant="plain"
+                size="sm"
+                p={0}
+                h="auto"
+                minW={0}
+                color="glaucous.400"
+                textDecoration="underline"
+                verticalAlign="baseline"
+                onClick={() => {
+                  setSortKey("index");
+                  setSortDirection("asc");
+                }}
+              >
+                sort by rank
+              </Button>
+              {" to reorder"}
+            </>
+          )}
+        </Text>
+      </HStack>
+      <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragEnd={onDragEnd}>
+        <Table<BriefRow>
+          data={sortedRows}
+          columns={columns}
+          sortKey={sortKey}
+          sortDirection={sortDirection}
+          onSortChange={(key, direction) => {
+            setSortKey(key);
+            setSortDirection(direction);
+          }}
+          getRowKey={(row) => row.uid}
+          rowComponent={BriefDragRow}
+          rowProps={(row) => ({ className: "group", ...(row.absent ? { opacity: 0.6 } : {}) })}
+        />
+      </DndContext>
     </VStack>
   );
 }
