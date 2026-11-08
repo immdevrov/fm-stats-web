@@ -42,11 +42,10 @@ export function briefCohortWarning(
   if (findings.length === 0) return null;
 
   const detail = findings.map((f) => `${f.name}: ${f.reasons.join(", ")}`).join("; ");
-  const onlyNoStats = findings.every((f) => f.reasons.every((r) => r === NO_STATS));
   return {
     title: "Outside a brief's cohort",
     description: `Added to ${list.name}. ${detail}.${
-      onlyNoStats ? "" : " Ranked against the cohort — a rough guide."
+      player.Mins === 0 ? "" : " Ranked against the cohort — a rough guide."
     }`,
   };
 }

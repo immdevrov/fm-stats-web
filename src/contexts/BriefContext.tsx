@@ -44,10 +44,12 @@ export function BriefProvider({ children }: { children: ReactNode }) {
         const next = pending.current.reduce((acc, fn) => fn(acc), stored);
         pending.current = [];
         setBriefs(next);
+        setLoadError(null);
         setIsLoaded(true);
       })
-      .catch(() => {
-        setLoadError("Your briefs could not be read.");
+      .catch((error: unknown) => {
+        if (loaded.current) return;
+        setLoadError(error instanceof Error ? error.message : "Unknown error");
         toaster.create({
           id: "briefs-not-loaded",
           title: "Briefs Not Loaded",

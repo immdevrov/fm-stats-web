@@ -21,7 +21,7 @@ function heatBackground(value: number): string {
   const d = (value - 50) / 50;
   if (d === 0) return "transparent";
   const colour = d > 0 ? "green" : "red";
-  return `color-mix(in oklab, var(--chakra-colors-${colour}-500) ${Math.round(Math.abs(d) * 75)}%, transparent)`;
+  return `color-mix(in oklab, var(--chakra-colors-${colour}-500) ${Math.round(Math.abs(d) * 60)}%, transparent)`;
 }
 
 function heatColumn(heat: HeatKey, subheader?: string): Column<BriefRow> {

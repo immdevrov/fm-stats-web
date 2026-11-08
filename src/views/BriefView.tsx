@@ -8,9 +8,10 @@ import { useRoster } from "../contexts/SnapshotContext";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { useLinkBriefList } from "../hooks/useLinkBriefList";
 import { linkedListOf } from "../utils/briefs";
-import { briefCriteria } from "../utils/brief-rows";
+import { briefCriteria, briefRoleConfig } from "../utils/brief-rows";
 import { saveWorkingState } from "../utils/scouting-filters";
-import { rankedLeagueSet } from "../utils/scouting-engine";
+import { buildScoutingCohort, rankedLeagueSet } from "../utils/scouting-engine";
+import { roleClassFor } from "../utils/scouting-columns";
 import { LoadErrorNotice } from "../components/LoadErrorNotice";
 import { RosterErrorNotice } from "../components/RosterErrorNotice";
 import { LinkListDialog } from "../components/LinkListDialog";
@@ -79,6 +80,14 @@ export function BriefView() {
   }
 
   const list = linkedListOf(brief, lists, notesLoaded);
+  const hasRankedLeagues = rankedLeagueSet(rankings).size > 0;
+  const emptyCohort =
+    hasRankedLeagues &&
+    buildScoutingCohort(
+      roster,
+      roleClassFor(briefRoleConfig(brief), brief.filters.side),
+      rankings
+    ).length === 0;
 
   const openInScouting = () => {
     saveWorkingState({ filters: brief.filters, activeBriefId: brief.id });
@@ -101,7 +110,13 @@ export function BriefView() {
             </Button>
           </HStack>
 
-          {rankedLeagueSet(rankings).size === 0 && (
+          {emptyCohort && (
+            <Text color="fg.muted">
+              No players of this role in ranked leagues with 900+ minutes.
+            </Text>
+          )}
+
+          {!hasRankedLeagues && (
             <Text color="fg.muted">
               No leagues are ranked yet. Briefs only rank players in ranked leagues — rank them on{" "}
               <InlineLink to="/leagues">Leagues</InlineLink>.
