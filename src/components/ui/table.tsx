@@ -1,4 +1,4 @@
-import { Table as ChakraTable, Box } from "@chakra-ui/react";
+import { Table as ChakraTable, Box, Text } from "@chakra-ui/react";
 import { useState } from "react";
 import { Tooltip } from "./tooltip";
 
@@ -9,8 +9,11 @@ export interface Column<T> {
   id?: string;
   header: string;
   headerTooltip?: string;
+  subheader?: string;
   render?: (value: T[keyof T], row: T) => React.ReactNode;
+  cellProps?: (row: T) => React.ComponentProps<typeof ChakraTable.Cell>;
   sortable?: boolean;
+  firstSortDirection?: SortDirection;
   highlighted?: boolean;
   width?: string;
 }
@@ -65,9 +68,12 @@ export function Table<T extends object>(props: TableProps<T>) {
     ? props.sortDirection
     : internalSortDirection;
 
-  const handleSort = (key: keyof T) => {
+  const handleSort = (column: Column<T>) => {
+    const key = column.key;
     const newDirection =
-      sortKey === key ? (sortDirection === "asc" ? "desc" : "asc") : "desc";
+      sortKey === key
+        ? (sortDirection === "asc" ? "desc" : "asc")
+        : (column.firstSortDirection ?? "desc");
 
     if (isControlled(props)) {
       props.onSortChange(key, newDirection);
@@ -120,6 +126,24 @@ export function Table<T extends object>(props: TableProps<T>) {
     return sortDirection === "asc" ? " ▲" : " ▼";
   };
 
+  const headerLabel = (column: Column<T>) => {
+    const title = (
+      <>
+        {column.header}
+        {column.sortable !== false && getSortIndicator(column.key)}
+      </>
+    );
+    if (!column.subheader) return title;
+    return (
+      <Box>
+        <Box whiteSpace="nowrap">{title}</Box>
+        <Text fontSize="2xs" fontWeight="normal" color="fg.muted" whiteSpace="nowrap">
+          {column.subheader}
+        </Text>
+      </Box>
+    );
+  };
+
   return (
     <Box overflowX="auto">
       <ChakraTable.Root size="sm" borderWidth="1px" borderRadius="md">
@@ -130,7 +154,7 @@ export function Table<T extends object>(props: TableProps<T>) {
                 key={column.id ?? String(column.key)}
                 cursor={column.sortable !== false ? "pointer" : "default"}
                 onClick={() =>
-                  column.sortable !== false && handleSort(column.key)
+                  column.sortable !== false && handleSort(column)
                 }
                 _hover={
                   column.sortable !== false ? { bg: "bg.muted" } : undefined
@@ -145,15 +169,11 @@ export function Table<T extends object>(props: TableProps<T>) {
                 {column.headerTooltip ? (
                   <Tooltip content={column.headerTooltip}>
                     <Box display="flex" alignItems="center" w="100%" h="100%">
-                      {column.header}
-                      {column.sortable !== false && getSortIndicator(column.key)}
+                      {headerLabel(column)}
                     </Box>
                   </Tooltip>
                 ) : (
-                  <>
-                    {column.header}
-                    {column.sortable !== false && getSortIndicator(column.key)}
-                  </>
+                  headerLabel(column)
                 )}
               </ChakraTable.ColumnHeader>
             ))}
@@ -176,6 +196,7 @@ export function Table<T extends object>(props: TableProps<T>) {
                   borderRightWidth="1px"
                   borderColor="border.emphasized"
                   width={column.width}
+                  {...column.cellProps?.(row)}
                 >
                   {column.render
                     ? column.render(row[column.key], row)

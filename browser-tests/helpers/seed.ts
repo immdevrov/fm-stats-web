@@ -71,7 +71,7 @@ function makePlayer(uid: number, name: string) {
  */
 export async function seedPlayersAndCompareList(
   page: Page,
-  players: Array<{ uid: number; name: string }>,
+  players: Array<{ uid: number; name: string; overrides?: Record<string, unknown> }>,
   compareUids: number[]
 ) {
   await page.evaluate(
@@ -121,7 +121,7 @@ export async function seedPlayersAndCompareList(
     {
       dbName: DB_NAME,
       dbVersion: DB_VERSION,
-      players: players.map((p) => makePlayer(p.uid, p.name)),
+      players: players.map((p) => ({ ...makePlayer(p.uid, p.name), ...p.overrides })),
       compareUids,
       fields: [...PLAYER_FIELDS],
     }

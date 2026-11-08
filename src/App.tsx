@@ -9,6 +9,7 @@ import { PlayersView } from "./views/PlayersView";
 import { PlayerProfileView } from "./views/PlayerProfileView";
 import { ScoutingView } from "./views/ScoutingView";
 import { BriefsView } from "./views/BriefsView";
+import { BriefView } from "./views/BriefView";
 import { ListsView } from "./views/ListsView";
 import { CompareView } from "./views/CompareView";
 
@@ -27,6 +28,7 @@ function App() {
         <Route path="players/:playerId" element={<PlayerProfileView />} />
         <Route path="scouting" element={<ScoutingView />} />
         <Route path="briefs" element={<BriefsView />} />
+        <Route path="briefs/:briefId" element={<BriefView />} />
         <Route path="lists" element={<ListsView />} />
         <Route path="compare" element={<CompareView />} />
       </Route>

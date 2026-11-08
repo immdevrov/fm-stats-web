@@ -7,6 +7,12 @@ export function roleLabel(roleKey: string, side: Side): string {
   return side === "both" ? name : `${name}, ${side}`;
 }
 
+export function roleNoun(roleKey: string, side: Side): string {
+  const name = ROLE_CONFIG.find((rc) => rc.key === roleKey)?.name ?? roleKey;
+  const article = /^[aeiou]/i.test(name) ? "an" : "a";
+  return side === "both" ? `${article} ${name}` : `${article} ${name} (${side})`;
+}
+
 export function linkedListOf(
   brief: Brief | null,
   lists: PlayerList[],
