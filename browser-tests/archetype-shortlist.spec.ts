@@ -42,9 +42,9 @@ test('an archetype links a shortlist, pins players to it and is unlinked when th
   await expect(page.getByText('Bob Striker')).toBeVisible();
   await expect(page.getByText('Carol Striker')).toBeVisible();
   await page.getByText('Shortlist only').click();
-  await expect(page.getByText('Alice Striker')).toBeVisible();
   await expect(page.getByText('Bob Striker')).toHaveCount(0);
   await expect(page.getByText('Carol Striker')).toHaveCount(0);
+  await expect(page.getByText('Alice Striker')).toBeVisible();
 
   await page.goto('/lists');
   await page.getByRole('button', { name: 'Poacher targets (1)' }).click();

@@ -67,7 +67,7 @@ export function ArchetypePicker({ filters, activeId, onApply, onActiveChange }: 
     else onApply(target);
   };
 
-  const saveAsNew = (name: string) => onActiveChange(create(name, filters, linked?.id).id);
+  const saveAsNew = (name: string) => onActiveChange(create(name, filters, active?.listId).id);
 
   return (
     <HStack gap={2}>
