@@ -2,7 +2,11 @@ import { getDB, wrapError } from './connection';
 import type { PlannedSlot, SquadPlan } from '../../types/planner';
 import { getPreset } from '../../formations';
 import { GK_CELL, cellKey, isPlayableCell } from '../../formations/grid';
-import { coerceFilters } from '../../utils/scouting-filters';
+import {
+  FILTERS_STATS_VERSION,
+  brokenByStatChange,
+  coerceFilters,
+} from '../../utils/scouting-filters';
 import type { Brief, BriefPick } from '../../types/briefs';
 
 const MY_CLUB = 'myClub';
@@ -121,23 +125,29 @@ export function setActiveSnapshotId(id: string | null): Promise<void> {
   return _set(ACTIVE_SNAPSHOT, id, 'save active snapshot');
 }
 
-export async function getBriefs(): Promise<Brief[]> {
+export async function getBriefs(): Promise<{ briefs: Brief[]; removed: string[] }> {
   const value = await _get(BRIEFS);
-  if (!Array.isArray(value)) return [];
+  if (!Array.isArray(value)) return { briefs: [], removed: [] };
   const seen = new Set<string>();
   const result: Brief[] = [];
+  const removed: string[] = [];
   for (const entry of value) {
     if (typeof entry !== 'object' || entry === null) continue;
     const { id, name, filters, listId } = entry as Partial<Brief>;
     if (typeof id !== 'string' || !id || typeof name !== 'string' || !name || seen.has(id)) continue;
     seen.add(id);
     const brief: Brief = { id, name, filters: coerceFilters(filters) };
+    const { statsVersion } = entry as { statsVersion?: unknown };
+    if (brokenByStatChange(brief.filters, statsVersion)) {
+      removed.push(name);
+      continue;
+    }
     if (typeof listId === 'string' && listId) brief.listId = listId;
     const picks = _coercePicks((entry as { picks?: unknown }).picks);
     if (picks) brief.picks = picks;
     result.push(brief);
   }
-  return result;
+  return { briefs: result, removed };
 }
 
 function _coercePicks(value: unknown): BriefPick[] | undefined {
@@ -158,5 +168,6 @@ function _coercePicks(value: unknown): BriefPick[] | undefined {
 }
 
 export function setBriefs(briefs: Brief[]): Promise<void> {
-  return _set(BRIEFS, briefs, 'save briefs');
+  const stamped = briefs.map((brief) => ({ ...brief, statsVersion: FILTERS_STATS_VERSION }));
+  return _set(BRIEFS, stamped, 'save briefs');
 }

@@ -62,6 +62,24 @@ export function coerceFilters(value: unknown): ScoutingFilters {
   };
 }
 
+export const FILTERS_STATS_VERSION = 2;
+
+const BROKEN_BY_STAT_CHANGE: Record<string, readonly string[]> = {
+  CD: ["stat_pressuresSuccessful", "group_possession", "group_physical", "group_defensive"],
+  FB: ["stat_pressuresSuccessful", "group_possession", "group_physical", "group_defensive", "group_movement"],
+  DM: ["stat_pressuresSuccessful", "stat_ballRetention", "group_possession", "group_defensive"],
+  CM: ["stat_pressuresSuccessful", "group_possession", "group_defensive"],
+  AM: ["stat_ballRetention", "group_possession"],
+  W: ["group_possession", "group_defensive", "group_movement"],
+  ST: ["group_possession", "group_defensive", "group_attacking"],
+};
+
+export function brokenByStatChange(filters: ScoutingFilters, statsVersion: unknown): boolean {
+  if (typeof statsVersion === "number" && statsVersion >= 2) return false;
+  const broken = BROKEN_BY_STAT_CHANGE[filters.roleKey] ?? [];
+  return [filters.sortKey, ...Object.keys(filters.columnFilters)].some((key) => broken.includes(key));
+}
+
 function sameColumnFilters(a: ColumnFilters, b: ColumnFilters): boolean {
   const left = coerceColumnFilters(a);
   const right = coerceColumnFilters(b);
@@ -97,7 +115,11 @@ export function loadWorkingState(): WorkingState {
     const parsed: unknown = raw ? JSON.parse(raw) : null;
     const activeBriefId =
       isRecord(parsed) && typeof parsed.activeArchetypeId === "string" ? parsed.activeArchetypeId : null;
-    return { filters: coerceFilters(parsed), activeBriefId };
+    const filters = coerceFilters(parsed);
+    if (isRecord(parsed) && brokenByStatChange(filters, parsed.statsVersion)) {
+      return { filters: { ...DEFAULT_FILTERS, roleKey: filters.roleKey, side: filters.side }, activeBriefId: null };
+    }
+    return { filters, activeBriefId };
   } catch {
     return { filters: { ...DEFAULT_FILTERS }, activeBriefId: null };
   }
@@ -105,7 +127,7 @@ export function loadWorkingState(): WorkingState {
 
 export function saveWorkingState({ filters, activeBriefId }: WorkingState) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...filters, activeArchetypeId: activeBriefId }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...filters, activeArchetypeId: activeBriefId, statsVersion: FILTERS_STATS_VERSION }));
   } catch {
     /* ignore */
   }

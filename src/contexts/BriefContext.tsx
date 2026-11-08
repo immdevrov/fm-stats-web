@@ -50,9 +50,18 @@ export function BriefProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     db.getBriefs()
-      .then((stored) => {
+      .then(({ briefs: stored, removed }) => {
         if (loaded.current) return;
         loaded.current = true;
+        if (removed.length > 0) {
+          toaster.create({
+            id: "briefs-removed",
+            title: "Briefs removed",
+            description: `Stat changes broke ${removed.map((name) => `"${name}"`).join(", ")}. Linked lists are kept.`,
+            type: "warning",
+            duration: 8000,
+          });
+        }
         const next = pending.current.reduce((acc, fn) => fn(acc), stored);
         pending.current = [];
         latest.current = next;
@@ -89,7 +98,7 @@ export function BriefProvider({ children }: { children: ReactNode }) {
     if (!isLoaded) return;
     const start = changes.current;
     db.getBriefs()
-      .then((stored) => {
+      .then(({ briefs: stored }) => {
         if (changes.current !== start) return;
         latest.current = stored;
         setBriefs((current) =>
