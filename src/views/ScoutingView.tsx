@@ -537,9 +537,11 @@ export function ScoutingView() {
     setColumnFiltersRaw({});
     setExcludeInjuries(true);
     setExcludedLeagues(new Set());
+    setActiveArchetypeId(null);
   }, []);
 
-  const hasActiveFilters = contractHorizon !== null ||
+  const hasActiveFilters = activeArchetypeId !== null ||
+    contractHorizon !== null ||
     Object.keys(columnFiltersRaw).length > 0 ||
     !excludeInjuries ||
     excludedLeagues.size > 0;
@@ -748,7 +750,11 @@ export function ScoutingView() {
                     size="xs"
                     variant={side === s ? "solid" : "outline"}
                     colorPalette={side === s ? "glaucous" : undefined}
-                    onClick={() => setSide(s)}
+                    onClick={() => {
+                      if (s === side) return;
+                      setSide(s);
+                      setActiveArchetypeId(null);
+                    }}
                   >
                     {s.charAt(0).toUpperCase() + s.slice(1)}
                   </Button>

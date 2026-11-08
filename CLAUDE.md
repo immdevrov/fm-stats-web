@@ -164,7 +164,7 @@ A named, saved scouting search. Chosen, saved and edited from the picker in the 
 - **State**: `ArchetypeProvider` (`src/contexts/ArchetypeContext.tsx`), mounted in `Layout`. Same pattern as `SquadPlanProvider`: gate on `isLoaded`, a change counter so a late read never overwrites a user change, a re-read on tab return.
 - **One filter shape**: `ScoutingFilters` (`src/types/archetypes.ts`); defaults, coercion, equality and the `localStorage` working state live in `src/utils/scouting-filters.ts`. Roles are stored by `ROLE_CONFIG` key, never by tab index.
 - **Working state**: scouting keeps its live filters and the active archetype id in `localStorage` (`scouting-filters`). *Modified* is derived on render with `sameFilters`, never stored.
-- **Switching role tab leaves the archetype** (the picker goes back to *No archetype*, filters stay). The side selector and *Clear filters* are edits, not a switch.
+- **Switching role tab or side leaves the archetype** (the picker goes back to *No archetype*, filters stay). **Clear filters leaves it too** — it means plain scouting, not an edit — and is shown whenever an archetype is active, so it is always a way out. Threshold, contract, injury and league changes are edits (*modified*).
 - **Contract filter is a preset** (`season` / `1y` / `2y`) resolved against the active snapshot's date with `resolveHorizon()`; disabled and not applied on an undated snapshot.
 - The old hard-coded `calculateArchetypes` in `src/utils/utils.ts` is unused and kept as a reference for bringing badges back.
 
