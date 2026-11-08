@@ -761,6 +761,8 @@ export function ScoutingView() {
                 activeId={activeArchetypeId}
                 onApply={applyArchetype}
                 onActiveChange={setActiveArchetypeId}
+                shortlistOnly={shortlistOnly}
+                onShortlistOnlyChange={setShortlistOnly}
               />
             </Box>
           </HStack>
@@ -799,16 +801,6 @@ export function ScoutingView() {
               <Checkbox.Control />
               <Checkbox.Label>Hide unwanted</Checkbox.Label>
             </Checkbox.Root>
-            {linkedList && (
-              <Checkbox.Root
-                checked={shortlistOnly}
-                onCheckedChange={(e) => setShortlistOnly(e.checked === true)}
-              >
-                <Checkbox.HiddenInput />
-                <Checkbox.Control />
-                <Checkbox.Label>Shortlist only</Checkbox.Label>
-              </Checkbox.Root>
-            )}
             {availableLeagues.length > 0 && (
               <LeagueMultiSelect
                 leagues={availableLeagues}

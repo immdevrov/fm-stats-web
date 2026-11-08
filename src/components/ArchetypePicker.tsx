@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, HStack, Menu, Portal, Text } from "@chakra-ui/react";
+import { Button, Checkbox, HStack, Menu, Portal, Text } from "@chakra-ui/react";
 import { ROLE_CONFIG } from "../roles";
 import { useArchetypes } from "../contexts/ArchetypeContext";
 import { usePlayerNotes } from "../contexts/PlayerNotesContext";
@@ -23,9 +23,18 @@ interface ArchetypePickerProps {
   activeId: string | null;
   onApply: (archetype: Archetype) => void;
   onActiveChange: (id: string | null) => void;
+  shortlistOnly: boolean;
+  onShortlistOnlyChange: (value: boolean) => void;
 }
 
-export function ArchetypePicker({ filters, activeId, onApply, onActiveChange }: ArchetypePickerProps) {
+export function ArchetypePicker({
+  filters,
+  activeId,
+  onApply,
+  onActiveChange,
+  shortlistOnly,
+  onShortlistOnlyChange,
+}: ArchetypePickerProps) {
   const { archetypes, isLoaded, create, update, rename, remove, setList } = useArchetypes();
   const { lists, createList, isLoaded: notesLoaded, loadError } = usePlayerNotes();
   const [dialog, setDialog] = useState<PickerDialog | null>(null);
@@ -110,6 +119,17 @@ export function ArchetypePicker({ filters, activeId, onApply, onActiveChange }: 
         <Text fontSize="sm" color="fg.muted">
           → {linked.name}
         </Text>
+      )}
+      {linked && (
+        <Checkbox.Root
+          size="sm"
+          checked={shortlistOnly}
+          onCheckedChange={(e) => onShortlistOnlyChange(e.checked === true)}
+        >
+          <Checkbox.HiddenInput />
+          <Checkbox.Control />
+          <Checkbox.Label>Shortlist only</Checkbox.Label>
+        </Checkbox.Root>
       )}
 
       {active && (
