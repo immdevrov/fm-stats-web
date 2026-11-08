@@ -166,3 +166,14 @@ A named, saved scouting search. Chosen, saved and edited from the picker in the 
 - **Switching role tab leaves the archetype** (the picker goes back to *No archetype*, filters stay). The side selector and *Clear filters* are edits, not a switch.
 - **Contract filter is a preset** (`season` / `1y` / `2y`) resolved against the active snapshot's date with `resolveHorizon()`; disabled and not applied on an undated snapshot.
 - The old hard-coded `calculateArchetypes` in `src/utils/utils.ts` is unused and kept as a reference for bringing badges back.
+
+### Shortlist link
+
+Step 2. Spec: `docs/superpowers/specs/2026-11-08-archetype-shortlists-design.md`.
+
+- **Storage**: `listId?` on the archetype — one list per archetype, any number of archetypes per list. `PlayerList` knows nothing of it.
+- **Not a filter**: linking saves at once; *modified*, *Save* and *Revert* ignore it. *Save as new* copies it.
+- **Missing list = no link**, and **unknown is not missing**: `linkedListOf()` (`src/utils/archetypes.ts`) is the one definition — it returns nothing until notes have loaded, or at all on a notes load error.
+- **Lifecycle**: deleting a linked list on `/lists` names its archetypes in the confirm, then `unlinkList`; *Delete list* is disabled until archetypes load. *New save* calls `unlinkAll` — the links go with the lists, the archetypes stay.
+- **Changes before the first read** are queued in `ArchetypeProvider` and replayed onto the stored value, since `unlinkList`/`unlinkAll` are called from outside the picker. The load ignores a second read (StrictMode runs the effect twice).
+- **`/scouting`**: the `…` menu has *Link list…* or *Change list…* / *Unlink*, in both the modified and unmodified states. With an active linked archetype, each row gets a `ShortlistPin` (disabled for unwanted) and the toolbar gets *Shortlist only* — view state, narrowing the filtered rows; reset when the active archetype or its list changes.

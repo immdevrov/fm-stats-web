@@ -333,3 +333,27 @@ export async function seedLeagueRankings(page: Page, leagues: string[]) {
     { dbName: DB_NAME, dbVersion: DB_VERSION, leagues }
   );
 }
+
+export async function readSetting(page: Page, key: string): Promise<unknown> {
+  return page.evaluate(
+    ({ dbName, dbVersion, key }) => {
+      return new Promise<unknown>((resolve, reject) => {
+        const request = indexedDB.open(dbName, dbVersion);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          const db = request.result;
+          const get = db.transaction(['settings'], 'readonly').objectStore('settings').get(key);
+          get.onsuccess = () => {
+            db.close();
+            resolve(get.result?.value ?? null);
+          };
+          get.onerror = () => {
+            db.close();
+            reject(get.error);
+          };
+        };
+      });
+    },
+    { dbName: DB_NAME, dbVersion: DB_VERSION, key }
+  );
+}
