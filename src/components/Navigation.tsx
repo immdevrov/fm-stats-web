@@ -14,6 +14,7 @@ const navItems: NavItem[] = [
   { path: "/teams", label: "Teams" },
   { path: "/players", label: "Players" },
   { path: "/scouting", label: "Scouting" },
+  { path: "/briefs", label: "Briefs" },
   { path: "/lists", label: "Lists" },
   { path: "/compare", label: "Compare" },
 ];

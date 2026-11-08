@@ -1,5 +1,11 @@
-import type { Brief } from "../types/briefs";
+import { ROLE_CONFIG } from "../roles";
+import type { Brief, Side } from "../types/briefs";
 import type { PlayerList } from "../types/annotations";
+
+export function roleLabel(roleKey: string, side: Side): string {
+  const name = ROLE_CONFIG.find((rc) => rc.key === roleKey)?.name ?? roleKey;
+  return side === "both" ? name : `${name}, ${side}`;
+}
 
 export function linkedListOf(
   brief: Brief | null,

@@ -8,8 +8,8 @@ import { sameFilters } from "../utils/scouting-filters";
 import type { Brief, ScoutingFilters } from "../types/briefs";
 import { NameDialog } from "./ui/name-dialog";
 import { ConfirmDialog } from "./ui/confirm-dialog";
-import { toaster } from "./ui/toaster";
-import { LinkListDialog, type LinkListChoice } from "./LinkListDialog";
+import { LinkListDialog } from "./LinkListDialog";
+import { useLinkBriefList } from "../hooks/useLinkBriefList";
 
 type PickerDialog =
   | { kind: "save-as" }
@@ -36,7 +36,8 @@ export function BriefPicker({
   onShortlistOnlyChange,
 }: BriefPickerProps) {
   const { briefs, isLoaded, create, update, rename, remove, setList } = useBriefs();
-  const { lists, createList, isLoaded: notesLoaded, loadError } = usePlayerNotes();
+  const { lists, isLoaded: notesLoaded, loadError } = usePlayerNotes();
+  const link = useLinkBriefList();
   const [dialog, setDialog] = useState<PickerDialog | null>(null);
 
   if (!isLoaded) return null;
@@ -46,24 +47,6 @@ export function BriefPicker({
   const notesReady = notesLoaded && !loadError;
   const linked = linkedListOf(active, lists, notesReady);
   const dialogLinked = dialog?.kind === "link" ? linkedListOf(dialog.brief, lists, notesReady) : null;
-
-  const link = async (briefId: string, choice: LinkListChoice) => {
-    if ("listId" in choice) {
-      setList(briefId, choice.listId);
-      return;
-    }
-    try {
-      const list = await createList(choice.newName);
-      setList(briefId, list.id);
-    } catch {
-      toaster.create({
-        title: "List Not Created",
-        description: "The list could not be created.",
-        type: "error",
-        duration: 3000,
-      });
-    }
-  };
 
   const groups = [...ROLE_CONFIG]
     .sort((a, b) => Number(b.key === filters.roleKey) - Number(a.key === filters.roleKey))

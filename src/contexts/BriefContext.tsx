@@ -8,6 +8,7 @@ import type { Brief, ScoutingFilters } from "../types/briefs";
 interface BriefContextValue {
   briefs: Brief[];
   isLoaded: boolean;
+  loadError: string | null;
   create: (name: string, filters: ScoutingFilters, listId?: string) => Brief;
   update: (id: string, filters: ScoutingFilters) => void;
   rename: (id: string, name: string) => void;
@@ -30,6 +31,7 @@ const BriefContext = createContext<BriefContextValue | null>(null);
 export function BriefProvider({ children }: { children: ReactNode }) {
   const [briefs, setBriefs] = useState<Brief[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const changes = useRef(0);
   const loaded = useRef(false);
   const pending = useRef<Change[]>([]);
@@ -45,6 +47,7 @@ export function BriefProvider({ children }: { children: ReactNode }) {
         setIsLoaded(true);
       })
       .catch(() => {
+        setLoadError("Your briefs could not be read.");
         toaster.create({
           id: "briefs-not-loaded",
           title: "Briefs Not Loaded",
@@ -131,7 +134,7 @@ export function BriefProvider({ children }: { children: ReactNode }) {
 
   return (
     <BriefContext.Provider
-      value={{ briefs, isLoaded, create, update, rename, remove, setList, unlinkList, unlinkAll }}
+      value={{ briefs, isLoaded, loadError, create, update, rename, remove, setList, unlinkList, unlinkAll }}
     >
       {children}
     </BriefContext.Provider>
