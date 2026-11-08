@@ -36,6 +36,7 @@ export function ArchetypePicker({ filters, activeId, onApply, onActiveChange }: 
   const modified = active !== null && !sameFilters(filters, active.filters);
   const notesReady = notesLoaded && !loadError;
   const linked = linkedListOf(active, lists, notesReady);
+  const dialogLinked = dialog?.kind === "link" ? linkedListOf(dialog.archetype, lists, notesReady) : null;
 
   const link = async (archetypeId: string, choice: LinkListChoice) => {
     if ("listId" in choice) {
@@ -167,9 +168,9 @@ export function ArchetypePicker({ filters, activeId, onApply, onActiveChange }: 
 
       <LinkListDialog
         isOpen={dialog?.kind === "link"}
-        title={linked ? "Change list" : "Link list"}
+        title={dialogLinked ? "Change list" : "Link list"}
         lists={lists}
-        initialListId={linked?.id ?? null}
+        initialListId={dialogLinked?.id ?? null}
         defaultNewName={dialog?.kind === "link" ? dialog.archetype.name : ""}
         onSubmit={(choice) => dialog?.kind === "link" && link(dialog.archetype.id, choice)}
         onClose={() => setDialog(null)}

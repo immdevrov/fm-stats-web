@@ -309,8 +309,14 @@ export function ScoutingView() {
   const activeArchetype = archetypes.find((a) => a.id === activeArchetypeId) ?? null;
   const linkedList = linkedListOf(activeArchetype, lists, notesLoaded && !notesError);
   const linkedListId = linkedList?.id ?? null;
-  const [shortlistFor, setShortlistFor] = useState<string | null>(null);
-  const shortlistOnly = shortlistFor !== null && shortlistFor === activeArchetypeId;
+  const [shortlistOnly, setShortlistOnly] = useState(false);
+  const shortlistKey = `${activeArchetypeId}|${linkedListId}`;
+  const [shortlistKeySeen, setShortlistKeySeen] = useState(shortlistKey);
+  if (shortlistKeySeen !== shortlistKey) {
+    setShortlistKeySeen(shortlistKey);
+    setShortlistOnly(false);
+  }
+  const shortlistUids = shortlistOnly ? linkedList?.uids : undefined;
 
   const [sortKey, setSortKey] = useState<keyof ScoutingRow>(saved.sortKey as keyof ScoutingRow);
   const [sortDirection, setSortDirection] = useState<SortDirection>(saved.sortDirection);
@@ -418,8 +424,8 @@ export function ScoutingView() {
       result = result.filter((r) => !isUnwanted(r.uid));
     }
 
-    if (shortlistOnly && linkedList) {
-      const pinned = new Set(linkedList.uids);
+    if (shortlistUids) {
+      const pinned = new Set(shortlistUids);
       result = result.filter((r) => pinned.has(r.uid));
     }
 
@@ -491,7 +497,7 @@ export function ScoutingView() {
       }
       return 0;
     });
-  }, [scoutingData, excludeInjuries, columnFilters, contractBefore, excludedLeagues, sortKey, sortDirection, hideUnwanted, isUnwanted, shortlistOnly, linkedList]);
+  }, [scoutingData, excludeInjuries, columnFilters, contractBefore, excludedLeagues, sortKey, sortDirection, hideUnwanted, isUnwanted, shortlistUids]);
 
   const totalPages = Math.ceil(filteredAndSorted.length / PAGE_SIZE);
   const paginatedData = useMemo(() => {
@@ -794,7 +800,7 @@ export function ScoutingView() {
             {linkedList && (
               <Checkbox.Root
                 checked={shortlistOnly}
-                onCheckedChange={(e) => setShortlistFor(e.checked === true ? activeArchetypeId : null)}
+                onCheckedChange={(e) => setShortlistOnly(e.checked === true)}
               >
                 <Checkbox.HiddenInput />
                 <Checkbox.Control />

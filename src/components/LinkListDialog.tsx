@@ -34,9 +34,13 @@ function OpenLinkListDialog({
   const [error, setError] = useState<string | null>(null);
 
   const submit = () => {
-    if (listId) {
+    if (listId && lists.some((list) => list.id === listId)) {
       onSubmit({ listId });
       onClose();
+      return;
+    }
+    if (listId) {
+      setListId("");
       return;
     }
     const trimmed = name.trim();
