@@ -3,7 +3,8 @@ import { db } from "../services/db";
 import { toaster } from "../components/ui/toaster";
 import { useOnTabReturn } from "../hooks/useOnTabReturn";
 import { generateId } from "../utils/ids";
-import { moveTo, setGrade as applyGrade, setVerdict as applyVerdict } from "../utils/brief-picks";
+import { usePlayerNotes } from "./PlayerNotesContext";
+import { moveTo, prunePicks, setGrade as applyGrade, setVerdict as applyVerdict } from "../utils/brief-picks";
 import type { Brief, Grade, ScoutingFilters } from "../types/briefs";
 
 interface BriefContextValue {
@@ -40,6 +41,12 @@ export function BriefProvider({ children }: { children: ReactNode }) {
   const changes = useRef(0);
   const loaded = useRef(false);
   const pending = useRef<Change[]>([]);
+  const latest = useRef<Brief[]>([]);
+  const { onListsChanged } = usePlayerNotes();
+
+  useEffect(() => {
+    latest.current = briefs;
+  }, [briefs]);
 
   useEffect(() => {
     db.getBriefs()
@@ -95,6 +102,25 @@ export function BriefProvider({ children }: { children: ReactNode }) {
     if (!loaded.current) pending.current.push(fn);
     setBriefs(fn);
   }, []);
+
+  useEffect(
+    () =>
+      onListsChanged((lists) => {
+        const prune = (brief: Brief): Brief => {
+          const list = lists.find((l) => l.id === brief.listId);
+          if (!list || !brief.picks) return brief;
+          const next = prunePicks(brief.picks, list.uids);
+          if (next === undefined) return brief;
+          const copy = { ...brief };
+          if (next.length) copy.picks = next;
+          else delete copy.picks;
+          return copy;
+        };
+        if (loaded.current && !latest.current.some((b) => prune(b) !== b)) return;
+        change((current) => current.map(prune));
+      }),
+    [onListsChanged, change]
+  );
 
   const create = useCallback(
     (name: string, filters: ScoutingFilters, listId?: string) => {

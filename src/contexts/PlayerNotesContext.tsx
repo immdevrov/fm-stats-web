@@ -4,6 +4,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useRef,
   type ReactNode,
 } from "react";
 import { db } from "../services/db";
@@ -22,6 +23,8 @@ interface PlayerNotesContextValue {
   refresh: () => Promise<void>;
   isUnwanted: (uid: number) => boolean;
   toggleUnwanted: (uid: number, player?: PlayerIdentity) => Promise<void>;
+  setUnwanted: (uid: number, unwanted: boolean, player?: PlayerIdentity) => Promise<void>;
+  onListsChanged: (listener: (lists: PlayerList[]) => void) => () => void;
   transferOf: (uid: number) => TransferMark | undefined;
   setTransfer: (uid: number, transfer: TransferMark | null, player?: PlayerIdentity) => Promise<void>;
   listsFor: (uid: number) => PlayerList[];
@@ -44,6 +47,7 @@ export function PlayerNotesProvider({ children }: { children: ReactNode }) {
   const [lists, setLists] = useState<PlayerList[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const listeners = useRef(new Set<(lists: PlayerList[]) => void>());
 
   useEffect(() => {
     async function loadNotes() {
@@ -70,7 +74,20 @@ export function PlayerNotesProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshLists = useCallback(async () => {
-    setLists(await db.getLists());
+    const read = await db.getLists();
+    setLists(read);
+    return read;
+  }, []);
+
+  const onListsChanged = useCallback((listener: (lists: PlayerList[]) => void) => {
+    listeners.current.add(listener);
+    return () => {
+      listeners.current.delete(listener);
+    };
+  }, []);
+
+  const notify = useCallback((read: PlayerList[]) => {
+    listeners.current.forEach((listener) => listener(read));
   }, []);
 
   const refresh = useCallback(async () => {
@@ -86,12 +103,19 @@ export function PlayerNotesProvider({ children }: { children: ReactNode }) {
     [annotations]
   );
 
-  const toggleUnwanted = useCallback(
-    async (uid: number, player?: PlayerIdentity) => {
-      await db.setUnwanted(uid, !(annotations.get(uid)?.unwanted === true), player);
-      await Promise.all([refreshAnnotations(), refreshLists()]);
+  const setUnwanted = useCallback(
+    async (uid: number, unwanted: boolean, player?: PlayerIdentity) => {
+      await db.setUnwanted(uid, unwanted, player);
+      const [, read] = await Promise.all([refreshAnnotations(), refreshLists()]);
+      notify(read);
     },
-    [annotations, refreshAnnotations, refreshLists]
+    [refreshAnnotations, refreshLists, notify]
+  );
+
+  const toggleUnwanted = useCallback(
+    (uid: number, player?: PlayerIdentity) =>
+      setUnwanted(uid, !(annotations.get(uid)?.unwanted === true), player),
+    [annotations, setUnwanted]
   );
 
   const transferOf = useCallback(
@@ -130,9 +154,9 @@ export function PlayerNotesProvider({ children }: { children: ReactNode }) {
       const list = stored.find((l) => l.id === listId);
       if (!list) return;
       await db.saveList({ ...list, uids: list.uids.filter((id) => id !== uid) });
-      await refreshLists();
+      notify(await refreshLists());
     },
-    [refreshLists]
+    [refreshLists, notify]
   );
 
   const createList = useCallback(
@@ -192,6 +216,8 @@ export function PlayerNotesProvider({ children }: { children: ReactNode }) {
         refresh,
         isUnwanted,
         toggleUnwanted,
+        setUnwanted,
+        onListsChanged,
         transferOf,
         setTransfer,
         listsFor,
