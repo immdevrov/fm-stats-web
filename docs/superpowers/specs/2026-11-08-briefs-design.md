@@ -34,8 +34,8 @@ that serves it is parked until real use asks for it.
 - **UI**: every user-visible *archetype* becomes *brief* — the scouting picker
   (*No brief*, *Save as brief*, *Save as new brief*, *Rename brief*, *Delete
   brief*, *Brief actions*), its empty state, the name-taken message, the *Briefs
-  Not Saved* toast, and the delete-list confirm on `/lists` (*"Wingers" is the
-  shortlist of …*).
+  Not Saved* and *Briefs Not Loaded* toasts, and the delete-list confirm on
+  `/lists` (*"Wingers" is the shortlist of …*).
 - **Code**: identifiers follow, so code and UI use one word. `Archetype` →
   `Brief`, `ArchetypeProvider`/`useArchetypes` → `BriefProvider`/`useBriefs`
   (`src/contexts/BriefContext.tsx`), `ArchetypePicker` → `BriefPicker`,
@@ -47,8 +47,9 @@ that serves it is parked until real use asks for it.
   `archetypes` key in the `settings` store, the `scouting-filters`
   `localStorage` key, and the `activeArchetypeId` property inside that stored
   JSON. Renaming them would need a migration and gain nothing.
-- **Not touched**: the old `calculateArchetypes` in `src/utils/utils.ts` (the
-  badge reference) and earlier spec/plan documents.
+- **Not touched**: the old badge system — `calculateArchetypes` in
+  `src/utils/utils.ts` and the `src/processors/*` that use the word — and
+  earlier spec/plan documents.
 - The rename is its own commit with no behaviour change.
 
 ## Pages
@@ -57,19 +58,21 @@ Sidebar: **Briefs** right after *Scouting*. Two routes.
 
 ### `/briefs` — the overview
 
-A table, one row per brief, grouped or sorted by role in `ROLE_CONFIG` order
-(as the picker groups them), then by name.
+A table, one row per brief, ordered by role in plain `ROLE_CONFIG` order, then
+by name (case-insensitive).
 
 | Column | Content |
 |---|---|
 | Brief | name, linking to `/briefs/:id` |
-| Role | role name, plus the side when it is not *both* (*Full-back, left*) |
+| Role | the role's `ROLE_CONFIG` name, plus the side when it is not *both* (*Fullback, left*) |
 | Shortlist | linked list name, or a *Link list* button |
 | Candidates | number of players on the linked list; blank when unlinked |
 
 - *Link list* opens the existing `LinkListDialog` and does exactly what the
-  picker's link action does (create a new list if chosen, then `setList`). That
-  logic moves out of the picker into one shared helper both call.
+  picker's link action does (create a new list if chosen, then `setList`; a
+  failed create raises *List Not Created*). That logic moves out of the picker
+  into one hook, `useLinkBriefList()`, since it needs `createList` from
+  `usePlayerNotes()` and `setList` from `useBriefs()`.
 - **No roster read.** The candidate count is the list's length, so the overview
   stays cheap — like `/import`, it never calls `useRoster()`.
 - Empty state: *No briefs yet — save a search as a brief on Scouting*, linking
@@ -83,10 +86,14 @@ A table, one row per brief, grouped or sorted by role in `ROLE_CONFIG` order
 
 - **Criteria line**, built from `brief.filters`, each part present only when it
   narrows something: role (and side); each column threshold using the scouting
-  column abbreviation (*TKL ≥ 60*, *AER 40–80*, *Age ≤ 24*, *Wage ≤ 50,000*);
+  column abbreviation (*Tkl ≥ 60*, *Aer 40–80*, *Age ≤ 24*, *Wage ≤* the wage
+  as `formatWage` prints it);
   the contract horizon (*contract by end of season* / *within a year* / *within
   two years*); *injury-free* when injuries are excluded; *N leagues excluded*.
-  The sort is not shown.
+  The sort is not shown. Only thresholds on columns the brief's role actually
+  has count — role tabs do not clear column filters, so a stored brief can
+  carry a key from another role, which scouting already ignores; so does this
+  page (criteria line and heat columns alike).
 - **Open in scouting** writes `{ filters: brief.filters, activeBriefId: brief.id }`
   through the existing `saveWorkingState` and navigates to `/scouting`, which
   reads its working state on mount. Scouting stays the only place a brief's
@@ -127,18 +134,37 @@ when this returns `[]`; the heat table's tags and the toast (below) read the
 same function, so the three can never disagree.
 
 - **Outside, but present**: he is **ranked against the cohort** without joining
-  it — each of his values is placed in the cohort's sorted column, and each of
-  his group sums in the cohort's sorted group sums. Nobody else's numbers move.
+  it — each of his stat values is placed in the cohort's sorted column, his
+  derived stats are the role's formulas applied to those percentiles (as for
+  everyone), and each of his group sums is placed in the cohort's sorted group
+  sums. Nobody else's numbers move.
   His row carries one tag per reason: *620 min*, *Unranked league*, *Not a
-  left full-back* (the brief's role and side in words).
+  Fullback (left)* — the brief's `ROLE_CONFIG` name, plus the side when not
+  *both*. The side classes follow the role classes' own rules (`LeftFullback`
+  accepts `D (L)` only, so a `WB (L)` is tagged too), as scouting does.
 - **Wrong role**: `Role`'s constructor refuses a player its `isRole` rejects. A
   wrong-role player is wrapped through a subclass of the brief's role class
   whose `isRole` accepts anyone, so his per-90s come from the same getters.
+- **Empty cohort** — whatever the cause (no ranked league, or ranked leagues
+  but nobody of this role class at 900+ minutes): nobody gets percentiles. Every
+  present row shows its practical columns and tags, with blank heat cells.
+  `getPercentile` throws on an empty list, so the engine guards this itself.
 - **No stats at all** (0 minutes): blank stat cells and a *No stats* tag.
 - **Absent from the active snapshot** (retired, or outside the export): a
-  dimmed row with his last-known name from the list's stored identity, a
-  *Not in this snapshot* tag, and a *Remove* button that takes him off the
-  list — the same treatment `/lists` gives.
+  dimmed row named from his annotation's `lastKnownName` / `lastKnownClub`
+  (falling back to *UID n*, as `/lists` does), a *Not in this snapshot* tag,
+  and a *Remove* button that takes him off the list.
+
+**One ranking path.** The engine exposes the cohort's ranking context — sorted
+stat columns and sorted group sums — and one function ranks a single `Role`
+against it. `computeScoutingData` builds its rows through that same function,
+so a cohort member and an outsider are ranked by identical code:
+
+```ts
+interface CohortRanking { /* sorted stat columns, sorted group sums, roleConfig, statGroups */ }
+function buildCohortRanking(cohort: Role[], roleConfig, statGroups): CohortRanking | null; // null when empty
+function rankPlayer(player: Role, ranking: CohortRanking): ScoutingRow;
+```
 
 ### Columns, left to right
 
@@ -150,8 +176,10 @@ same function, so the three can never disagree.
    abbreviation (*≥ 60*, *40–80*), with the full stat name as the tooltip.
 4. **The role's group ratings** — every group for the role not already in 3.
 5. **All stats** — a toggle above the table. Off by default; on, it adds every
-   remaining stat and derived stat for the role after the groups. Plain view
-   state, gone on reload.
+   remaining stat in `roleConfig.statKeys` and every derived stat — exactly the
+   per-stat columns scouting shows — after the groups. Stats that exist only
+   inside a group are not shown on their own, as on scouting. Plain view state,
+   gone on reload.
 
 A brief with no stat/derived/group thresholds has an empty block 3; the groups
 lead. Age and wage thresholds show in the criteria line, not as heat columns.
@@ -170,8 +198,11 @@ scale is for the brief page only.
 
 ### Sorting
 
-Every column sorts on header click, as in scouting; percentiles sort on the
-displayed (inverted-if-needed) value. Rows with no value sort last.
+A leading **#** column holds the player's position on the list (1, 2, …).
+Every column sorts on header click; percentiles sort on the displayed
+(inverted-if-needed) value; rows with no value (absent, no stats, empty
+cohort) sort last. Sorting by **#** is the way back to list order. Step 5's
+manual ranking will take over that column.
 
 ## The toast
 
@@ -179,16 +210,20 @@ Adding a player to a list from the **status menu** (`PlayerStatusControl` — on
 the profile, `/players`, `/lists`, squad tables and scouting) checks every brief
 that links to that list. For each one he is outside — by `cohortExclusions`
 against that brief's role class, using his record in the active snapshot — a
-single warning toast lists the brief and the reasons:
+single warning toast lists the brief and the reasons. The roster comes from
+`useRoster()` (every view hosting the control already calls it); league
+rankings are fetched with `db.getLeagueRankings()` at add time.
 
 > **Outside a brief's cohort** — Added to *Left-back targets*. *Attacking
-> full-back*: 620 minutes. His numbers there are ranked against the cohort and
-> are a rough guide.
+> full-back*: 620 minutes. Ranked against the cohort — a rough guide.
+
+With *no stats* as the only reason, the last sentence is left out.
 
 - One toast per add, naming each brief he falls outside.
 - No toast when he is inside every linked brief's cohort, when no brief links
-  to the list, when the roster or league rankings are not loaded, or when he is
-  not in the active snapshot.
+  to the list, when the roster is not loaded, when fetching league rankings
+  fails, when **no league is ranked at all** (every add would warn, and the
+  brief page already says so), or when he is not in the active snapshot.
 - 0 minutes reads *no stats*.
 - The scouting **pin** never toasts: every scouting row is in the cohort of the
   brief it pins to. Creating a new list from the status menu never toasts:
@@ -203,8 +238,7 @@ single warning toast lists the brief and the reasons:
 - **Roster loading** → spinner; **roster failed** → `RosterErrorNotice`.
 - **League rankings failed** → error notice; **none ranked** → the notice
   scouting already shows. The table still lists the pinned players (every one
-  tagged *Unranked league*, no percentiles), since an empty cohort ranks
-  nothing.
+  tagged *Unranked league*, no percentiles) — the empty-cohort rule above.
 - **Unknown id** → *Brief not found* with a link to `/briefs`.
 - Document titles: *Briefs*, *Brief: {name}*.
 
@@ -219,14 +253,21 @@ single warning toast lists the brief and the reasons:
 
 Few, behaviour-only, Playwright, each kept test mutation-checked.
 
+The seed helpers' `makePlayer` gives every player identical stats, so the
+seeders gain per-player **overrides** (any player field — `Mins`, `Division`,
+a per-90 stat). Briefs are seeded straight into the `archetypes` setting with
+`seedSettings`.
+
 1. **The brief page shows every pinned player, even one its filters exclude.**
-   Save a brief with a threshold, link a list, pin two players; raise the
-   threshold on scouting so one no longer passes; `/briefs/:id` still shows
-   both, with heat cells for the brief's stat.
+   Seed strikers with distinct values of one stat, and a brief with a threshold
+   on it that exactly one pinned player fails; link it to a seeded list holding
+   both. `/briefs/:id` shows both rows, in list order, with the exact expected
+   percentile in each heat cell.
 2. **An out-of-cohort player is ranked and tagged, and the status menu warns.**
-   Add a player outside the brief's cohort to its linked list from the status
-   menu → the toast names the brief and the reason; on the brief page his row
-   has percentiles and the matching tag.
+   Seed a striker with 600 minutes and a stat value placing him at a known,
+   non-50 percentile in the cohort. Add him to the brief's linked list from the
+   status menu on his profile → the toast names the brief and *600 minutes*; on
+   the brief page his row shows the *600 min* tag and that exact percentile.
 
 The rename adds no test: the existing archetype specs move to the new wording
 and must stay green.
@@ -234,5 +275,6 @@ and must stay green.
 ## Docs
 
 `CLAUDE.md`: the *Archetypes* section becomes *Briefs* (with the fixed storage
-identifiers called out), plus the two pages, the cohort-exclusion rule, the heat
-scale and the toast.
+identifiers called out), plus the two pages, the cohort-exclusion rule, the one
+ranking path, the heat scale and the toast. The Historic Snapshots note that
+"only `/import` never calls `useRoster()`" gains `/briefs` (the overview).
