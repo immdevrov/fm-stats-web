@@ -399,6 +399,8 @@ export function ScoutingView() {
     setCurrentPage(1);
   }, []);
 
+  const hasRankedLeague = leagueRankings.some((r) => r.rank < 999);
+
   const availableLeagues = useMemo(() => {
     const leagues = new Set<string>();
     for (const row of scoutingData) {
@@ -840,7 +842,20 @@ export function ScoutingView() {
             )}
             {scoutingData.length === 0 && !isPending ? (
               <Text color="fg.muted" textAlign="center">
-                No players found for this role. Import data and set up league rankings first.
+                {hasRankedLeague ? (
+                  "No players of this role in ranked leagues with 900+ minutes."
+                ) : (
+                  <>
+                    No leagues are ranked yet. Scouting only compares players in ranked leagues — rank
+                    them on{" "}
+                    <Link to="/leagues">
+                      <Text as="span" color="glaucous.400" _hover={{ textDecoration: "underline" }}>
+                        Leagues
+                      </Text>
+                    </Link>
+                    .
+                  </>
+                )}
               </Text>
             ) : (
               <>
