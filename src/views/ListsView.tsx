@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { usePlayerNotes, type PlayerIdentity } from "../contexts/PlayerNotesContext";
 import { useRoster, useSnapshots } from "../contexts/SnapshotContext";
 import { useMyTeam } from "../contexts/MyTeamContext";
+import { useArchetypes } from "../contexts/ArchetypeContext";
 import { isTransferDone } from "../utils/squad";
 import type { TransferMark } from "../types/annotations";
 import { PlayerStatusControl } from "../components/PlayerStatusControl";
@@ -47,6 +48,7 @@ export function ListsView() {
     removeFromList,
     setTransfer,
   } = usePlayerNotes();
+  const { archetypes, isLoaded: archetypesLoaded, unlinkList } = useArchetypes();
   const { myClub } = useMyTeam();
   const { isNewest } = useSnapshots();
   const [activeTab, setActiveTab] = useState<string | null>(null);
@@ -215,8 +217,14 @@ export function ListsView() {
 
   const handleDelete = async () => {
     if (!activeList) return;
-    if (window.confirm(`Delete "${activeList.name}"? Players are not affected.`)) {
+    const linkedFrom = archetypes.filter((a) => a.listId === activeList.id).map((a) => a.name);
+    const message =
+      linkedFrom.length > 0
+        ? `"${activeList.name}" is the shortlist of ${linkedFrom.join(", ")}. Delete it and unlink?`
+        : `Delete "${activeList.name}"? Players are not affected.`;
+    if (window.confirm(message)) {
       await deleteList(activeList.id);
+      unlinkList(activeList.id);
       setActiveTab(null);
     }
   };
@@ -287,7 +295,7 @@ export function ListsView() {
               <Button size="xs" variant="ghost" onClick={handleRename}>
                 Rename
               </Button>
-              <Button size="xs" variant="ghost" onClick={handleDelete}>
+              <Button size="xs" variant="ghost" onClick={handleDelete} disabled={!archetypesLoaded}>
                 Delete list
               </Button>
               {missingCount > 0 && (

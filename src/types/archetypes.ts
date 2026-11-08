@@ -22,4 +22,5 @@ export interface Archetype {
   id: string;
   name: string;
   filters: ScoutingFilters;
+  listId?: string;
 }

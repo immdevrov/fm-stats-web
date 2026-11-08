@@ -8,10 +8,21 @@ import type { Archetype, ScoutingFilters } from "../types/archetypes";
 interface ArchetypeContextValue {
   archetypes: Archetype[];
   isLoaded: boolean;
-  create: (name: string, filters: ScoutingFilters) => Archetype;
+  create: (name: string, filters: ScoutingFilters, listId?: string) => Archetype;
   update: (id: string, filters: ScoutingFilters) => void;
   rename: (id: string, name: string) => void;
   remove: (id: string) => void;
+  setList: (archetypeId: string, listId: string | null) => void;
+  unlinkList: (listId: string) => void;
+  unlinkAll: () => void;
+}
+
+type Change = (current: Archetype[]) => Archetype[];
+
+function withoutList(archetype: Archetype): Archetype {
+  const copy = { ...archetype };
+  delete copy.listId;
+  return copy;
 }
 
 const ArchetypeContext = createContext<ArchetypeContextValue | null>(null);
@@ -20,10 +31,16 @@ export function ArchetypeProvider({ children }: { children: ReactNode }) {
   const [archetypes, setArchetypes] = useState<Archetype[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const changes = useRef(0);
+  const loaded = useRef(false);
+  const pending = useRef<Change[]>([]);
 
   useEffect(() => {
     db.getArchetypes().then((stored) => {
-      setArchetypes((current) => (changes.current > 0 ? current : stored));
+      if (loaded.current) return;
+      loaded.current = true;
+      const next = pending.current.reduce((acc, fn) => fn(acc), stored);
+      pending.current = [];
+      setArchetypes(next);
       setIsLoaded(true);
     });
   }, []);
@@ -53,14 +70,16 @@ export function ArchetypeProvider({ children }: { children: ReactNode }) {
       .catch(() => undefined);
   });
 
-  const change = useCallback((fn: (current: Archetype[]) => Archetype[]) => {
+  const change = useCallback((fn: Change) => {
     changes.current++;
+    if (!loaded.current) pending.current.push(fn);
     setArchetypes(fn);
   }, []);
 
   const create = useCallback(
-    (name: string, filters: ScoutingFilters) => {
+    (name: string, filters: ScoutingFilters, listId?: string) => {
       const archetype: Archetype = { id: generateId("archetype"), name: name.trim(), filters };
+      if (listId) archetype.listId = listId;
       change((current) => [...current, archetype]);
       return archetype;
     },
@@ -84,8 +103,26 @@ export function ArchetypeProvider({ children }: { children: ReactNode }) {
     [change]
   );
 
+  const setList = useCallback(
+    (archetypeId: string, listId: string | null) =>
+      change((current) =>
+        current.map((a) => (a.id !== archetypeId ? a : listId ? { ...a, listId } : withoutList(a)))
+      ),
+    [change]
+  );
+
+  const unlinkList = useCallback(
+    (listId: string) =>
+      change((current) => current.map((a) => (a.listId === listId ? withoutList(a) : a))),
+    [change]
+  );
+
+  const unlinkAll = useCallback(() => change((current) => current.map(withoutList)), [change]);
+
   return (
-    <ArchetypeContext.Provider value={{ archetypes, isLoaded, create, update, rename, remove }}>
+    <ArchetypeContext.Provider
+      value={{ archetypes, isLoaded, create, update, rename, remove, setList, unlinkList, unlinkAll }}
+    >
       {children}
     </ArchetypeContext.Provider>
   );

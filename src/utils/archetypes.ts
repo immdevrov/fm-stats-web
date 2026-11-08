@@ -1,4 +1,14 @@
 import type { Archetype } from "../types/archetypes";
+import type { PlayerList } from "../types/annotations";
+
+export function linkedListOf(
+  archetype: Archetype | null,
+  lists: PlayerList[],
+  notesReady: boolean
+): PlayerList | null {
+  if (!notesReady || !archetype?.listId) return null;
+  return lists.find((list) => list.id === archetype.listId) ?? null;
+}
 
 export function validateArchetypeName(
   name: string,
