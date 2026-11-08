@@ -15,7 +15,8 @@ export const STAT_ABBREVIATIONS: Record<string, string> = {
   keyPasses: "KP",
   tackles: "Tkl",
   tackleRatio: "TR",
-  pressuresSuccessful: "Pr%",
+  pressureRatio: "Pr%",
+  pressuresAttempted: "PrA",
   defensiveContributions: "DC",
   headersWonRatio: "HW",
   aerialAttempts: "AA",
@@ -31,7 +32,8 @@ export const STAT_ABBREVIATIONS: Record<string, string> = {
   goals: "Gls",
   xGOverperformance: "xG+",
   shots: "Sh",
-  ballRetention: "BR",
+  possessionWon: "PW",
+  possessionLost: "PL",
   mistakes: "Mst",
   distance: "Dst",
 };
@@ -42,10 +44,9 @@ export const GROUP_ABBREVIATIONS: Record<string, string> = {
   error: "Err",
   defensive: "Def",
   aerial: "Aer",
-  possession: "Pos",
-  physical: "Phy",
   creative: "Cre",
   movement: "Mov",
+  crossing: "Cro",
   attacking: "Att",
 };
 

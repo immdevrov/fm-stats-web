@@ -21,16 +21,14 @@ export class DefensiveMidfielderProcessor {
 
   get archetypes(): Record<string, KeyOfType<IDefensiveMidfielder, number>[]> {
     return {
-      [this.ARCHETYPE_NAMES.DESTROYER]: ["pressuresSuccessful", "tackleRatio", "possessionWon"],
+      [this.ARCHETYPE_NAMES.DESTROYER]: ["pressureRatio", "tackleRatio", "possessionWon"],
       [this.ARCHETYPE_NAMES.DEEP_PLAYMAKER]: [
-        "ballRetention",
         "progressivePasses",
         "keyPasses",
       ],
       [this.ARCHETYPE_NAMES.ANCHOR]: [
         "passRatio",
         "progressivePasses",
-        "ballRetention",
       ],
     };
   }

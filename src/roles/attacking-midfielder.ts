@@ -26,7 +26,6 @@ export class AttackingMidfielder extends Role implements IAttackingMidfielder {
   // Possession stats
   readonly possessionWon: number;
   readonly possessionLost: number;
-  readonly ballRetention: number;
 
   // Passing stats
   readonly passRatio: number;
@@ -50,7 +49,6 @@ export class AttackingMidfielder extends Role implements IAttackingMidfielder {
     const possessionStats = extractPossessionStats(player);
     this.possessionWon = possessionStats.possessionWon;
     this.possessionLost = possessionStats.possessionLost;
-    this.ballRetention = possessionStats.ballRetention;
 
     const passStats = extractPassingStats(player);
     this.passRatio = passStats.passRatio;

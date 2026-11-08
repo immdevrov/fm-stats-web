@@ -28,7 +28,6 @@ export class DefensiveMidfielder extends Role implements IDefensiveMidfielder {
   // Possession stats
   readonly possessionWon: number;
   readonly possessionLost: number;
-  readonly ballRetention: number;
 
   // Passing stats
   readonly passRatio: number;
@@ -38,7 +37,8 @@ export class DefensiveMidfielder extends Role implements IDefensiveMidfielder {
   // Defensive stats
   readonly tackles: number;
   readonly tackleRatio: number;
-  readonly pressuresSuccessful: number;
+  readonly pressureRatio: number;
+  readonly pressuresAttempted: number;
   readonly defensiveContributions: number;
 
   constructor(player: Player) {
@@ -52,7 +52,6 @@ export class DefensiveMidfielder extends Role implements IDefensiveMidfielder {
     const possessionStats = extractPossessionStats(player);
     this.possessionWon = possessionStats.possessionWon;
     this.possessionLost = possessionStats.possessionLost;
-    this.ballRetention = possessionStats.ballRetention;
 
     const passStats = extractPassingStats(player);
     this.passRatio = passStats.passRatio;
@@ -62,7 +61,8 @@ export class DefensiveMidfielder extends Role implements IDefensiveMidfielder {
     const defensiveStats = extractDefensiveStats(player);
     this.tackles = defensiveStats.tackles;
     this.tackleRatio = defensiveStats.tackleRatio;
-    this.pressuresSuccessful = defensiveStats.pressuresSuccessful;
+    this.pressureRatio = defensiveStats.pressureRatio;
+    this.pressuresAttempted = defensiveStats.pressuresAttempted;
     this.defensiveContributions = defensiveStats.defensiveContributions;
   }
 

@@ -22,8 +22,6 @@ export interface IPossessionStats {
   possessionWon: number;
   /** times lost possession */
   possessionLost: number;
-  /** computed: won - lost */
-  ballRetention: number;
 }
 
 export interface IPassingStats {
@@ -40,8 +38,10 @@ export interface IDefensiveStats {
   tackles: number;
   /** % tackles won */
   tackleRatio: number;
-  /** successful pressing actions */
-  pressuresSuccessful: number;
+  /** pressures completed / pressures attempted */
+  pressureRatio: number;
+  /** pressing actions attempted */
+  pressuresAttempted: number;
   /** blocks + interceptions + clearances + tackles per 90 */
   defensiveContributions: number;
 }
@@ -49,7 +49,7 @@ export interface IDefensiveStats {
 export interface ICreativeStats {
   /** expected assists */
   xA: number;
-  /** chances created */
+  /** chances created - more reliable metric then key passes, but still inflated by offsides*/
   chancesCreated: number;
 }
 
@@ -71,6 +71,9 @@ export interface IMovementStats {
   dribbles: number;
   /** sprint actions */
   sprints: number;
+}
+
+export interface ICrossingStats {
   /** % crosses completed */
   crossRatio: number;
   /** successful crosses */
@@ -92,13 +95,6 @@ export interface IGoalkeeperStats {
   savesPer90: number;
 }
 
-export interface IPhysicalStats {
-  /** in cm (not per 90) */
-  height: number;
-  /** years (not per 90) */
-  age: number;
-}
-
 export interface IErrorStats {
   /** mistakes leading to goals */
   mistakes: number;
@@ -117,7 +113,6 @@ export const STAT_MAPPING = {
   // Possession
   possessionWon: "PossWonPer90",
   possessionLost: "PossLostPer90",
-  // ballRetention is computed
 
   // Passing
   passRatio: "PasPercentage",
@@ -127,6 +122,8 @@ export const STAT_MAPPING = {
   // Defensive
   tackles: "TckPer90",
   tackleRatio: "TckR",
+  pressuresAttempted: "PresAPer90",
+  // pressureRatio is computed
 
   // Creative
   xA: "xAPer90",
@@ -142,6 +139,8 @@ export const STAT_MAPPING = {
   // Movement
   dribbles: "DrbPer90",
   sprints: "SprintsPer90",
+
+  // Crossing
   crossRatio: "OPCrPercentage",
   crossesSuccessful: "OPCrsCPer90",
 
@@ -151,10 +150,6 @@ export const STAT_MAPPING = {
   expectedSaveRatio: "exsvPercentage",
   concededPer90: "ConPer90",
   // savesHeldRatio is computed
-
-  // Physical
-  height: "Height",
-  age: "Age",
 
   // Error
   mistakes: "GlMst",
@@ -178,11 +173,7 @@ export function extractAerialStats(player: Player): IAerialStats {
 export function extractPossessionStats(player: Player): IPossessionStats {
   const possessionWon = safeNumber(player.PossWonPer90);
   const possessionLost = safeNumber(player.PossLostPer90);
-  return {
-    possessionWon,
-    possessionLost,
-    ballRetention: possessionWon - possessionLost,
-  };
+  return { possessionWon, possessionLost };
 }
 
 export function extractPassingStats(player: Player): IPassingStats {
@@ -196,12 +187,13 @@ export function extractPassingStats(player: Player): IPassingStats {
 export function extractDefensiveStats(player: Player): IDefensiveStats {
   const presCompleted = safeNumber(player.PresCPer90);
   const presAttempted = safeNumber(player.PresAPer90);
-  const pressuresSuccessful = presAttempted === 0 ? 0 : Math.round((presCompleted / presAttempted + Number.EPSILON) * 100) / 100;
+  const pressureRatio = presAttempted === 0 ? 0 : Math.round((presCompleted / presAttempted + Number.EPSILON) * 100) / 100;
   const defensiveContributions = Math.round((safeNumber(player.BlkPer90) + safeNumber(player.IntPer90) + safeNumber(player.ClrPer90) + safeNumber(player.TckPer90) + Number.EPSILON) * 100) / 100;
   return {
     tackles: safeNumber(player.TckPer90),
     tackleRatio: safeNumber(player.TckR),
-    pressuresSuccessful,
+    pressureRatio,
+    pressuresAttempted: presAttempted,
     defensiveContributions,
   };
 }
@@ -227,6 +219,11 @@ export function extractMovementStats(player: Player): IMovementStats {
   return {
     dribbles: safeNumber(player.DrbPer90),
     sprints: safeNumber(player.SprintsPer90),
+  };
+}
+
+export function extractCrossingStats(player: Player): ICrossingStats {
+  return {
     crossRatio: safeNumber(player.OPCrPercentage),
     crossesSuccessful: safeNumber(player.OPCrsCPer90),
   };
@@ -249,13 +246,6 @@ export function extractGoalkeeperStats(player: Player): IGoalkeeperStats {
     savesPer90: player.Mins > 0
       ? Math.round(((svh + svp + svt) / player.Mins) * 90 * 100) / 100
       : 0,
-  };
-}
-
-export function extractPhysicalStats(player: Player): IPhysicalStats {
-  return {
-    height: safeNumber(player.Height),
-    age: safeNumber(player.Age),
   };
 }
 

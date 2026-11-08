@@ -98,7 +98,7 @@ export class FullbackProcessor {
         wage,
         crossRatio,
         crossesSuccessful,
-        pressuresSuccessful,
+        pressureRatio,
         xA,
         keyPasses,
         dribbles,
@@ -119,7 +119,7 @@ export class FullbackProcessor {
         dribbles,
         "crossRatio%": crossRatio,
         crossAttempts: ((crossesSuccessful / crossRatio) * 100).toFixed(2),
-        pressuresSuccessful,
+        pressureRatio,
         wage: wage ? formatWage(wage) : null,
         contractExpires: contractExpires ? displayDate(contractExpires) : null,
       };

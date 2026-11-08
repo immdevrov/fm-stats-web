@@ -21,10 +21,10 @@ import { type IRole, Role } from "./_role";
 export interface IStriker
   extends IRole,
     Pick<IAerialStats, "headersWonRatio" | "aerialAttempts" | "keyHeaders">,
-    Pick<IPossessionStats, "possessionWon" | "ballRetention">,
+    Pick<IPossessionStats, "possessionWon">,
     IAttackingStats,
     ICreativeStats,
-    Pick<IDefensiveStats, "tackleRatio" | "pressuresSuccessful">,
+    Pick<IDefensiveStats, "tackleRatio" | "pressureRatio" | "pressuresAttempted">,
     Pick<IPassingStats, "keyPasses">,
     Pick<IMovementStats, "dribbles"> {}
 
@@ -36,7 +36,6 @@ export class Striker extends Role implements IStriker {
 
   // Possession stats (partial)
   readonly possessionWon: number;
-  readonly ballRetention: number;
 
   // Attacking stats
   readonly goals: number;
@@ -51,7 +50,8 @@ export class Striker extends Role implements IStriker {
 
   // Defensive stats (partial)
   readonly tackleRatio: number;
-  readonly pressuresSuccessful: number;
+  readonly pressureRatio: number;
+  readonly pressuresAttempted: number;
   readonly defensiveContributions: number;
 
   // Passing stats (partial)
@@ -70,7 +70,6 @@ export class Striker extends Role implements IStriker {
 
     const possessionStats = extractPossessionStats(player);
     this.possessionWon = possessionStats.possessionWon;
-    this.ballRetention = possessionStats.ballRetention;
 
     const attackingStats = extractAttackingStats(player);
     this.goals = attackingStats.goals;
@@ -85,7 +84,8 @@ export class Striker extends Role implements IStriker {
 
     const defensiveStats = extractDefensiveStats(player);
     this.tackleRatio = defensiveStats.tackleRatio;
-    this.pressuresSuccessful = defensiveStats.pressuresSuccessful;
+    this.pressureRatio = defensiveStats.pressureRatio;
+    this.pressuresAttempted = defensiveStats.pressuresAttempted;
     this.defensiveContributions = defensiveStats.defensiveContributions;
 
     const passStats = extractPassingStats(player);

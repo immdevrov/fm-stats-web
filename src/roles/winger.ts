@@ -7,6 +7,7 @@ import {
   type ICreativeStats,
   type IAttackingStats,
   type IMovementStats,
+  type ICrossingStats,
   extractAerialStats,
   extractPossessionStats,
   extractPassingStats,
@@ -14,6 +15,7 @@ import {
   extractCreativeStats,
   extractAttackingStats,
   extractMovementStats,
+  extractCrossingStats,
 } from "../types/stat-categories";
 import { getEffectivePosition } from "../utils/utils";
 import { type IRole, Role } from "./_role";
@@ -23,10 +25,11 @@ export interface IWinger
     Pick<IAerialStats, "headersWonRatio" | "aerialAttempts">,
     IPossessionStats,
     IPassingStats,
-    Pick<IDefensiveStats, "pressuresSuccessful">,
+    Pick<IDefensiveStats, "pressureRatio" | "pressuresAttempted">,
     ICreativeStats,
     Pick<IAttackingStats, "npxG" | "conversionRatio">,
-    IMovementStats {}
+    IMovementStats,
+    ICrossingStats {}
 
 export class Winger extends Role implements IWinger {
   // Aerial stats (partial)
@@ -36,7 +39,6 @@ export class Winger extends Role implements IWinger {
   // Possession stats
   readonly possessionWon: number;
   readonly possessionLost: number;
-  readonly ballRetention: number;
 
   // Passing stats
   readonly passRatio: number;
@@ -44,7 +46,8 @@ export class Winger extends Role implements IWinger {
   readonly keyPasses: number;
 
   // Defensive stats (partial)
-  readonly pressuresSuccessful: number;
+  readonly pressureRatio: number;
+  readonly pressuresAttempted: number;
   readonly defensiveContributions: number;
 
   // Creative stats
@@ -58,6 +61,8 @@ export class Winger extends Role implements IWinger {
   // Movement stats
   readonly dribbles: number;
   readonly sprints: number;
+
+  // Crossing stats
   readonly crossRatio: number;
   readonly crossesSuccessful: number;
 
@@ -71,7 +76,6 @@ export class Winger extends Role implements IWinger {
     const possessionStats = extractPossessionStats(player);
     this.possessionWon = possessionStats.possessionWon;
     this.possessionLost = possessionStats.possessionLost;
-    this.ballRetention = possessionStats.ballRetention;
 
     const passStats = extractPassingStats(player);
     this.passRatio = passStats.passRatio;
@@ -79,7 +83,8 @@ export class Winger extends Role implements IWinger {
     this.keyPasses = passStats.keyPasses;
 
     const defensiveStats = extractDefensiveStats(player);
-    this.pressuresSuccessful = defensiveStats.pressuresSuccessful;
+    this.pressureRatio = defensiveStats.pressureRatio;
+    this.pressuresAttempted = defensiveStats.pressuresAttempted;
     this.defensiveContributions = defensiveStats.defensiveContributions;
 
     const creativeStats = extractCreativeStats(player);
@@ -93,8 +98,10 @@ export class Winger extends Role implements IWinger {
     const movementStats = extractMovementStats(player);
     this.dribbles = movementStats.dribbles;
     this.sprints = movementStats.sprints;
-    this.crossRatio = movementStats.crossRatio;
-    this.crossesSuccessful = movementStats.crossesSuccessful;
+
+    const crossingStats = extractCrossingStats(player);
+    this.crossRatio = crossingStats.crossRatio;
+    this.crossesSuccessful = crossingStats.crossesSuccessful;
   }
 
   static isRole(player: Player): boolean {

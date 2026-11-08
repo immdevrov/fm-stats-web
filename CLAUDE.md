@@ -21,7 +21,7 @@ FM Jotter is a web application for analyzing Football Manager 24 player statisti
 - **Path alias**: `@/*` maps to `./src/*`
 
 ### Role System Details
-- **Stat Categories** (`stat-categories.ts`): 11 category interfaces (Aerial, Possession, Passing, Defensive, Creative, Attacking, Movement, Goalkeeper, Physical, Error) with `extract*Stats()` functions
+- **Stat Categories** (`stat-categories.ts`): 10 category interfaces (Aerial, Possession, Passing, Defensive, Creative, Attacking, Movement, Crossing, Goalkeeper, Error) with `extract*Stats()` functions
 - **Role Detection**: Each role has static `isRole(player)` checking `player.Position` array
 - **Sub-role Pattern**: Some roles extend others (e.g., LeftFullback extends Fullback with side filtering)
 - **Computed Stats**: Roles can derive stats (e.g., `saveRatioOverExpected = saveRatio - expectedSaveRatio`)

@@ -33,6 +33,7 @@ import {
   extractAttackingStats,
   extractCreativeStats,
   extractMovementStats,
+  extractCrossingStats,
   extractGoalkeeperStats,
 } from "../types/stat-categories";
 import { buildCohort, computePercentiles, type StatPercentile } from "../utils/comparison-utils";
@@ -393,6 +394,7 @@ function OutfieldStats({ player }: { player: Player }) {
   const attacking = extractAttackingStats(player);
   const creative = extractCreativeStats(player);
   const movement = extractMovementStats(player);
+  const crossing = extractCrossingStats(player);
 
   return (
     <SimpleGrid columns={2} gap={2}>
@@ -409,7 +411,8 @@ function OutfieldStats({ player }: { player: Player }) {
         stats={[
           { label: "Tackles", value: defensive.tackles.toFixed(2) },
           { label: "Tackle %", value: formatPercent(defensive.tackleRatio) },
-          { label: "Press Ratio", value: defensive.pressuresSuccessful.toFixed(2) },
+          { label: "Press Ratio", value: defensive.pressureRatio.toFixed(2) },
+          { label: "Pressures", value: defensive.pressuresAttempted.toFixed(2) },
           { label: "Def. Contrib.", value: defensive.defensiveContributions.toFixed(2) },
         ]}
       />
@@ -426,7 +429,6 @@ function OutfieldStats({ player }: { player: Player }) {
         stats={[
           { label: "Poss Won", value: possession.possessionWon.toFixed(2) },
           { label: "Poss Lost", value: possession.possessionLost.toFixed(2) },
-          { label: "Retention", value: possession.ballRetention.toFixed(2) },
         ]}
       />
       <StatSection
@@ -451,8 +453,13 @@ function OutfieldStats({ player }: { player: Player }) {
         stats={[
           { label: "Dribbles", value: movement.dribbles.toFixed(2) },
           { label: "Sprints", value: movement.sprints.toFixed(2) },
-          { label: "Cross %", value: formatPercent(movement.crossRatio) },
-          { label: "Crosses", value: movement.crossesSuccessful.toFixed(2) },
+        ]}
+      />
+      <StatSection
+        title="Crossing"
+        stats={[
+          { label: "Cross %", value: formatPercent(crossing.crossRatio) },
+          { label: "Crosses", value: crossing.crossesSuccessful.toFixed(2) },
         ]}
       />
     </SimpleGrid>

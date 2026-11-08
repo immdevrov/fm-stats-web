@@ -38,7 +38,6 @@ export class CentralMidfielder extends Role implements ICentralMidfielder {
   // Possession stats
   readonly possessionWon: number;
   readonly possessionLost: number;
-  readonly ballRetention: number;
 
   // Passing stats
   readonly passRatio: number;
@@ -48,7 +47,8 @@ export class CentralMidfielder extends Role implements ICentralMidfielder {
   // Defensive stats
   readonly tackles: number;
   readonly tackleRatio: number;
-  readonly pressuresSuccessful: number;
+  readonly pressureRatio: number;
+  readonly pressuresAttempted: number;
   readonly defensiveContributions: number;
 
   // Creative stats (partial)
@@ -73,7 +73,6 @@ export class CentralMidfielder extends Role implements ICentralMidfielder {
     const possessionStats = extractPossessionStats(player);
     this.possessionWon = possessionStats.possessionWon;
     this.possessionLost = possessionStats.possessionLost;
-    this.ballRetention = possessionStats.ballRetention;
 
     const passStats = extractPassingStats(player);
     this.passRatio = passStats.passRatio;
@@ -83,7 +82,8 @@ export class CentralMidfielder extends Role implements ICentralMidfielder {
     const defensiveStats = extractDefensiveStats(player);
     this.tackles = defensiveStats.tackles;
     this.tackleRatio = defensiveStats.tackleRatio;
-    this.pressuresSuccessful = defensiveStats.pressuresSuccessful;
+    this.pressureRatio = defensiveStats.pressureRatio;
+    this.pressuresAttempted = defensiveStats.pressuresAttempted;
     this.defensiveContributions = defensiveStats.defensiveContributions;
 
     const creativeStats = extractCreativeStats(player);

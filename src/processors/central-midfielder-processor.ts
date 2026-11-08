@@ -21,9 +21,8 @@ export class CentralMidfielderProcessor {
 
   get archetypes(): Record<string, KeyOfType<ICentralMidfielder, number>[]> {
     return {
-      [this.ARCHETYPE_NAMES.DESTROYER]: ["pressuresSuccessful", "tackleRatio", "possessionWon"],
+      [this.ARCHETYPE_NAMES.DESTROYER]: ["pressureRatio", "tackleRatio", "possessionWon"],
       [this.ARCHETYPE_NAMES.DEEP_PLAYMAKER]: [
-        "ballRetention",
         "progressivePasses",
         "keyPasses",
       ],
@@ -62,7 +61,7 @@ export class CentralMidfielderProcessor {
         keyPasses,
         dribbles,
         sprints,
-        pressuresSuccessful,
+        pressureRatio,
         distance,
         contractExpires,
         wage,
@@ -82,7 +81,7 @@ export class CentralMidfielderProcessor {
         dribbles,
         sprints,
         distance,
-        pressuresSuccessful,
+        pressureRatio,
         wage: wage ? formatWage(wage) : null,
         contractExpires: contractExpires ? displayDate(contractExpires) : null,
       };

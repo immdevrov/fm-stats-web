@@ -31,12 +31,11 @@ export class StrikersProcessor {
   get archetypes(): Record<string, KeyOfType<IStriker, number>[]> {
     return {
       [this.ARCHETYPE_NAMES.GOALSCORER]: ["conversionRatio", "shots", "goals"],
-      [this.ARCHETYPE_NAMES.PRESSING_FORWARD]: ["pressuresSuccessful", "tackleRatio"],
+      [this.ARCHETYPE_NAMES.PRESSING_FORWARD]: ["pressureRatio", "tackleRatio"],
       [this.ARCHETYPE_NAMES.CREATOR]: ["xA", "chancesCreated"],
       [this.ARCHETYPE_NAMES.TARGET_FORWARD]: [
         "headersWonRatio",
         "keyHeaders",
-        "ballRetention",
       ],
       [this.ARCHETYPE_NAMES.ADVANCED_FORWARD]: ["dribbles", "keyPasses"],
     };
@@ -74,7 +73,7 @@ export class StrikersProcessor {
         xA,
         keyPasses,
         dribbles,
-        pressuresSuccessful,
+        pressureRatio,
         aerialAttempts,
         headersWonRatio,
         contractExpires,
@@ -92,7 +91,7 @@ export class StrikersProcessor {
         shots,
         xA: getCohort(xA, xACohorts),
         dribbles: getCohort(dribbles, dribblesCohorts),
-        pressuresSuccessful,
+        pressureRatio,
         aerialAttempts,
         goals,
         headersWonRatio: getCohort(headersWonRatio, hdrsCohorts),

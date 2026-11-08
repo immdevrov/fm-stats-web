@@ -4,13 +4,11 @@ import {
   type IPossessionStats,
   type IPassingStats,
   type IDefensiveStats,
-  type IPhysicalStats,
   type IErrorStats,
   extractAerialStats,
   extractPossessionStats,
   extractPassingStats,
   extractDefensiveStats,
-  extractPhysicalStats,
   extractErrorStats,
 } from "../types/stat-categories";
 import { getEffectivePosition } from "../utils/utils";
@@ -22,7 +20,6 @@ export interface ICentralDefender
     IPossessionStats,
     IPassingStats,
     IDefensiveStats,
-    IPhysicalStats,
     IErrorStats {}
 
 export class CentralDefender extends Role implements ICentralDefender {
@@ -34,7 +31,6 @@ export class CentralDefender extends Role implements ICentralDefender {
   // Possession stats
   readonly possessionWon: number;
   readonly possessionLost: number;
-  readonly ballRetention: number;
 
   // Passing stats
   readonly passRatio: number;
@@ -44,11 +40,9 @@ export class CentralDefender extends Role implements ICentralDefender {
   // Defensive stats
   readonly tackles: number;
   readonly tackleRatio: number;
-  readonly pressuresSuccessful: number;
+  readonly pressureRatio: number;
+  readonly pressuresAttempted: number;
   readonly defensiveContributions: number;
-
-  // Physical stats
-  readonly height: number;
 
   // Error stats
   readonly mistakes: number;
@@ -64,7 +58,6 @@ export class CentralDefender extends Role implements ICentralDefender {
     const possessionStats = extractPossessionStats(player);
     this.possessionWon = possessionStats.possessionWon;
     this.possessionLost = possessionStats.possessionLost;
-    this.ballRetention = possessionStats.ballRetention;
 
     const passStats = extractPassingStats(player);
     this.passRatio = passStats.passRatio;
@@ -74,11 +67,9 @@ export class CentralDefender extends Role implements ICentralDefender {
     const defensiveStats = extractDefensiveStats(player);
     this.tackles = defensiveStats.tackles;
     this.tackleRatio = defensiveStats.tackleRatio;
-    this.pressuresSuccessful = defensiveStats.pressuresSuccessful;
+    this.pressureRatio = defensiveStats.pressureRatio;
+    this.pressuresAttempted = defensiveStats.pressuresAttempted;
     this.defensiveContributions = defensiveStats.defensiveContributions;
-
-    const physicalStats = extractPhysicalStats(player);
-    this.height = physicalStats.height;
 
     const errorStats = extractErrorStats(player);
     this.mistakes = errorStats.mistakes;
