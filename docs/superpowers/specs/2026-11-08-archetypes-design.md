@@ -101,8 +101,8 @@ dropped.
 - **Switching role tab** while an archetype is active leaves the archetype: the
   picker goes back to *no archetype*, the filters stay as they are. An
   archetype is a search for one role; the same thresholds on another role are
-  a different search, not an edit of this one. The side selector is an edit,
-  not a switch.
+  a different search, not an edit of this one. *(Amended 2026-11-08: changing
+  the side leaves the archetype too.)*
 - **Deleting the active archetype** leaves the working filters untouched and
   the picker on *no archetype*.
 
@@ -124,9 +124,10 @@ One control in the scouting toolbar, beside the role tabs.
 - Names are trimmed, non-empty, and unique case-insensitively; the dialog says
   why when one is refused.
 
-*Clear filters* keeps working as today and does not touch the active
-archetype — afterwards it simply shows as modified, and *Revert* brings the
-search back.
+*(Amended 2026-11-08.)* *Clear filters* means plain scouting: it clears the
+filters **and** leaves the archetype, and is shown whenever an archetype is
+active. The saved archetype is untouched; choosing it again brings the search
+back.
 
 ## Storage
 

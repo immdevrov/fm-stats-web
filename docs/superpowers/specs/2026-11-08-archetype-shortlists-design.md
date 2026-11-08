@@ -125,8 +125,9 @@ without the table's column memo having to.
 
 ### Shortlist only
 
-A checkbox beside *Hide unwanted*, present only while the active archetype is
-linked. It narrows the rows the current filters already show to the listed
+A checkbox in the archetype control, right after the linked list's name —
+not in the filter row, so archetype controls and plain search controls stay
+in separate places. Present only while the active archetype is linked. It narrows the rows the current filters already show to the listed
 players; percentiles still come from the full cohort. Plain view state like
 *Hide unwanted*: not part of the archetype, not in `localStorage`, gone on
 reload. Turning it on resets to page 1. The filter applies only while the

@@ -12,6 +12,7 @@ import { useSnapshots } from "../contexts/SnapshotContext";
 import { useMyTeam } from "../contexts/MyTeamContext";
 import { useSquadPlan } from "../contexts/SquadPlanContext";
 import { useCompare } from "../contexts/CompareContext";
+import { useArchetypes } from "../contexts/ArchetypeContext";
 import type { Player } from "../types/types";
 
 function errorText(error: unknown): string {
@@ -36,6 +37,7 @@ export function ImportView() {
   } = useSnapshots();
   const { clearMyClub } = useMyTeam();
   const { clearPlan } = useSquadPlan();
+  const { unlinkAll } = useArchetypes();
   const { clearAll: clearCompareList } = useCompare();
   const [pendingName, setPendingName] = useState<string | null>(null);
   const [progress, setProgress] = useState<{ written: number; total: number } | null>(null);
@@ -87,6 +89,8 @@ export function ImportView() {
           await db.clearLeagueRankings();
           await db.clearListsAndAnnotations(true);
           await db.clearCompareList();
+          await db.setMyClub(null);
+          await db.setSquadPlan(null);
         } catch (error) {
           throw new Error(
             `Erasing the old save did not finish (${errorText(error)}). Some of it may still be there and some may be gone — check My Team, snapshots and lists before importing again.`
@@ -95,6 +99,7 @@ export function ImportView() {
         clearMyClub();
         clearPlan();
         clearCompareList();
+        unlinkAll();
       }
 
       let id: string;

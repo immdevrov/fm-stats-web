@@ -15,8 +15,8 @@ async function _get(key: string): Promise<unknown> {
     const db = await getDB();
     const entry = await db.get('settings', key);
     return entry?.value ?? null;
-  } catch {
-    return null;
+  } catch (error) {
+    throw wrapError(`read ${key}`, error);
   }
 }
 
@@ -128,10 +128,12 @@ export async function getArchetypes(): Promise<Archetype[]> {
   const result: Archetype[] = [];
   for (const entry of value) {
     if (typeof entry !== 'object' || entry === null) continue;
-    const { id, name, filters } = entry as Partial<Archetype>;
+    const { id, name, filters, listId } = entry as Partial<Archetype>;
     if (typeof id !== 'string' || !id || typeof name !== 'string' || !name || seen.has(id)) continue;
     seen.add(id);
-    result.push({ id, name, filters: coerceFilters(filters) });
+    const archetype: Archetype = { id, name, filters: coerceFilters(filters) };
+    if (typeof listId === 'string' && listId) archetype.listId = listId;
+    result.push(archetype);
   }
   return result;
 }

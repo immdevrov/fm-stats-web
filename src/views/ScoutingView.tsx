@@ -39,6 +39,8 @@ import { resolveHorizon } from "../utils/planner";
 import { loadWorkingState, saveWorkingState } from "../utils/scouting-filters";
 import type { Archetype, ColumnFilters, ContractHorizon, ScoutingFilters, Side } from "../types/archetypes";
 import { ArchetypePicker } from "../components/ArchetypePicker";
+import { ShortlistPin } from "../components/ShortlistPin";
+import { linkedListOf } from "../utils/archetypes";
 import { useArchetypes } from "../contexts/ArchetypeContext";
 
 const STAT_ABBREVIATIONS: Record<string, string> = {
@@ -282,7 +284,7 @@ export function ScoutingView() {
 
   const { compareList, addPlayer, removePlayer } = useCompare();
   const compareSet = useMemo(() => new Set(compareList), [compareList]);
-  const { isUnwanted } = usePlayerNotes();
+  const { isUnwanted, lists, isLoaded: notesLoaded, loadError: notesError } = usePlayerNotes();
 
   const { active: activeSnapshot } = useSnapshots();
   const snapshotDate = activeSnapshot?.date ?? null;
@@ -304,6 +306,17 @@ export function ScoutingView() {
   const [excludeInjuries, setExcludeInjuries] = useState(saved.excludeInjuries);
   const [excludedLeagues, setExcludedLeagues] = useState<Set<string>>(new Set(saved.excludedLeagues));
   const [hideUnwanted, setHideUnwanted] = useState(false);
+  const activeArchetype = archetypes.find((a) => a.id === activeArchetypeId) ?? null;
+  const linkedList = linkedListOf(activeArchetype, lists, notesLoaded && !notesError);
+  const linkedListId = linkedList?.id ?? null;
+  const [shortlistOnly, setShortlistOnly] = useState(false);
+  const shortlistKey = `${activeArchetypeId}|${linkedListId}`;
+  const [shortlistKeySeen, setShortlistKeySeen] = useState(shortlistKey);
+  if (shortlistKeySeen !== shortlistKey) {
+    setShortlistKeySeen(shortlistKey);
+    setShortlistOnly(false);
+  }
+  const shortlistUids = shortlistOnly ? linkedList?.uids : undefined;
 
   const [sortKey, setSortKey] = useState<keyof ScoutingRow>(saved.sortKey as keyof ScoutingRow);
   const [sortDirection, setSortDirection] = useState<SortDirection>(saved.sortDirection);
@@ -386,6 +399,8 @@ export function ScoutingView() {
     setCurrentPage(1);
   }, []);
 
+  const hasRankedLeague = leagueRankings.some((r) => r.rank < 999);
+
   const availableLeagues = useMemo(() => {
     const leagues = new Set<string>();
     for (const row of scoutingData) {
@@ -409,6 +424,11 @@ export function ScoutingView() {
 
     if (hideUnwanted) {
       result = result.filter((r) => !isUnwanted(r.uid));
+    }
+
+    if (shortlistUids) {
+      const pinned = new Set(shortlistUids);
+      result = result.filter((r) => pinned.has(r.uid));
     }
 
     for (const [key, bounds] of Object.entries(columnFilters)) {
@@ -479,7 +499,7 @@ export function ScoutingView() {
       }
       return 0;
     });
-  }, [scoutingData, excludeInjuries, columnFilters, contractBefore, excludedLeagues, sortKey, sortDirection, hideUnwanted, isUnwanted]);
+  }, [scoutingData, excludeInjuries, columnFilters, contractBefore, excludedLeagues, sortKey, sortDirection, hideUnwanted, isUnwanted, shortlistUids]);
 
   const totalPages = Math.ceil(filteredAndSorted.length / PAGE_SIZE);
   const paginatedData = useMemo(() => {
@@ -489,7 +509,7 @@ export function ScoutingView() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [roleKey, side, columnFilters, contractBefore, excludeInjuries, excludedLeagues, sortKey, sortDirection, hideUnwanted]);
+  }, [roleKey, side, columnFilters, contractBefore, excludeInjuries, excludedLeagues, sortKey, sortDirection, hideUnwanted, shortlistOnly]);
 
   const handleSortChange = useCallback(
     (key: keyof ScoutingRow, direction: SortDirection) => {
@@ -517,9 +537,11 @@ export function ScoutingView() {
     setColumnFiltersRaw({});
     setExcludeInjuries(true);
     setExcludedLeagues(new Set());
+    setActiveArchetypeId(null);
   }, []);
 
-  const hasActiveFilters = contractHorizon !== null ||
+  const hasActiveFilters = activeArchetypeId !== null ||
+    contractHorizon !== null ||
     Object.keys(columnFiltersRaw).length > 0 ||
     !excludeInjuries ||
     excludedLeagues.size > 0;
@@ -542,10 +564,16 @@ export function ScoutingView() {
         key: "uid",
         header: "",
         sortable: false,
-        width: "56px",
-        render: (_value, row) => (
-          <PlayerStatusControl uid={row.uid} player={{ Name: row.name, Club: row.club }} />
-        ),
+        width: linkedListId ? "84px" : "56px",
+        render: (_value, row) =>
+          linkedListId ? (
+            <HStack gap={1}>
+              <PlayerStatusControl uid={row.uid} player={{ Name: row.name, Club: row.club }} />
+              <ShortlistPin listId={linkedListId} uid={row.uid} player={{ Name: row.name, Club: row.club }} />
+            </HStack>
+          ) : (
+            <PlayerStatusControl uid={row.uid} player={{ Name: row.name, Club: row.club }} />
+          ),
       },
       {
         key: "name",
@@ -632,7 +660,7 @@ export function ScoutingView() {
     }
 
     return base;
-  }, [roleConfig.statKeys, roleConfig.derivedPercentileStats, statGroups, compareSet, addPlayer, removePlayer]);
+  }, [roleConfig.statKeys, roleConfig.derivedPercentileStats, statGroups, compareSet, addPlayer, removePlayer, linkedListId]);
 
   const filterRow = useMemo(() => {
     const filterableKeys = new Set(["age", "wage"]);
@@ -722,7 +750,11 @@ export function ScoutingView() {
                     size="xs"
                     variant={side === s ? "solid" : "outline"}
                     colorPalette={side === s ? "glaucous" : undefined}
-                    onClick={() => setSide(s)}
+                    onClick={() => {
+                      if (s === side) return;
+                      setSide(s);
+                      setActiveArchetypeId(null);
+                    }}
                   >
                     {s.charAt(0).toUpperCase() + s.slice(1)}
                   </Button>
@@ -735,6 +767,8 @@ export function ScoutingView() {
                 activeId={activeArchetypeId}
                 onApply={applyArchetype}
                 onActiveChange={setActiveArchetypeId}
+                shortlistOnly={shortlistOnly}
+                onShortlistOnlyChange={setShortlistOnly}
               />
             </Box>
           </HStack>
@@ -806,7 +840,20 @@ export function ScoutingView() {
             )}
             {scoutingData.length === 0 && !isPending ? (
               <Text color="fg.muted" textAlign="center">
-                No players found for this role. Import data and set up league rankings first.
+                {hasRankedLeague ? (
+                  "No players of this role in ranked leagues with 900+ minutes."
+                ) : (
+                  <>
+                    No leagues are ranked yet. Scouting only compares players in ranked leagues — rank
+                    them on{" "}
+                    <Link to="/leagues">
+                      <Text as="span" color="glaucous.400" _hover={{ textDecoration: "underline" }}>
+                        Leagues
+                      </Text>
+                    </Link>
+                    .
+                  </>
+                )}
               </Text>
             ) : (
               <>

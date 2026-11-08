@@ -9,10 +9,11 @@ import { PlannerBoard } from "./PlannerBoard";
 import { PlannerToolbar } from "./PlannerToolbar";
 import { CandidatePanel } from "./CandidatePanel";
 import { PlannerDnd } from "./PlannerDnd";
+import { LoadErrorNotice } from "../LoadErrorNotice";
 
 export function SquadPlanner({ club, players }: { club: string; players: Player[] }) {
   const { lists, annotations } = usePlayerNotes();
-  const { plan, isLoaded, applyPreset, refreshSnapshots } = useSquadPlan();
+  const { plan, isLoaded, loadError, applyPreset, refreshSnapshots } = useSquadPlan();
   const { players: allPlayers } = useRoster();
   const { isNewest } = useSnapshots();
 
@@ -44,6 +45,8 @@ export function SquadPlanner({ club, players }: { club: string; players: Player[
       new Map(allPlayers.map((p) => [p.UID, { name: p.Name, club: p.Club }]))
     );
   }, [isLoaded, plan, allPlayers, isNewest, refreshSnapshots]);
+
+  if (loadError) return <LoadErrorNotice what="Your squad plan" error={loadError} />;
 
   if (!isLoaded || allPlayers === null) {
     return <Spinner size="lg" colorPalette="glaucous" alignSelf="center" />;
