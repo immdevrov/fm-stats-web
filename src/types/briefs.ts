@@ -18,7 +18,7 @@ export interface ScoutingFilters {
   sortDirection: SortDirection;
 }
 
-export interface Archetype {
+export interface Brief {
   id: string;
   name: string;
   filters: ScoutingFilters;

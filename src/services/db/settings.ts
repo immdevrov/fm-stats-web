@@ -3,12 +3,12 @@ import type { PlannedSlot, SquadPlan } from '../../types/planner';
 import { getPreset } from '../../formations';
 import { GK_CELL, cellKey, isPlayableCell } from '../../formations/grid';
 import { coerceFilters } from '../../utils/scouting-filters';
-import type { Archetype } from '../../types/archetypes';
+import type { Brief } from '../../types/briefs';
 
 const MY_CLUB = 'myClub';
 const SQUAD_PLAN = 'squadPlan';
 const ACTIVE_SNAPSHOT = 'activeSnapshot';
-const ARCHETYPES = 'archetypes';
+const BRIEFS = 'archetypes';
 
 async function _get(key: string): Promise<unknown> {
   try {
@@ -121,23 +121,23 @@ export function setActiveSnapshotId(id: string | null): Promise<void> {
   return _set(ACTIVE_SNAPSHOT, id, 'save active snapshot');
 }
 
-export async function getArchetypes(): Promise<Archetype[]> {
-  const value = await _get(ARCHETYPES);
+export async function getBriefs(): Promise<Brief[]> {
+  const value = await _get(BRIEFS);
   if (!Array.isArray(value)) return [];
   const seen = new Set<string>();
-  const result: Archetype[] = [];
+  const result: Brief[] = [];
   for (const entry of value) {
     if (typeof entry !== 'object' || entry === null) continue;
-    const { id, name, filters, listId } = entry as Partial<Archetype>;
+    const { id, name, filters, listId } = entry as Partial<Brief>;
     if (typeof id !== 'string' || !id || typeof name !== 'string' || !name || seen.has(id)) continue;
     seen.add(id);
-    const archetype: Archetype = { id, name, filters: coerceFilters(filters) };
-    if (typeof listId === 'string' && listId) archetype.listId = listId;
-    result.push(archetype);
+    const brief: Brief = { id, name, filters: coerceFilters(filters) };
+    if (typeof listId === 'string' && listId) brief.listId = listId;
+    result.push(brief);
   }
   return result;
 }
 
-export function setArchetypes(archetypes: Archetype[]): Promise<void> {
-  return _set(ARCHETYPES, archetypes, 'save archetypes');
+export function setBriefs(briefs: Brief[]): Promise<void> {
+  return _set(BRIEFS, briefs, 'save briefs');
 }

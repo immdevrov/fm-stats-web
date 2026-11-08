@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { readSetting, seedLeagueRankings, seedList, seedPlayersAndCompareList } from './helpers/seed';
 
-test('an archetype links a shortlist, pins players to it and is unlinked when the list is deleted', async ({ page }) => {
+test('a brief links a shortlist, pins players to it and is unlinked when the list is deleted', async ({ page }) => {
   await page.goto('/import');
   await expect(page.getByRole('heading', { name: 'Import Player Data' })).toBeVisible();
   await seedPlayersAndCompareList(
@@ -20,11 +20,11 @@ test('an archetype links a shortlist, pins players to it and is unlinked when th
   await page.getByRole('button', { name: 'Striker', exact: true }).click();
   await expect(page.getByText('Alice Striker')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Save as archetype' }).click();
+  await page.getByRole('button', { name: 'Save as brief' }).click();
   await page.getByRole('textbox', { name: 'Name' }).fill('Poacher');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
 
-  await page.getByRole('button', { name: 'Archetype actions' }).click();
+  await page.getByRole('button', { name: 'Brief actions' }).click();
   await expect(page.getByRole('menuitem', { name: 'Link list…' })).toBeVisible();
   await page.getByRole('menuitem', { name: 'Link list…' }).click();
   await page.getByRole('textbox', { name: 'Name' }).fill('Poacher targets');
@@ -69,7 +69,7 @@ test('an archetype links a shortlist, pins players to it and is unlinked when th
 
   await page.goto('/scouting');
   await expect(page.getByRole('button', { name: 'Poacher' })).toBeVisible();
-  await page.getByRole('button', { name: 'Archetype actions' }).click();
+  await page.getByRole('button', { name: 'Brief actions' }).click();
   await expect(page.getByRole('menuitem', { name: 'Link list…' })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByText('Alice Striker')).toBeVisible();

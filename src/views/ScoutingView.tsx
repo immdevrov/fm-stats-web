@@ -37,11 +37,11 @@ import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { useSnapshots } from "../contexts/SnapshotContext";
 import { resolveHorizon } from "../utils/planner";
 import { loadWorkingState, saveWorkingState } from "../utils/scouting-filters";
-import type { Archetype, ColumnFilters, ContractHorizon, ScoutingFilters, Side } from "../types/archetypes";
-import { ArchetypePicker } from "../components/ArchetypePicker";
+import type { Brief, ColumnFilters, ContractHorizon, ScoutingFilters, Side } from "../types/briefs";
+import { BriefPicker } from "../components/BriefPicker";
 import { ShortlistPin } from "../components/ShortlistPin";
-import { linkedListOf } from "../utils/archetypes";
-import { useArchetypes } from "../contexts/ArchetypeContext";
+import { linkedListOf } from "../utils/briefs";
+import { useBriefs } from "../contexts/BriefContext";
 
 const STAT_ABBREVIATIONS: Record<string, string> = {
   saveRatio: "SR",
@@ -289,9 +289,9 @@ export function ScoutingView() {
   const { active: activeSnapshot } = useSnapshots();
   const snapshotDate = activeSnapshot?.date ?? null;
 
-  const [{ filters: saved, activeArchetypeId: savedArchetypeId }] = useState(loadWorkingState);
-  const [activeArchetypeId, setActiveArchetypeId] = useState<string | null>(savedArchetypeId);
-  const { archetypes, isLoaded: archetypesLoaded } = useArchetypes();
+  const [{ filters: saved, activeBriefId: savedBriefId }] = useState(loadWorkingState);
+  const [activeBriefId, setActiveBriefId] = useState<string | null>(savedBriefId);
+  const { briefs, isLoaded: briefsLoaded } = useBriefs();
 
   const [roleKey, setRoleKey] = useState(saved.roleKey);
   const [side, setSide] = useState<Side>(saved.side);
@@ -306,11 +306,11 @@ export function ScoutingView() {
   const [excludeInjuries, setExcludeInjuries] = useState(saved.excludeInjuries);
   const [excludedLeagues, setExcludedLeagues] = useState<Set<string>>(new Set(saved.excludedLeagues));
   const [hideUnwanted, setHideUnwanted] = useState(false);
-  const activeArchetype = archetypes.find((a) => a.id === activeArchetypeId) ?? null;
-  const linkedList = linkedListOf(activeArchetype, lists, notesLoaded && !notesError);
+  const activeBrief = briefs.find((a) => a.id === activeBriefId) ?? null;
+  const linkedList = linkedListOf(activeBrief, lists, notesLoaded && !notesError);
   const linkedListId = linkedList?.id ?? null;
   const [shortlistOnly, setShortlistOnly] = useState(false);
-  const shortlistKey = `${activeArchetypeId}|${linkedListId}`;
+  const shortlistKey = `${activeBriefId}|${linkedListId}`;
   const [shortlistKeySeen, setShortlistKeySeen] = useState(shortlistKey);
   if (shortlistKeySeen !== shortlistKey) {
     setShortlistKeySeen(shortlistKey);
@@ -376,17 +376,17 @@ export function ScoutingView() {
   }, [allPlayers, leagueRankings, roleConfig, side, statGroups]);
 
   useEffect(() => {
-    saveWorkingState({ filters: currentFilters, activeArchetypeId });
-  }, [currentFilters, activeArchetypeId]);
+    saveWorkingState({ filters: currentFilters, activeBriefId });
+  }, [currentFilters, activeBriefId]);
 
   useEffect(() => {
-    if (archetypesLoaded && activeArchetypeId && !archetypes.some((a) => a.id === activeArchetypeId)) {
-      setActiveArchetypeId(null);
+    if (briefsLoaded && activeBriefId && !briefs.some((a) => a.id === activeBriefId)) {
+      setActiveBriefId(null);
     }
-  }, [archetypesLoaded, archetypes, activeArchetypeId]);
+  }, [briefsLoaded, briefs, activeBriefId]);
 
-  const applyArchetype = useCallback((archetype: Archetype) => {
-    const f = archetype.filters;
+  const applyBrief = useCallback((brief: Brief) => {
+    const f = brief.filters;
     setRoleKey(f.roleKey);
     setSide(f.side);
     setColumnFiltersRaw(f.columnFilters);
@@ -395,7 +395,7 @@ export function ScoutingView() {
     setExcludedLeagues(new Set(f.excludedLeagues));
     setSortKey(f.sortKey as keyof ScoutingRow);
     setSortDirection(f.sortDirection);
-    setActiveArchetypeId(archetype.id);
+    setActiveBriefId(brief.id);
     setCurrentPage(1);
   }, []);
 
@@ -537,10 +537,10 @@ export function ScoutingView() {
     setColumnFiltersRaw({});
     setExcludeInjuries(true);
     setExcludedLeagues(new Set());
-    setActiveArchetypeId(null);
+    setActiveBriefId(null);
   }, []);
 
-  const hasActiveFilters = activeArchetypeId !== null ||
+  const hasActiveFilters = activeBriefId !== null ||
     contractHorizon !== null ||
     Object.keys(columnFiltersRaw).length > 0 ||
     !excludeInjuries ||
@@ -736,7 +736,7 @@ export function ScoutingView() {
                 size="sm"
                 variant={roleIndex === i ? "solid" : "outline"}
                 colorPalette={roleIndex === i ? "glaucous" : undefined}
-                onClick={() => { setRoleKey(rc.key); setSide("both"); setActiveArchetypeId(null); }}
+                onClick={() => { setRoleKey(rc.key); setSide("both"); setActiveBriefId(null); }}
               >
                 {rc.name}
               </Button>
@@ -753,7 +753,7 @@ export function ScoutingView() {
                     onClick={() => {
                       if (s === side) return;
                       setSide(s);
-                      setActiveArchetypeId(null);
+                      setActiveBriefId(null);
                     }}
                   >
                     {s.charAt(0).toUpperCase() + s.slice(1)}
@@ -762,11 +762,11 @@ export function ScoutingView() {
               </>
             )}
             <Box ml="auto">
-              <ArchetypePicker
+              <BriefPicker
                 filters={currentFilters}
-                activeId={activeArchetypeId}
-                onApply={applyArchetype}
-                onActiveChange={setActiveArchetypeId}
+                activeId={activeBriefId}
+                onApply={applyBrief}
+                onActiveChange={setActiveBriefId}
                 shortlistOnly={shortlistOnly}
                 onShortlistOnlyChange={setShortlistOnly}
               />

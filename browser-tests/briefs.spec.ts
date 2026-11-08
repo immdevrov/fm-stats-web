@@ -13,7 +13,7 @@ async function expectAgeMin(page: Page, value: string) {
   await page.keyboard.press('Escape');
 }
 
-test('an archetype saves a scouting search, reverts edits and comes back after leaving it', async ({ page }) => {
+test('a brief saves a scouting search, reverts edits and comes back after leaving it', async ({ page }) => {
   await page.goto('/import');
   await expect(page.getByRole('heading', { name: 'Import Player Data' })).toBeVisible();
   await seedPlayersAndCompareList(
@@ -31,7 +31,7 @@ test('an archetype saves a scouting search, reverts edits and comes back after l
   await expect(page.getByText('Alice Striker')).toBeVisible();
 
   await setAgeMin(page, '18');
-  await page.getByRole('button', { name: 'Save as archetype' }).click();
+  await page.getByRole('button', { name: 'Save as brief' }).click();
   await page.getByRole('textbox', { name: 'Name' }).fill('Poacher');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Poacher' })).toBeVisible();
@@ -47,8 +47,8 @@ test('an archetype saves a scouting search, reverts edits and comes back after l
   await expect(page.getByRole('button', { name: 'Poacher' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Winger', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'No archetype' })).toBeVisible();
-  await page.getByRole('button', { name: 'No archetype' }).click();
+  await expect(page.getByRole('button', { name: 'No brief' })).toBeVisible();
+  await page.getByRole('button', { name: 'No brief' }).click();
   await page.getByRole('menuitem', { name: 'Poacher' }).click();
   await expect(page).toHaveTitle(/Scouting: Striker/);
   await expect(page.getByText('Alice Striker')).toBeVisible();

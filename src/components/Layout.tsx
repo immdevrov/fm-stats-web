@@ -7,7 +7,7 @@ import { PlayerNotesProvider } from "../contexts/PlayerNotesContext";
 import { MyTeamProvider } from "../contexts/MyTeamContext";
 import { SquadPlanProvider } from "../contexts/SquadPlanContext";
 import { SnapshotProvider } from "../contexts/SnapshotContext";
-import { ArchetypeProvider } from "../contexts/ArchetypeContext";
+import { BriefProvider } from "../contexts/BriefContext";
 
 export function Layout() {
   return (
@@ -16,7 +16,7 @@ export function Layout() {
         <PlayerNotesProvider>
           <MyTeamProvider>
             <SquadPlanProvider>
-              <ArchetypeProvider>
+              <BriefProvider>
                 <Box minH="100vh" bg="bg.canvas" color="fg.default">
                   <HStack align="stretch" gap={0} h="100vh">
                     <Box
@@ -36,7 +36,7 @@ export function Layout() {
                   </HStack>
                   <Toaster />
                 </Box>
-              </ArchetypeProvider>
+              </BriefProvider>
             </SquadPlanProvider>
           </MyTeamProvider>
         </PlayerNotesProvider>

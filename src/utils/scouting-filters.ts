@@ -1,5 +1,5 @@
 import { ROLE_CONFIG } from "../roles";
-import type { ColumnFilters, ContractHorizon, ScoutingFilters, Side } from "../types/archetypes";
+import type { ColumnFilters, ContractHorizon, ScoutingFilters, Side } from "../types/briefs";
 
 const STORAGE_KEY = "scouting-filters";
 const SIDES: readonly Side[] = ["both", "left", "right"];
@@ -88,24 +88,24 @@ export function sameFilters(a: ScoutingFilters, b: ScoutingFilters): boolean {
 
 export interface WorkingState {
   filters: ScoutingFilters;
-  activeArchetypeId: string | null;
+  activeBriefId: string | null;
 }
 
 export function loadWorkingState(): WorkingState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     const parsed: unknown = raw ? JSON.parse(raw) : null;
-    const activeArchetypeId =
+    const activeBriefId =
       isRecord(parsed) && typeof parsed.activeArchetypeId === "string" ? parsed.activeArchetypeId : null;
-    return { filters: coerceFilters(parsed), activeArchetypeId };
+    return { filters: coerceFilters(parsed), activeBriefId };
   } catch {
-    return { filters: { ...DEFAULT_FILTERS }, activeArchetypeId: null };
+    return { filters: { ...DEFAULT_FILTERS }, activeBriefId: null };
   }
 }
 
-export function saveWorkingState({ filters, activeArchetypeId }: WorkingState) {
+export function saveWorkingState({ filters, activeBriefId }: WorkingState) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...filters, activeArchetypeId }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...filters, activeArchetypeId: activeBriefId }));
   } catch {
     /* ignore */
   }

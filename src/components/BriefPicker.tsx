@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Button, Checkbox, HStack, Menu, Portal, Text } from "@chakra-ui/react";
 import { ROLE_CONFIG } from "../roles";
-import { useArchetypes } from "../contexts/ArchetypeContext";
+import { useBriefs } from "../contexts/BriefContext";
 import { usePlayerNotes } from "../contexts/PlayerNotesContext";
-import { linkedListOf, validateArchetypeName } from "../utils/archetypes";
+import { linkedListOf, validateBriefName } from "../utils/briefs";
 import { sameFilters } from "../utils/scouting-filters";
-import type { Archetype, ScoutingFilters } from "../types/archetypes";
+import type { Brief, ScoutingFilters } from "../types/briefs";
 import { NameDialog } from "./ui/name-dialog";
 import { ConfirmDialog } from "./ui/confirm-dialog";
 import { toaster } from "./ui/toaster";
@@ -13,48 +13,48 @@ import { LinkListDialog, type LinkListChoice } from "./LinkListDialog";
 
 type PickerDialog =
   | { kind: "save-as" }
-  | { kind: "rename"; archetype: Archetype }
-  | { kind: "delete"; archetype: Archetype }
-  | { kind: "discard"; target: Archetype }
-  | { kind: "link"; archetype: Archetype };
+  | { kind: "rename"; brief: Brief }
+  | { kind: "delete"; brief: Brief }
+  | { kind: "discard"; target: Brief }
+  | { kind: "link"; brief: Brief };
 
-interface ArchetypePickerProps {
+interface BriefPickerProps {
   filters: ScoutingFilters;
   activeId: string | null;
-  onApply: (archetype: Archetype) => void;
+  onApply: (brief: Brief) => void;
   onActiveChange: (id: string | null) => void;
   shortlistOnly: boolean;
   onShortlistOnlyChange: (value: boolean) => void;
 }
 
-export function ArchetypePicker({
+export function BriefPicker({
   filters,
   activeId,
   onApply,
   onActiveChange,
   shortlistOnly,
   onShortlistOnlyChange,
-}: ArchetypePickerProps) {
-  const { archetypes, isLoaded, create, update, rename, remove, setList } = useArchetypes();
+}: BriefPickerProps) {
+  const { briefs, isLoaded, create, update, rename, remove, setList } = useBriefs();
   const { lists, createList, isLoaded: notesLoaded, loadError } = usePlayerNotes();
   const [dialog, setDialog] = useState<PickerDialog | null>(null);
 
   if (!isLoaded) return null;
 
-  const active = archetypes.find((a) => a.id === activeId) ?? null;
+  const active = briefs.find((a) => a.id === activeId) ?? null;
   const modified = active !== null && !sameFilters(filters, active.filters);
   const notesReady = notesLoaded && !loadError;
   const linked = linkedListOf(active, lists, notesReady);
-  const dialogLinked = dialog?.kind === "link" ? linkedListOf(dialog.archetype, lists, notesReady) : null;
+  const dialogLinked = dialog?.kind === "link" ? linkedListOf(dialog.brief, lists, notesReady) : null;
 
-  const link = async (archetypeId: string, choice: LinkListChoice) => {
+  const link = async (briefId: string, choice: LinkListChoice) => {
     if ("listId" in choice) {
-      setList(archetypeId, choice.listId);
+      setList(briefId, choice.listId);
       return;
     }
     try {
       const list = await createList(choice.newName);
-      setList(archetypeId, list.id);
+      setList(briefId, list.id);
     } catch {
       toaster.create({
         title: "List Not Created",
@@ -67,10 +67,10 @@ export function ArchetypePicker({
 
   const groups = [...ROLE_CONFIG]
     .sort((a, b) => Number(b.key === filters.roleKey) - Number(a.key === filters.roleKey))
-    .map((rc) => ({ role: rc, items: archetypes.filter((a) => a.filters.roleKey === rc.key) }))
+    .map((rc) => ({ role: rc, items: briefs.filter((a) => a.filters.roleKey === rc.key) }))
     .filter((group) => group.items.length > 0);
 
-  const choose = (target: Archetype) => {
+  const choose = (target: Brief) => {
     if (active && target.id === active.id && !modified) return;
     if (modified) setDialog({ kind: "discard", target });
     else onApply(target);
@@ -83,7 +83,7 @@ export function ArchetypePicker({
       <Menu.Root>
         <Menu.Trigger asChild>
           <Button size="sm" variant="outline">
-            {active ? active.name : "No archetype"}
+            {active ? active.name : "No brief"}
           </Button>
         </Menu.Trigger>
         <Portal>
@@ -91,15 +91,15 @@ export function ArchetypePicker({
             <Menu.Content>
               {groups.length === 0 && (
                 <Menu.Item value="empty" disabled>
-                  No archetypes saved yet
+                  No briefs saved yet
                 </Menu.Item>
               )}
               {groups.map((group) => (
                 <Menu.ItemGroup key={group.role.key}>
                   <Menu.ItemGroupLabel>{group.role.name}</Menu.ItemGroupLabel>
-                  {group.items.map((archetype) => (
-                    <Menu.Item key={archetype.id} value={archetype.id} onSelect={() => choose(archetype)}>
-                      {archetype.name}
+                  {group.items.map((brief) => (
+                    <Menu.Item key={brief.id} value={brief.id} onSelect={() => choose(brief)}>
+                      {brief.name}
                     </Menu.Item>
                   ))}
                 </Menu.ItemGroup>
@@ -111,7 +111,7 @@ export function ArchetypePicker({
 
       {!active && (
         <Button size="sm" variant="ghost" onClick={() => setDialog({ kind: "save-as" })}>
-          Save as archetype
+          Save as brief
         </Button>
       )}
 
@@ -135,7 +135,7 @@ export function ArchetypePicker({
       {active && (
         <Menu.Root>
           <Menu.Trigger asChild>
-            <Button size="sm" variant="ghost" aria-label="Archetype actions">
+            <Button size="sm" variant="ghost" aria-label="Brief actions">
               …
             </Button>
           </Menu.Trigger>
@@ -143,13 +143,13 @@ export function ArchetypePicker({
             <Menu.Positioner>
               <Menu.Content>
                 {notesReady && !linked && (
-                  <Menu.Item value="link" onSelect={() => setDialog({ kind: "link", archetype: active })}>
+                  <Menu.Item value="link" onSelect={() => setDialog({ kind: "link", brief: active })}>
                     Link list…
                   </Menu.Item>
                 )}
                 {linked && (
                   <>
-                    <Menu.Item value="link" onSelect={() => setDialog({ kind: "link", archetype: active })}>
+                    <Menu.Item value="link" onSelect={() => setDialog({ kind: "link", brief: active })}>
                       Change list…
                     </Menu.Item>
                     <Menu.Item value="unlink" onSelect={() => setList(active.id, null)}>
@@ -157,10 +157,10 @@ export function ArchetypePicker({
                     </Menu.Item>
                   </>
                 )}
-                <Menu.Item value="rename" onSelect={() => setDialog({ kind: "rename", archetype: active })}>
+                <Menu.Item value="rename" onSelect={() => setDialog({ kind: "rename", brief: active })}>
                   Rename
                 </Menu.Item>
-                <Menu.Item value="delete" onSelect={() => setDialog({ kind: "delete", archetype: active })}>
+                <Menu.Item value="delete" onSelect={() => setDialog({ kind: "delete", brief: active })}>
                   Delete
                 </Menu.Item>
               </Menu.Content>
@@ -191,26 +191,26 @@ export function ArchetypePicker({
         title={dialogLinked ? "Change list" : "Link list"}
         lists={lists}
         initialListId={dialogLinked?.id ?? null}
-        defaultNewName={dialog?.kind === "link" ? dialog.archetype.name : ""}
-        onSubmit={(choice) => dialog?.kind === "link" && link(dialog.archetype.id, choice)}
+        defaultNewName={dialog?.kind === "link" ? dialog.brief.name : ""}
+        onSubmit={(choice) => dialog?.kind === "link" && link(dialog.brief.id, choice)}
         onClose={() => setDialog(null)}
       />
       <NameDialog
         isOpen={dialog?.kind === "save-as"}
-        title={active ? "Save as new archetype" : "Save as archetype"}
+        title={active ? "Save as new brief" : "Save as brief"}
         initialValue=""
-        validate={(name) => validateArchetypeName(name, archetypes)}
+        validate={(name) => validateBriefName(name, briefs)}
         onSubmit={saveAsNew}
         onClose={() => setDialog(null)}
       />
       <NameDialog
         isOpen={dialog?.kind === "rename"}
-        title="Rename archetype"
-        initialValue={dialog?.kind === "rename" ? dialog.archetype.name : ""}
+        title="Rename brief"
+        initialValue={dialog?.kind === "rename" ? dialog.brief.name : ""}
         validate={(name) =>
-          validateArchetypeName(name, archetypes, dialog?.kind === "rename" ? dialog.archetype.id : undefined)
+          validateBriefName(name, briefs, dialog?.kind === "rename" ? dialog.brief.id : undefined)
         }
-        onSubmit={(name) => dialog?.kind === "rename" && rename(dialog.archetype.id, name)}
+        onSubmit={(name) => dialog?.kind === "rename" && rename(dialog.brief.id, name)}
         onClose={() => setDialog(null)}
       />
       <ConfirmDialog
@@ -218,14 +218,14 @@ export function ArchetypePicker({
         onClose={() => setDialog(null)}
         onConfirm={() => {
           if (dialog?.kind !== "delete") return;
-          remove(dialog.archetype.id);
+          remove(dialog.brief.id);
           onActiveChange(null);
           setDialog(null);
         }}
-        title="Delete archetype"
+        title="Delete brief"
         message={
           dialog?.kind === "delete"
-            ? `Delete “${dialog.archetype.name}”? Your current filters stay as they are.`
+            ? `Delete “${dialog.brief.name}”? Your current filters stay as they are.`
             : ""
         }
         options={[{ label: "Delete", value: "delete" }]}

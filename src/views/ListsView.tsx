@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { usePlayerNotes, type PlayerIdentity } from "../contexts/PlayerNotesContext";
 import { useRoster, useSnapshots } from "../contexts/SnapshotContext";
 import { useMyTeam } from "../contexts/MyTeamContext";
-import { useArchetypes } from "../contexts/ArchetypeContext";
+import { useBriefs } from "../contexts/BriefContext";
 import { isTransferDone } from "../utils/squad";
 import type { TransferMark } from "../types/annotations";
 import { PlayerStatusControl } from "../components/PlayerStatusControl";
@@ -48,7 +48,7 @@ export function ListsView() {
     removeFromList,
     setTransfer,
   } = usePlayerNotes();
-  const { archetypes, isLoaded: archetypesLoaded, unlinkList } = useArchetypes();
+  const { briefs, isLoaded: briefsLoaded, unlinkList } = useBriefs();
   const { myClub } = useMyTeam();
   const { isNewest } = useSnapshots();
   const [activeTab, setActiveTab] = useState<string | null>(null);
@@ -217,7 +217,7 @@ export function ListsView() {
 
   const handleDelete = async () => {
     if (!activeList) return;
-    const linkedFrom = archetypes.filter((a) => a.listId === activeList.id).map((a) => a.name);
+    const linkedFrom = briefs.filter((a) => a.listId === activeList.id).map((a) => a.name);
     const message =
       linkedFrom.length > 0
         ? `"${activeList.name}" is the shortlist of ${linkedFrom.join(", ")}. Delete it and unlink?`
@@ -295,7 +295,7 @@ export function ListsView() {
               <Button size="xs" variant="ghost" onClick={handleRename}>
                 Rename
               </Button>
-              <Button size="xs" variant="ghost" onClick={handleDelete} disabled={!archetypesLoaded}>
+              <Button size="xs" variant="ghost" onClick={handleDelete} disabled={!briefsLoaded}>
                 Delete list
               </Button>
               {missingCount > 0 && (

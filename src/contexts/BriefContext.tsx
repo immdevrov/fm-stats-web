@@ -3,52 +3,52 @@ import { db } from "../services/db";
 import { toaster } from "../components/ui/toaster";
 import { useOnTabReturn } from "../hooks/useOnTabReturn";
 import { generateId } from "../utils/ids";
-import type { Archetype, ScoutingFilters } from "../types/archetypes";
+import type { Brief, ScoutingFilters } from "../types/briefs";
 
-interface ArchetypeContextValue {
-  archetypes: Archetype[];
+interface BriefContextValue {
+  briefs: Brief[];
   isLoaded: boolean;
-  create: (name: string, filters: ScoutingFilters, listId?: string) => Archetype;
+  create: (name: string, filters: ScoutingFilters, listId?: string) => Brief;
   update: (id: string, filters: ScoutingFilters) => void;
   rename: (id: string, name: string) => void;
   remove: (id: string) => void;
-  setList: (archetypeId: string, listId: string | null) => void;
+  setList: (briefId: string, listId: string | null) => void;
   unlinkList: (listId: string) => void;
   unlinkAll: () => void;
 }
 
-type Change = (current: Archetype[]) => Archetype[];
+type Change = (current: Brief[]) => Brief[];
 
-function withoutList(archetype: Archetype): Archetype {
-  const copy = { ...archetype };
+function withoutList(brief: Brief): Brief {
+  const copy = { ...brief };
   delete copy.listId;
   return copy;
 }
 
-const ArchetypeContext = createContext<ArchetypeContextValue | null>(null);
+const BriefContext = createContext<BriefContextValue | null>(null);
 
-export function ArchetypeProvider({ children }: { children: ReactNode }) {
-  const [archetypes, setArchetypes] = useState<Archetype[]>([]);
+export function BriefProvider({ children }: { children: ReactNode }) {
+  const [briefs, setBriefs] = useState<Brief[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const changes = useRef(0);
   const loaded = useRef(false);
   const pending = useRef<Change[]>([]);
 
   useEffect(() => {
-    db.getArchetypes()
+    db.getBriefs()
       .then((stored) => {
         if (loaded.current) return;
         loaded.current = true;
         const next = pending.current.reduce((acc, fn) => fn(acc), stored);
         pending.current = [];
-        setArchetypes(next);
+        setBriefs(next);
         setIsLoaded(true);
       })
       .catch(() => {
         toaster.create({
-          id: "archetypes-not-loaded",
-          title: "Archetypes Not Loaded",
-          description: "Your archetypes could not be read. Nothing was changed — reload the page to try again.",
+          id: "briefs-not-loaded",
+          title: "Briefs Not Loaded",
+          description: "Your briefs could not be read. Nothing was changed — reload the page to try again.",
           type: "error",
           duration: 6000,
         });
@@ -57,23 +57,23 @@ export function ArchetypeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isLoaded) return;
-    db.setArchetypes(archetypes).catch(() => {
+    db.setBriefs(briefs).catch(() => {
       toaster.create({
-        title: "Archetypes Not Saved",
-        description: "Your archetypes could not be saved.",
+        title: "Briefs Not Saved",
+        description: "Your briefs could not be saved.",
         type: "error",
         duration: 3000,
       });
     });
-  }, [isLoaded, archetypes]);
+  }, [isLoaded, briefs]);
 
   useOnTabReturn(() => {
     if (!isLoaded) return;
     const start = changes.current;
-    db.getArchetypes()
+    db.getBriefs()
       .then((stored) => {
         if (changes.current !== start) return;
-        setArchetypes((current) =>
+        setBriefs((current) =>
           JSON.stringify(current) === JSON.stringify(stored) ? current : stored
         );
       })
@@ -83,15 +83,15 @@ export function ArchetypeProvider({ children }: { children: ReactNode }) {
   const change = useCallback((fn: Change) => {
     changes.current++;
     if (!loaded.current) pending.current.push(fn);
-    setArchetypes(fn);
+    setBriefs(fn);
   }, []);
 
   const create = useCallback(
     (name: string, filters: ScoutingFilters, listId?: string) => {
-      const archetype: Archetype = { id: generateId("archetype"), name: name.trim(), filters };
-      if (listId) archetype.listId = listId;
-      change((current) => [...current, archetype]);
-      return archetype;
+      const brief: Brief = { id: generateId("brief"), name: name.trim(), filters };
+      if (listId) brief.listId = listId;
+      change((current) => [...current, brief]);
+      return brief;
     },
     [change]
   );
@@ -114,9 +114,9 @@ export function ArchetypeProvider({ children }: { children: ReactNode }) {
   );
 
   const setList = useCallback(
-    (archetypeId: string, listId: string | null) =>
+    (briefId: string, listId: string | null) =>
       change((current) =>
-        current.map((a) => (a.id !== archetypeId ? a : listId ? { ...a, listId } : withoutList(a)))
+        current.map((a) => (a.id !== briefId ? a : listId ? { ...a, listId } : withoutList(a)))
       ),
     [change]
   );
@@ -130,17 +130,17 @@ export function ArchetypeProvider({ children }: { children: ReactNode }) {
   const unlinkAll = useCallback(() => change((current) => current.map(withoutList)), [change]);
 
   return (
-    <ArchetypeContext.Provider
-      value={{ archetypes, isLoaded, create, update, rename, remove, setList, unlinkList, unlinkAll }}
+    <BriefContext.Provider
+      value={{ briefs, isLoaded, create, update, rename, remove, setList, unlinkList, unlinkAll }}
     >
       {children}
-    </ArchetypeContext.Provider>
+    </BriefContext.Provider>
   );
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
-export function useArchetypes() {
-  const ctx = useContext(ArchetypeContext);
-  if (!ctx) throw new Error("useArchetypes must be used within ArchetypeProvider");
+export function useBriefs() {
+  const ctx = useContext(BriefContext);
+  if (!ctx) throw new Error("useBriefs must be used within BriefProvider");
   return ctx;
 }
