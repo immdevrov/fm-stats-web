@@ -357,3 +357,27 @@ export async function readSetting(page: Page, key: string): Promise<unknown> {
     { dbName: DB_NAME, dbVersion: DB_VERSION, key }
   );
 }
+
+export async function readListUids(page: Page, listId: string): Promise<number[]> {
+  return page.evaluate(
+    ({ dbName, dbVersion, listId }) => {
+      return new Promise<number[]>((resolve, reject) => {
+        const request = indexedDB.open(dbName, dbVersion);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          const db = request.result;
+          const get = db.transaction(['playerLists'], 'readonly').objectStore('playerLists').get(listId);
+          get.onsuccess = () => {
+            db.close();
+            resolve(get.result?.uids ?? []);
+          };
+          get.onerror = () => {
+            db.close();
+            reject(get.error);
+          };
+        };
+      });
+    },
+    { dbName: DB_NAME, dbVersion: DB_VERSION, listId }
+  );
+}

@@ -45,7 +45,7 @@ export function VerdictLine({ brief, list, row }: { brief: Brief; list: PlayerLi
   if (editing) {
     const finish = (save: boolean, value: string) => {
       setEditing(false);
-      if (save) setVerdict(brief.id, list.uids, row.uid, value);
+      if (save && value.trim() !== (row.verdict ?? "")) setVerdict(brief.id, list.uids, row.uid, value);
     };
     return (
       <Input

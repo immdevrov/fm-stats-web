@@ -111,9 +111,8 @@ export function BriefHeatTable({
   const { annotations } = usePlayerNotes();
   const { movePick } = useBriefs();
   const [allStats, setAllStats] = useState(false);
-  const [sortKey, setSortKey] = useState<keyof BriefRow>("index");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
-  const rankMode = sortKey === "index" && sortDirection === "asc";
+  const [chosenSortKey, setSortKey] = useState<keyof BriefRow>("index");
+  const [chosenDirection, setSortDirection] = useState<SortDirection>("asc");
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
   const rows = useMemo(
@@ -121,7 +120,7 @@ export function BriefHeatTable({
     [brief, list, roster, rankings, annotations]
   );
 
-  const columns = useMemo(() => {
+  const availableColumns = useMemo(() => {
     const { columnFilters } = brief.filters;
     const keys = heatKeys(briefRoleConfig(brief));
     const isBriefStat = (heat: HeatKey) => thresholdText(columnFilters[heat.key]) !== null;
@@ -132,12 +131,6 @@ export function BriefHeatTable({
         key: "index",
         header: "#",
         firstSortDirection: "asc",
-        render: (v, row) => (
-          <>
-            {rankMode && <DragGrip uid={row.uid} name={row.name} />}
-            {String(v)}
-          </>
-        ),
       },
       {
         key: "grade",
@@ -196,9 +189,30 @@ export function BriefHeatTable({
       }
     }
     return base;
-  }, [brief, list, allStats, rankMode]);
+  }, [brief, list, allStats]);
 
-  const sortHeader = columns.find((c) => c.key === sortKey)?.header;
+  const sortColumn = availableColumns.find((c) => c.key === chosenSortKey);
+  const sortKey = sortColumn ? chosenSortKey : "index";
+  const sortDirection = sortColumn ? chosenDirection : "asc";
+  const sortHeader = sortColumn?.header;
+  const rankMode = sortKey === "index" && sortDirection === "asc";
+  const columns = useMemo(
+    () =>
+      availableColumns.map((c) =>
+        c.key === "index"
+          ? {
+              ...c,
+              render: (v: unknown, row: BriefRow) => (
+                <>
+                  {rankMode && <DragGrip uid={row.uid} name={row.name} />}
+                  {String(v)}
+                </>
+              ),
+            }
+          : c
+      ),
+    [availableColumns, rankMode]
+  );
   const sortedRows = useMemo(() => sortRows(rows, sortKey, sortDirection), [rows, sortKey, sortDirection]);
 
   const onDragEnd = ({ active, over }: DragEndEvent) => {

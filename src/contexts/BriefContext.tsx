@@ -55,6 +55,7 @@ export function BriefProvider({ children }: { children: ReactNode }) {
         loaded.current = true;
         const next = pending.current.reduce((acc, fn) => fn(acc), stored);
         pending.current = [];
+        latest.current = next;
         setBriefs(next);
         setLoadError(null);
         setIsLoaded(true);
@@ -90,6 +91,7 @@ export function BriefProvider({ children }: { children: ReactNode }) {
     db.getBriefs()
       .then((stored) => {
         if (changes.current !== start) return;
+        latest.current = stored;
         setBriefs((current) =>
           JSON.stringify(current) === JSON.stringify(stored) ? current : stored
         );

@@ -3,6 +3,7 @@ import { STAT_ABBREVIATIONS } from '../src/utils/scouting-columns';
 import {
   seedLeagueRankings,
   seedList,
+  readListUids,
   readSetting,
   seedPlayersAndCompareList,
   seedSettings,
@@ -134,6 +135,7 @@ test('a player removed from the shortlist loses his pick', async ({ page }) => {
   await page.goto('/players/4');
   await page.getByRole('button', { name: 'Player status' }).click();
   await page.getByText('Dribbler targets').click();
+  await expect.poll(async () => (await readListUids(page, 'l1')).includes(4)).toBe(true);
   await page.goto('/briefs/b1');
   await expect(rows).toHaveCount(2);
   await expect(rows.nth(1)).toContainText('Dee Striker');
@@ -175,7 +177,7 @@ test('dragging a row reorders the shortlist and survives a reload; sorting turns
 
   await page.getByRole('columnheader', { name: 'Age', exact: true }).click();
   await expect(page.getByLabel('Drag Ann Striker')).toHaveCount(0);
-  await expect(page.getByText('Sorted by Age')).toBeVisible();
+  await expect(page.getByText('Sorted by Age — sort by rank to reorder', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'sort by rank' }).click();
   await expect(page.getByText('Drag rows to reorder.')).toBeVisible();
 });
