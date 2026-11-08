@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Button, chakra, HStack, IconButton, Input, Menu, Portal } from "@chakra-ui/react";
+import { Badge, chakra, IconButton, Input, Menu, Portal } from "@chakra-ui/react";
 import { LuX } from "react-icons/lu";
 import { useBriefs } from "../contexts/BriefContext";
 import { usePlayerNotes } from "../contexts/PlayerNotesContext";
@@ -7,32 +7,60 @@ import type { Brief, Grade } from "../types/briefs";
 import type { PlayerList } from "../types/annotations";
 import type { BriefRow } from "../utils/brief-rows";
 
-const GRADES: { value: Grade | null; label: string; aria: string }[] = [
-  { value: "A", label: "A", aria: "Grade A" },
-  { value: "B", label: "B", aria: "Grade B" },
-  { value: "C", label: "C", aria: "Grade C" },
-  { value: null, label: "–", aria: "No grade" },
+const NO_GRADE = "none";
+
+const GRADES: { value: Grade | typeof NO_GRADE; label: string; meaning: string; palette: string }[] = [
+  { value: "A", label: "A", meaning: "Sign him", palette: "green" },
+  { value: "B", label: "B", meaning: "Solid fallback", palette: "yellow" },
+  { value: "C", label: "C", meaning: "Only if the price is right", palette: "orange" },
+  { value: NO_GRADE, label: "–", meaning: "No grade", palette: "gray" },
 ];
+
+function GradeBadge({ value }: { value: Grade | typeof NO_GRADE }) {
+  const grade = GRADES.find((g) => g.value === value) ?? GRADES[3];
+  return (
+    <Badge
+      colorPalette={grade.palette}
+      variant={value === NO_GRADE ? "outline" : "solid"}
+      minW={6}
+      justifyContent="center"
+    >
+      {grade.label}
+    </Badge>
+  );
+}
 
 export function GradeControl({ brief, list, row }: { brief: Brief; list: PlayerList; row: BriefRow }) {
   const { setGrade } = useBriefs();
+  const current = row.grade ?? NO_GRADE;
   return (
-    <HStack gap={0.5}>
-      {GRADES.map((g) => (
-        <Button
-          key={g.aria}
-          size="2xs"
-          minW={6}
-          px={1}
-          variant={row.grade === g.value ? "solid" : "ghost"}
-          aria-label={g.aria}
-          aria-pressed={row.grade === g.value}
-          onClick={() => setGrade(brief.id, list.uids, row.uid, g.value)}
-        >
-          {g.label}
-        </Button>
-      ))}
-    </HStack>
+    <Menu.Root>
+      <Menu.Trigger asChild>
+        <chakra.button aria-label={`Grade for ${row.name}`} borderRadius="sm" cursor="pointer">
+          <GradeBadge value={current} />
+        </chakra.button>
+      </Menu.Trigger>
+      <Portal>
+        <Menu.Positioner>
+          <Menu.Content>
+            <Menu.RadioItemGroup
+              value={current}
+              onValueChange={(e) =>
+                setGrade(brief.id, list.uids, row.uid, e.value === NO_GRADE ? null : (e.value as Grade))
+              }
+            >
+              {GRADES.map((g) => (
+                <Menu.RadioItem key={g.value} value={g.value}>
+                  <GradeBadge value={g.value} />
+                  <Menu.ItemText>{g.meaning}</Menu.ItemText>
+                  <Menu.ItemIndicator />
+                </Menu.RadioItem>
+              ))}
+            </Menu.RadioItemGroup>
+          </Menu.Content>
+        </Menu.Positioner>
+      </Portal>
+    </Menu.Root>
   );
 }
 

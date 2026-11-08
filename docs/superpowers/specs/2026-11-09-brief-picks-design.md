@@ -149,8 +149,11 @@ unchanged.
 
 ### Grade
 
-A narrow column right after `#`: a compact A / B / C / – control; one click
-sets the grade, `–` clears it. Editable on any snapshot — picks are taste, not
+A narrow column right after `#`: the grade as a coloured badge (A green, B
+yellow, C orange; ungraded a grey outlined `–`) that opens a dropdown of the
+four choices, each with its meaning (*Sign him*, *Solid fallback*, *Only if the
+price is right*, *No grade*). Changed after build at Roman's request; the
+first version was a row of four buttons. Editable on any snapshot — picks are taste, not
 snapshot data. The column sorts like any other (A first; ungraded last), which
 the table gives for free.
 

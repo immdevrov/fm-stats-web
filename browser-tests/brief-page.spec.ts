@@ -97,7 +97,8 @@ test('a grade and a verdict survive a reload', async ({ page }) => {
   await page.goto('/briefs/b1');
   const rows = page.locator('tbody').getByRole('row');
   const bea = rows.filter({ hasText: 'Bea Striker' });
-  await bea.getByRole('button', { name: 'Grade B' }).click();
+  await bea.getByRole('button', { name: 'Grade for Bea Striker' }).click();
+  await page.getByRole('menuitemradio', { name: 'Solid fallback' }).click();
   await bea.getByRole('button', { name: 'Verdict for Bea Striker' }).click();
   await page.getByRole('textbox', { name: 'Verdict for Bea Striker' }).fill('Quick but raw');
   await page.keyboard.press('Enter');
@@ -107,10 +108,10 @@ test('a grade and a verdict survive a reload', async ({ page }) => {
 
   await page.reload();
   const beaAfter = page.locator('tbody').getByRole('row').filter({ hasText: 'Bea Striker' });
-  await expect(beaAfter.getByRole('button', { name: 'Grade B' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(beaAfter.getByRole('button', { name: 'Grade for Bea Striker' })).toHaveText('B');
   await expect(beaAfter).toContainText('Quick but raw');
   const dee = page.locator('tbody').getByRole('row').filter({ hasText: 'Dee Striker' });
-  await expect(dee.getByRole('button', { name: 'No grade' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(dee.getByRole('button', { name: 'Grade for Dee Striker' })).toHaveText('–');
 });
 
 test('a player removed from the shortlist loses his pick', async ({ page }) => {
@@ -119,11 +120,12 @@ test('a player removed from the shortlist loses his pick', async ({ page }) => {
   await page.goto('/briefs/b1');
   const rows = page.locator('tbody').getByRole('row');
   const dee = rows.filter({ hasText: 'Dee Striker' });
-  await dee.getByRole('button', { name: 'Grade A' }).click();
+  await dee.getByRole('button', { name: 'Grade for Dee Striker' }).click();
+  await page.getByRole('menuitemradio', { name: 'Sign him' }).click();
   await dee.getByRole('button', { name: 'Verdict for Dee Striker' }).click();
   await page.getByRole('textbox', { name: 'Verdict for Dee Striker' }).fill('Plan B');
   await page.keyboard.press('Enter');
-  await expect(dee.getByRole('button', { name: 'Grade A' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(dee.getByRole('button', { name: 'Grade for Dee Striker' })).toHaveText('A');
   await expect(page.getByText('Plan B')).toBeVisible();
   await expect.poll(async () => (await storedPicks(page))?.some((p) => p.uid === 4)).toBe(true);
 
@@ -139,7 +141,7 @@ test('a player removed from the shortlist loses his pick', async ({ page }) => {
   await page.goto('/briefs/b1');
   await expect(rows).toHaveCount(2);
   await expect(rows.nth(1)).toContainText('Dee Striker');
-  await expect(rows.nth(1).getByRole('button', { name: 'No grade' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(rows.nth(1).getByRole('button', { name: 'Grade for Dee Striker' })).toHaveText('–');
   await expect(page.getByText('Plan B')).toHaveCount(0);
 });
 
