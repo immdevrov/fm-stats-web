@@ -26,11 +26,6 @@ import {
   ROLE_CONFIG,
   STAT_LABELS,
   INVERTED_STATS,
-  LeftFullback,
-  RightFullback,
-  LeftWinger,
-  RightWinger,
-  type RoleConfig,
 } from "../roles";
 import { formatWage, displayDate } from "../utils/utils";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
@@ -43,53 +38,7 @@ import { ShortlistPin } from "../components/ShortlistPin";
 import { linkedListOf } from "../utils/briefs";
 import { useBriefs } from "../contexts/BriefContext";
 
-const STAT_ABBREVIATIONS: Record<string, string> = {
-  saveRatio: "SR",
-  expectedSaveRatio: "xSR",
-  saveRatioOverExpected: "SR+",
-  goalsPrevented: "GP",
-  savesHeldRatio: "SH",
-  concededPer90: "Con",
-  savesPer90: "Sv",
-  shotStoppingRank: "SSR",
-  passRatio: "PR",
-  progressivePasses: "PP",
-  keyPasses: "KP",
-  tackles: "Tkl",
-  tackleRatio: "TR",
-  pressuresSuccessful: "Pr%",
-  defensiveContributions: "DC",
-  headersWonRatio: "HW",
-  aerialAttempts: "AA",
-  keyHeaders: "KH",
-  crossRatio: "CR",
-  crossesSuccessful: "Crs",
-  xA: "xA",
-  chancesCreated: "CC",
-  dribbles: "Drb",
-  sprints: "Spr",
-  npxG: "xG",
-  conversionRatio: "Cv",
-  goals: "Gls",
-  xGOverperformance: "xG+",
-  shots: "Sh",
-  ballRetention: "BR",
-  mistakes: "Mst",
-  distance: "Dst",
-};
-
-const GROUP_ABBREVIATIONS: Record<string, string> = {
-  goalkeeper: "GK",
-  passing: "Pas",
-  error: "Err",
-  defensive: "Def",
-  aerial: "Aer",
-  possession: "Pos",
-  physical: "Phy",
-  creative: "Cre",
-  movement: "Mov",
-  attacking: "Att",
-};
+import { STAT_ABBREVIATIONS, GROUP_ABBREVIATIONS, roleClassFor } from "../utils/scouting-columns";
 import { getStatGroupsForRole } from "../utils/stat-group-mapping";
 import {
   buildScoutingCohort,
@@ -130,13 +79,6 @@ function PercentileCell({ value, inverted }: { value: number; inverted?: boolean
       {rounded}
     </Text>
   );
-}
-
-function getRoleClassForSide(config: RoleConfig, side: Side): RoleConfig["RoleClass"] {
-  if (side === "both") return config.RoleClass;
-  if (config.key === "FB") return side === "left" ? LeftFullback : RightFullback;
-  if (config.key === "W") return side === "left" ? LeftWinger : RightWinger;
-  return config.RoleClass;
 }
 
 interface LeagueMultiSelectProps {
@@ -367,7 +309,7 @@ export function ScoutingView() {
     if (allPlayers.length === 0 || leagueRankings.length === 0) return;
 
     startTransition(() => {
-      const RoleClass = getRoleClassForSide(roleConfig, side);
+      const RoleClass = roleClassFor(roleConfig, side);
       const cohort = buildScoutingCohort(allPlayers, RoleClass, leagueRankings);
       setCohortSize(cohort.length);
       const data = computeScoutingData(cohort, roleConfig, statGroups);

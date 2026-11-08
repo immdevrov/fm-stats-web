@@ -1,7 +1,7 @@
 import type { Player, LeagueRanking } from "../types/types";
 import type { RoleConfig } from "../roles";
 import { INVERTED_STATS, Role } from "../roles";
-import { getPercentile, getColumn } from "./utils";
+import { getPercentileFromSorted, getColumn } from "./utils";
 import { type StatGroup } from "./stat-group-mapping";
 
 export interface ScoutingRow extends Record<string, unknown> {
@@ -17,23 +17,162 @@ export interface ScoutingRow extends Record<string, unknown> {
   groupRatings: Record<string, number>;
 }
 
+export type CohortExclusion = "minutes" | "league" | "role";
+
+export function cohortExclusions(
+  player: Player,
+  RoleClass: RoleConfig["RoleClass"],
+  rankedLeagues: Set<string>
+): CohortExclusion[] {
+  const reasons: CohortExclusion[] = [];
+  if (!RoleClass.isRole(player)) reasons.push("role");
+  if (!rankedLeagues.has(player.Division)) reasons.push("league");
+  if (!(player.Mins >= 900)) reasons.push("minutes");
+  return reasons;
+}
+
+export function rankedLeagueSet(rankings: LeagueRanking[]): Set<string> {
+  return new Set(rankings.filter((r) => r.rank < 999).map((r) => r.league));
+}
+
+const roleClassOverrides = new Map<RoleConfig["RoleClass"], RoleConfig["RoleClass"]>();
+
+export function asRole(player: Player, RoleClass: RoleConfig["RoleClass"]): Role {
+  let Wrapped = roleClassOverrides.get(RoleClass);
+  if (!Wrapped) {
+    Wrapped = class extends RoleClass {
+      static isRole() {
+        return true;
+      }
+    };
+    roleClassOverrides.set(RoleClass, Wrapped);
+  }
+  return new Wrapped(player);
+}
+
 export function buildScoutingCohort(
   allPlayers: Player[],
   RoleClass: RoleConfig["RoleClass"],
   leagueRankings: LeagueRanking[]
 ): Role[] {
-  const rankedLeagues = new Set(
-    leagueRankings.filter((r) => r.rank < 999).map((r) => r.league)
+  const rankedLeagues = rankedLeagueSet(leagueRankings);
+  return allPlayers
+    .filter((p) => cohortExclusions(p, RoleClass, rankedLeagues).length === 0)
+    .map((p) => new RoleClass(p));
+}
+
+export interface CohortRanking {
+  roleConfig: RoleConfig;
+  statGroups: StatGroup[];
+  sortedColumns: Record<string, number[]>;
+  sortedGroupSums: Record<string, number[]>;
+}
+
+function allStatKeysOf(roleConfig: RoleConfig, statGroups: StatGroup[]): Set<string> {
+  const keys = new Set<string>(roleConfig.statKeys);
+  for (const group of statGroups) {
+    for (const key of group.statKeys) keys.add(key);
+  }
+  return keys;
+}
+
+function percentilesOf(
+  player: Role,
+  keys: Iterable<string>,
+  sortedColumns: Record<string, number[]>
+): Record<string, number> {
+  const record = player as unknown as Record<string, number>;
+  const percentiles: Record<string, number> = {};
+  for (const key of keys) {
+    percentiles[key] = getPercentileFromSorted(record[key], sortedColumns[key]);
+  }
+  return percentiles;
+}
+
+function groupSumOf(group: StatGroup, percentiles: Record<string, number>): number {
+  let sum = 0;
+  for (const key of group.statKeys) {
+    const p = percentiles[key];
+    sum += INVERTED_STATS.has(key) ? 100 - p : p;
+  }
+  return sum;
+}
+
+export function buildCohortRanking(
+  cohort: Role[],
+  roleConfig: RoleConfig,
+  statGroups: StatGroup[]
+): CohortRanking | null {
+  if (cohort.length === 0) return null;
+
+  const cohortRecords = cohort as unknown as Record<string, unknown>[];
+  const keys = allStatKeysOf(roleConfig, statGroups);
+
+  const sortedColumns: Record<string, number[]> = {};
+  for (const key of keys) {
+    sortedColumns[key] = (getColumn(cohortRecords, key) as number[])
+      .slice()
+      .sort((a, b) => a - b);
+  }
+
+  const sortedGroupSums: Record<string, number[]> = {};
+  for (const group of statGroups) sortedGroupSums[group.key] = [];
+  for (const player of cohort) {
+    const percentiles = percentilesOf(player, keys, sortedColumns);
+    for (const group of statGroups) {
+      sortedGroupSums[group.key].push(groupSumOf(group, percentiles));
+    }
+  }
+  for (const group of statGroups) {
+    sortedGroupSums[group.key].sort((a, b) => a - b);
+  }
+
+  return { roleConfig, statGroups, sortedColumns, sortedGroupSums };
+}
+
+export function rankPlayer(player: Role, ranking: CohortRanking): ScoutingRow {
+  const { roleConfig, statGroups, sortedColumns, sortedGroupSums } = ranking;
+  const percentiles = percentilesOf(
+    player,
+    allStatKeysOf(roleConfig, statGroups),
+    sortedColumns
   );
 
-  return allPlayers
-    .filter(
-      (p) =>
-        RoleClass.isRole(p) &&
-        rankedLeagues.has(p.Division) &&
-        p.Mins >= 900
-    )
-    .map((p) => new RoleClass(p));
+  const groupRatings: Record<string, number> = {};
+  for (const group of statGroups) {
+    groupRatings[group.key] = getPercentileFromSorted(
+      groupSumOf(group, percentiles),
+      sortedGroupSums[group.key]
+    );
+  }
+
+  const { derivedPercentileStats } = roleConfig;
+  if (derivedPercentileStats) {
+    for (const derived of derivedPercentileStats) {
+      percentiles[derived.key] = derived.formula(percentiles);
+    }
+  }
+
+  const statPercentiles: Record<string, number> = {};
+  for (const key of roleConfig.statKeys) statPercentiles[key] = percentiles[key];
+  if (derivedPercentileStats) {
+    for (const derived of derivedPercentileStats) {
+      statPercentiles[derived.key] = percentiles[derived.key];
+    }
+  }
+
+  return {
+    uid: player.uid,
+    name: player.name,
+    age: player.age,
+    club: player.club,
+    division: player.division,
+    wage: player.wage,
+    contractExpires: player.contractExpires,
+    injuries: player.injuries,
+    statPercentiles,
+    groupRatings,
+  };
 }
 
 export function computeScoutingData(
@@ -41,105 +180,7 @@ export function computeScoutingData(
   roleConfig: RoleConfig,
   statGroups: StatGroup[]
 ): ScoutingRow[] {
-  if (cohort.length === 0) return [];
-
-  const cohortRecords = cohort as unknown as Record<string, unknown>[];
-  const { statKeys } = roleConfig;
-
-  // Pre-compute sorted columns for all stats (statKeys + all group stats)
-  const allStatKeys = new Set(statKeys);
-  for (const group of statGroups) {
-    for (const key of group.statKeys) {
-      allStatKeys.add(key);
-    }
-  }
-
-  const sortedColumns: Record<string, number[]> = {};
-  for (const key of allStatKeys) {
-    sortedColumns[key] = (getColumn(cohortRecords, key) as number[])
-      .slice()
-      .sort((a, b) => a - b);
-  }
-
-  // Compute per-player percentiles for ALL stats
-  const allPercentiles: Record<string, number>[] = cohort.map((player) => {
-    const record = player as unknown as Record<string, number>;
-    const percentiles: Record<string, number> = {};
-    for (const key of allStatKeys) {
-      percentiles[key] = getPercentile(record[key], sortedColumns[key]);
-    }
-    return percentiles;
-  });
-
-  // Compute group scores per player
-  const groupScores: Record<string, number[]> = {};
-  for (const group of statGroups) {
-    groupScores[group.key] = [];
-  }
-
-  const playerGroupScores: Record<string, number>[] = cohort.map((_, i) => {
-    const scores: Record<string, number> = {};
-    for (const group of statGroups) {
-      let sum = 0;
-      for (const key of group.statKeys) {
-        const p = allPercentiles[i][key];
-        sum += INVERTED_STATS.has(key) ? 100 - p : p;
-      }
-      scores[group.key] = sum;
-      groupScores[group.key].push(sum);
-    }
-    return scores;
-  });
-
-  // Sort group score columns for percentile ranking
-  const sortedGroupScores: Record<string, number[]> = {};
-  for (const group of statGroups) {
-    sortedGroupScores[group.key] = groupScores[group.key]
-      .slice()
-      .sort((a, b) => a - b);
-  }
-
-  // Compute derived percentile stats
-  const { derivedPercentileStats } = roleConfig;
-  if (derivedPercentileStats) {
-    for (const player of allPercentiles) {
-      for (const derived of derivedPercentileStats) {
-        player[derived.key] = derived.formula(player);
-      }
-    }
-  }
-
-  // Build final rows
-  return cohort.map((player, i) => {
-    const statPercentiles: Record<string, number> = {};
-    for (const key of statKeys) {
-      statPercentiles[key] = allPercentiles[i][key];
-    }
-    if (derivedPercentileStats) {
-      for (const derived of derivedPercentileStats) {
-        statPercentiles[derived.key] = allPercentiles[i][derived.key];
-      }
-    }
-
-    const groupRatings: Record<string, number> = {};
-    for (const group of statGroups) {
-      groupRatings[group.key] = getPercentile(
-        playerGroupScores[i][group.key],
-        sortedGroupScores[group.key]
-      );
-    }
-
-    return {
-      uid: player.uid,
-      name: player.name,
-      age: player.age,
-      club: player.club,
-      division: player.division,
-      wage: player.wage,
-      contractExpires: player.contractExpires,
-      injuries: player.injuries,
-      statPercentiles,
-      groupRatings,
-    };
-  });
+  const ranking = buildCohortRanking(cohort, roleConfig, statGroups);
+  if (!ranking) return [];
+  return cohort.map((p) => rankPlayer(p, ranking));
 }
