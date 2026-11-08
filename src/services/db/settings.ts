@@ -15,8 +15,8 @@ async function _get(key: string): Promise<unknown> {
     const db = await getDB();
     const entry = await db.get('settings', key);
     return entry?.value ?? null;
-  } catch {
-    return null;
+  } catch (error) {
+    throw wrapError(`read ${key}`, error);
   }
 }
 

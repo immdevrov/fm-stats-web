@@ -10,9 +10,10 @@ import { useRoster, useSnapshots } from "../contexts/SnapshotContext";
 import { usePlayerNotes } from "../contexts/PlayerNotesContext";
 import { markedSquad, type MarkedSquad } from "../utils/squad";
 import { RosterErrorNotice } from "../components/RosterErrorNotice";
+import { LoadErrorNotice } from "../components/LoadErrorNotice";
 
 export function MyTeamView() {
-  const { myClub, isLoaded, setMyClub, clearMyClub } = useMyTeam();
+  const { myClub, isLoaded, loadError, setMyClub, clearMyClub } = useMyTeam();
   const location = useLocation();
   const navigate = useNavigate();
   const isPlanner = location.pathname === "/my-team/planner";
@@ -56,6 +57,16 @@ export function MyTeamView() {
   };
 
   if (rosterError) return <RosterErrorNotice error={rosterError} />;
+
+  if (loadError) {
+    return (
+      <Box minH="100vh" p={8}>
+        <Container maxW="container.lg">
+          <LoadErrorNotice what="Your club" error={loadError} />
+        </Container>
+      </Box>
+    );
+  }
 
   if (!isLoaded) {
     return (

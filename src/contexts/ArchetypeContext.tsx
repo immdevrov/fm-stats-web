@@ -35,14 +35,24 @@ export function ArchetypeProvider({ children }: { children: ReactNode }) {
   const pending = useRef<Change[]>([]);
 
   useEffect(() => {
-    db.getArchetypes().then((stored) => {
-      if (loaded.current) return;
-      loaded.current = true;
-      const next = pending.current.reduce((acc, fn) => fn(acc), stored);
-      pending.current = [];
-      setArchetypes(next);
-      setIsLoaded(true);
-    });
+    db.getArchetypes()
+      .then((stored) => {
+        if (loaded.current) return;
+        loaded.current = true;
+        const next = pending.current.reduce((acc, fn) => fn(acc), stored);
+        pending.current = [];
+        setArchetypes(next);
+        setIsLoaded(true);
+      })
+      .catch(() => {
+        toaster.create({
+          id: "archetypes-not-loaded",
+          title: "Archetypes Not Loaded",
+          description: "Your archetypes could not be read. Nothing was changed — reload the page to try again.",
+          type: "error",
+          duration: 6000,
+        });
+      });
   }, []);
 
   useEffect(() => {

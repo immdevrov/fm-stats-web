@@ -25,6 +25,7 @@ import { MAX_DEPTH, type HorizonPreset, type PlannedPlayer, type SquadPlan } fro
 interface SquadPlanContextValue {
   plan: SquadPlan | null;
   isLoaded: boolean;
+  loadError: string | null;
   placements: PlacementIndex;
   applyPreset: (presetId: string) => void;
   moveMarker: (slotId: string, cell: Cell) => void;
@@ -54,13 +55,26 @@ function emptyPlan(preset: Preset, horizon: HorizonPreset | null): SquadPlan {
 export function SquadPlanProvider({ children }: { children: ReactNode }) {
   const [plan, setPlanState] = useState<SquadPlan | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const changes = useRef(0);
 
   useEffect(() => {
-    db.getSquadPlan().then((stored) => {
-      setPlanState((current) => (changes.current > 0 ? current : stored));
-      setIsLoaded(true);
-    });
+    db.getSquadPlan()
+      .then((stored) => {
+        setPlanState((current) => (changes.current > 0 ? current : stored));
+        setLoadError(null);
+        setIsLoaded(true);
+      })
+      .catch((error: unknown) => {
+        setLoadError(error instanceof Error ? error.message : "Unknown error");
+        toaster.create({
+          id: "plan-not-loaded",
+          title: "Plan Not Loaded",
+          description: "Your squad plan could not be read. Nothing was changed — reload the page to try again.",
+          type: "error",
+          duration: 6000,
+        });
+      });
   }, []);
 
   useOnTabReturn(() => {
@@ -205,6 +219,7 @@ export function SquadPlanProvider({ children }: { children: ReactNode }) {
       value={{
         plan,
         isLoaded,
+        loadError,
         placements,
         applyPreset,
         moveMarker,

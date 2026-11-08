@@ -6,6 +6,7 @@ import { useOnTabReturn } from "../hooks/useOnTabReturn";
 interface MyTeamContextValue {
   myClub: string | null;
   isLoaded: boolean;
+  loadError: string | null;
   setMyClub: (club: string) => void;
   clearMyClub: () => void;
 }
@@ -15,13 +16,26 @@ const MyTeamContext = createContext<MyTeamContextValue | null>(null);
 export function MyTeamProvider({ children }: { children: ReactNode }) {
   const [myClub, setMyClubState] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const changes = useRef(0);
 
   useEffect(() => {
-    db.getMyClub().then((club) => {
-      setMyClubState((current) => (changes.current > 0 ? current : club));
-      setIsLoaded(true);
-    });
+    db.getMyClub()
+      .then((club) => {
+        setMyClubState((current) => (changes.current > 0 ? current : club));
+        setLoadError(null);
+        setIsLoaded(true);
+      })
+      .catch((error: unknown) => {
+        setLoadError(error instanceof Error ? error.message : "Unknown error");
+        toaster.create({
+          id: "my-team-not-loaded",
+          title: "My Team Not Loaded",
+          description: "Your club could not be read. Nothing was changed — reload the page to try again.",
+          type: "error",
+          duration: 6000,
+        });
+      });
   }, []);
 
   useOnTabReturn(() => {
@@ -56,7 +70,7 @@ export function MyTeamProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <MyTeamContext.Provider value={{ myClub, isLoaded, setMyClub, clearMyClub }}>
+    <MyTeamContext.Provider value={{ myClub, isLoaded, loadError, setMyClub, clearMyClub }}>
       {children}
     </MyTeamContext.Provider>
   );
