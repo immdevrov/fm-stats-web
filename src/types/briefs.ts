@@ -18,9 +18,18 @@ export interface ScoutingFilters {
   sortDirection: SortDirection;
 }
 
+export type Grade = "A" | "B" | "C";
+
+export interface BriefPick {
+  uid: number;
+  grade?: Grade;
+  verdict?: string;
+}
+
 export interface Brief {
   id: string;
   name: string;
   filters: ScoutingFilters;
   listId?: string;
+  picks?: BriefPick[];
 }

@@ -3,7 +3,8 @@ import { db } from "../services/db";
 import { toaster } from "../components/ui/toaster";
 import { useOnTabReturn } from "../hooks/useOnTabReturn";
 import { generateId } from "../utils/ids";
-import type { Brief, ScoutingFilters } from "../types/briefs";
+import { moveTo, setGrade as applyGrade, setVerdict as applyVerdict } from "../utils/brief-picks";
+import type { Brief, Grade, ScoutingFilters } from "../types/briefs";
 
 interface BriefContextValue {
   briefs: Brief[];
@@ -16,6 +17,9 @@ interface BriefContextValue {
   setList: (briefId: string, listId: string | null) => void;
   unlinkList: (listId: string) => void;
   unlinkAll: () => void;
+  setGrade: (briefId: string, listUids: number[], uid: number, grade: Grade | null) => void;
+  setVerdict: (briefId: string, listUids: number[], uid: number, text: string) => void;
+  movePick: (briefId: string, listUids: number[], uid: number, toIndex: number) => void;
 }
 
 type Change = (current: Brief[]) => Brief[];
@@ -23,6 +27,7 @@ type Change = (current: Brief[]) => Brief[];
 function withoutList(brief: Brief): Brief {
   const copy = { ...brief };
   delete copy.listId;
+  delete copy.picks;
   return copy;
 }
 
@@ -121,7 +126,10 @@ export function BriefProvider({ children }: { children: ReactNode }) {
   const setList = useCallback(
     (briefId: string, listId: string | null) =>
       change((current) =>
-        current.map((a) => (a.id !== briefId ? a : listId ? { ...a, listId } : withoutList(a)))
+        current.map((a) => {
+          if (a.id !== briefId || a.listId === (listId ?? undefined)) return a;
+          return listId ? { ...withoutList(a), listId } : withoutList(a);
+        })
       ),
     [change]
   );
@@ -134,9 +142,36 @@ export function BriefProvider({ children }: { children: ReactNode }) {
 
   const unlinkAll = useCallback(() => change((current) => current.map(withoutList)), [change]);
 
+  const editPicks = useCallback(
+    (briefId: string, edit: (brief: Brief) => Brief["picks"]) =>
+      change((current) => current.map((a) => (a.id === briefId ? { ...a, picks: edit(a) } : a))),
+    [change]
+  );
+
+  const setGrade = useCallback(
+    (briefId: string, listUids: number[], uid: number, grade: Grade | null) =>
+      editPicks(briefId, (a) => applyGrade(a.picks, listUids, uid, grade)),
+    [editPicks]
+  );
+
+  const setVerdict = useCallback(
+    (briefId: string, listUids: number[], uid: number, text: string) =>
+      editPicks(briefId, (a) => applyVerdict(a.picks, listUids, uid, text)),
+    [editPicks]
+  );
+
+  const movePick = useCallback(
+    (briefId: string, listUids: number[], uid: number, toIndex: number) =>
+      editPicks(briefId, (a) => moveTo(a.picks, listUids, uid, toIndex)),
+    [editPicks]
+  );
+
   return (
     <BriefContext.Provider
-      value={{ briefs, isLoaded, loadError, create, update, rename, remove, setList, unlinkList, unlinkAll }}
+      value={{
+        briefs, isLoaded, loadError, create, update, rename, remove, setList, unlinkList, unlinkAll,
+        setGrade, setVerdict, movePick,
+      }}
     >
       {children}
     </BriefContext.Provider>

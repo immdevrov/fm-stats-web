@@ -3,7 +3,7 @@ import type { PlannedSlot, SquadPlan } from '../../types/planner';
 import { getPreset } from '../../formations';
 import { GK_CELL, cellKey, isPlayableCell } from '../../formations/grid';
 import { coerceFilters } from '../../utils/scouting-filters';
-import type { Brief } from '../../types/briefs';
+import type { Brief, BriefPick } from '../../types/briefs';
 
 const MY_CLUB = 'myClub';
 const SQUAD_PLAN = 'squadPlan';
@@ -133,9 +133,28 @@ export async function getBriefs(): Promise<Brief[]> {
     seen.add(id);
     const brief: Brief = { id, name, filters: coerceFilters(filters) };
     if (typeof listId === 'string' && listId) brief.listId = listId;
+    const picks = _coercePicks((entry as { picks?: unknown }).picks);
+    if (picks) brief.picks = picks;
     result.push(brief);
   }
   return result;
+}
+
+function _coercePicks(value: unknown): BriefPick[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const seen = new Set<number>();
+  const picks: BriefPick[] = [];
+  for (const raw of value) {
+    if (typeof raw !== 'object' || raw === null) continue;
+    const { uid, grade, verdict } = raw as Record<string, unknown>;
+    if (typeof uid !== 'number' || !Number.isFinite(uid) || seen.has(uid)) continue;
+    seen.add(uid);
+    const pick: BriefPick = { uid };
+    if (grade === 'A' || grade === 'B' || grade === 'C') pick.grade = grade;
+    if (typeof verdict === 'string' && verdict.trim()) pick.verdict = verdict.trim();
+    picks.push(pick);
+  }
+  return picks.length ? picks : undefined;
 }
 
 export function setBriefs(briefs: Brief[]): Promise<void> {
