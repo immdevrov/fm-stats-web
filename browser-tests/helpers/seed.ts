@@ -204,6 +204,8 @@ export async function seedAnnotation(
     transfer?: 'in' | 'out';
     note?: string;
     lastKnownName?: string;
+    price?: number;
+    wageDemand?: number;
   }
 ) {
   await page.evaluate(

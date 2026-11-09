@@ -6,6 +6,7 @@ import {
   readListUids,
   readSetting,
   seedPlayersAndCompareList,
+  seedAnnotation,
   seedSettings,
 } from './helpers/seed';
 
@@ -239,4 +240,32 @@ test('who beats whom compares the hovered or pinned player on the brief stats on
   await row('Dee Striker').getByRole('cell').nth(4).hover();
   await expect(page.getByText('Dee Striker beats 3, beaten by 0.')).toBeVisible();
   await expect(row('Bea Striker')).toHaveAttribute('data-dominance', 'beats');
+});
+
+test('a price and wage demand set on the profile show in the brief table', async ({ page }) => {
+  await seedDribblerBrief(page, [], [4, 2, 9]);
+  await seedAnnotation(page, { uid: 9, lastKnownName: 'Gone Striker', price: 3000000, wageDemand: 20000 });
+  await page.reload();
+  await page.goto('/players/2');
+  const field = (label: string) =>
+    page.getByText(label, { exact: true }).locator('..').getByRole('textbox');
+  await field('Price').fill('12000000');
+  await field('Wage demand').fill('45000');
+  await field('Wage demand').blur();
+
+  await page.getByRole('link', { name: 'Briefs', exact: true }).click();
+  await page.getByRole('link', { name: 'Dribbler', exact: true }).click();
+  const headers = page.locator('thead').getByRole('columnheader');
+  await expect(headers.filter({ hasText: /^Wage demand/ })).toBeVisible();
+  const headerTexts = await headers.allTextContents();
+  const priceColumn = headerTexts.findIndex((t) => t.startsWith('Price'));
+  const demandColumn = headerTexts.findIndex((t) => t.startsWith('Wage demand'));
+  const cells = (name: string) =>
+    page.locator('tbody').getByRole('row').filter({ hasText: name }).getByRole('cell');
+
+  await expect(cells('Bea Striker').nth(priceColumn)).toHaveText('12.000.000 €');
+  await expect(cells('Bea Striker').nth(demandColumn)).toHaveText('45.000 €');
+  await expect(cells('Dee Striker').nth(priceColumn)).toHaveText('');
+  await expect(cells('Gone Striker').nth(priceColumn)).toHaveText('3.000.000 €');
+  await expect(cells('Gone Striker').nth(demandColumn)).toHaveText('20.000 €');
 });

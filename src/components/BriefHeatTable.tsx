@@ -243,6 +243,12 @@ export function BriefHeatTable({
       { key: "club", header: "Club" },
       { key: "division", header: "League" },
       { key: "wage", header: "Wage", render: (v) => (v === null ? "" : formatWage(v as number)) },
+      { key: "price", header: "Price", render: (v) => (v === null ? "" : formatWage(v as number)) },
+      {
+        key: "wageDemand",
+        header: "Wage demand",
+        render: (v) => (v === null ? "" : formatWage(v as number)),
+      },
       {
         key: "contractExpires",
         header: "Contract",

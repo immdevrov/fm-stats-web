@@ -37,6 +37,8 @@ export interface BriefRow extends Record<string, unknown> {
   club: string | null;
   division: string | null;
   wage: number | null;
+  price: number | null;
+  wageDemand: number | null;
   contractExpires: Date | null;
   mins: number | null;
 }
@@ -144,8 +146,10 @@ export function buildBriefRows(
 
   return orderedShortlist(brief.picks, list.uids).map(({ uid, grade, verdict }, i) => {
     const player = byUid.get(uid);
+    const annotation = annotations.get(uid);
+    const price = annotation?.price ?? null;
+    const wageDemand = annotation?.wageDemand ?? null;
     if (!player) {
-      const annotation = annotations.get(uid);
       const row: BriefRow = {
         index: i + 1,
         uid,
@@ -161,6 +165,8 @@ export function buildBriefRows(
         club: annotation?.lastKnownClub ?? null,
         division: null,
         wage: null,
+        price,
+        wageDemand,
         contractExpires: null,
         mins: null,
       };
@@ -188,6 +194,8 @@ export function buildBriefRows(
       club: player.Club,
       division: player.Division,
       wage: player.Wage,
+      price,
+      wageDemand,
       contractExpires: player.Expires,
       mins: player.Mins,
     };
