@@ -56,7 +56,7 @@ export function BriefView() {
   if (!briefsLoaded || !notesLoaded || roster === null || rankings === null) {
     return (
       <Box minH="100vh" p={8}>
-        <Container maxW="container.xl">
+        <Container>
           <VStack gap={8}>
             <Spinner size="lg" colorPalette="glaucous" />
             <Text color="fg.muted">Loading brief...</Text>
@@ -69,7 +69,7 @@ export function BriefView() {
   if (!brief) {
     return (
       <Box minH="100vh" p={8}>
-        <Container maxW="container.xl">
+        <Container>
           <VStack gap={4}>
             <Heading size="xl">Brief not found</Heading>
             <InlineLink to="/briefs">Back to briefs</InlineLink>
@@ -96,7 +96,7 @@ export function BriefView() {
 
   return (
     <Box minH="100vh" p={8}>
-      <Container maxW="container.xl">
+      <Container>
         <VStack gap={6} align="stretch">
           <HStack justify="space-between" align="start" gap={4}>
             <VStack align="start" gap={1}>

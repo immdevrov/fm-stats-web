@@ -202,7 +202,7 @@ export function PlayersView() {
   if (isLoading) {
     return (
       <Box minH="100vh" p={8}>
-        <Container maxW="container.xl">
+        <Container>
           <VStack gap={8}>
             <Spinner size="lg" colorPalette="glaucous" />
             <Text color="fg.muted">Loading players...</Text>
@@ -214,7 +214,7 @@ export function PlayersView() {
 
   return (
     <Box minH="100vh" p={8}>
-      <Container maxW="container.xl">
+      <Container>
         <VStack gap={6} align="stretch">
           <Heading size="2xl" colorPalette="glaucous" color="fg.emphasized">
             Players

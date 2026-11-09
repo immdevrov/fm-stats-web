@@ -646,7 +646,7 @@ export function ScoutingView() {
   if (isLoading) {
     return (
       <Box p={4}>
-        <Container maxW="container.xl">
+        <Container>
           <VStack gap={4}>
             <Spinner size="lg" colorPalette="glaucous" />
             <Text color="fg.muted">Loading data...</Text>
@@ -659,7 +659,7 @@ export function ScoutingView() {
   if (error) {
     return (
       <Box p={4}>
-        <Container maxW="container.xl">
+        <Container>
           <Box p={4} borderRadius="md" bg="red.500" color="white">
             <Text fontWeight="medium">{error}</Text>
           </Box>
@@ -670,7 +670,7 @@ export function ScoutingView() {
 
   return (
     <Box p={4}>
-      <Container maxW="container.xl">
+      <Container>
         <VStack gap={3} align="stretch">
           <HStack gap={2} flexWrap="wrap">
             {ROLE_CONFIG.map((rc, i) => (

@@ -84,7 +84,7 @@ export function BriefsView() {
   if (!isLoaded || !notesLoaded) {
     return (
       <Box minH="100vh" p={8}>
-        <Container maxW="container.lg">
+        <Container maxW="5xl">
           <VStack gap={8}>
             <Spinner size="lg" colorPalette="glaucous" />
             <Text color="fg.muted">Loading briefs...</Text>
@@ -96,7 +96,7 @@ export function BriefsView() {
 
   return (
     <Box minH="100vh" p={8}>
-      <Container maxW="container.lg">
+      <Container maxW="5xl">
         <VStack gap={6} align="stretch">
           <Heading size="2xl" colorPalette="glaucous" color="fg.emphasized">
             Briefs

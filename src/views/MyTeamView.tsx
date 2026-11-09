@@ -61,7 +61,7 @@ export function MyTeamView() {
   if (loadError) {
     return (
       <Box minH="100vh" p={8}>
-        <Container maxW="container.lg">
+        <Container maxW="7xl">
           <LoadErrorNotice what="Your club" error={loadError} />
         </Container>
       </Box>
@@ -71,7 +71,7 @@ export function MyTeamView() {
   if (!isLoaded) {
     return (
       <Box minH="100vh" p={8}>
-        <Container maxW="container.lg">
+        <Container maxW="7xl">
           <VStack gap={8}>
             <Spinner size="lg" colorPalette="glaucous" />
             <Text color="fg.muted">Loading...</Text>
@@ -84,7 +84,7 @@ export function MyTeamView() {
   if (!myClub || isPicking) {
     return (
       <Box minH="100vh" p={8}>
-        <Container maxW="container.lg">
+        <Container maxW="7xl">
           <VStack gap={6} align="stretch">
             <Heading size="2xl" colorPalette="glaucous" color="fg.emphasized">
               {myClub ? "Change your club" : "Which club is yours?"}
@@ -123,7 +123,7 @@ export function MyTeamView() {
 
   return (
     <Box minH="100vh" p={8}>
-      <Container maxW={isPlanner ? "container.2xl" : "container.lg"}>
+      <Container maxW={isPlanner ? "full" : "7xl"}>
         <VStack gap={6} align="stretch">
           <HStack justify="space-between" align="center" flexWrap="wrap" gap={4}>
             <HStack gap={3} align="baseline">

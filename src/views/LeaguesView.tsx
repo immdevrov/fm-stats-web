@@ -305,7 +305,7 @@ export function LeaguesView() {
   if (isLoading) {
     return (
       <Box minH="100vh" p={8}>
-        <Container maxW="container.lg">
+        <Container maxW="5xl">
           <VStack gap={8}>
             <Spinner size="lg" colorPalette="glaucous" />
             <Text color="fg.muted">Loading leagues...</Text>
@@ -318,7 +318,7 @@ export function LeaguesView() {
   if (error) {
     return (
       <Box minH="100vh" p={8}>
-        <Container maxW="container.lg">
+        <Container maxW="5xl">
           <Box p={4} borderRadius="md" bg="red.500" color="white">
             <Text fontWeight="medium">{error}</Text>
           </Box>
@@ -329,7 +329,7 @@ export function LeaguesView() {
 
   return (
     <Box minH="100vh" p={8}>
-      <Container maxW="container.lg">
+      <Container maxW="5xl">
         <VStack gap={8} align="stretch">
           <HStack justify="space-between" align="center" flexWrap="wrap" gap={4}>
             <Heading size="2xl" colorPalette="glaucous" color="fg.emphasized">

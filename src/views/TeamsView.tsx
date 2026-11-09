@@ -177,7 +177,7 @@ export function TeamsView() {
   if (isLoading) {
     return (
       <Box minH="100vh" p={8}>
-        <Container maxW="container.lg">
+        <Container maxW="5xl">
           <VStack gap={8}>
             <Spinner size="lg" colorPalette="glaucous" />
             <Text color="fg.muted">Loading teams...</Text>
@@ -189,7 +189,7 @@ export function TeamsView() {
 
   return (
     <Box minH="100vh" p={8}>
-      <Container maxW="container.lg">
+      <Container maxW="5xl">
         <VStack gap={6} align="stretch">
           <HStack justify="space-between" align="center" flexWrap="wrap" gap={4}>
             <Heading size="2xl" colorPalette="glaucous" color="fg.emphasized">

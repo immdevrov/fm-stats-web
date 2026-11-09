@@ -174,7 +174,7 @@ export function ImportView() {
 
   return (
     <Box minH="100vh" p={8}>
-      <Container maxW="container.md">
+      <Container maxW="4xl">
         <VStack gap={8} align="stretch">
           <Heading size="2xl" colorPalette="glaucous" color="fg.emphasized">
             Import Player Data

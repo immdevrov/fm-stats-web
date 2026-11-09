@@ -66,6 +66,7 @@ GK (Goalkeeper), D (Defender), WB (Wing Back), DM (Defensive Midfielder), M (Mid
 - Semantic tokens: `fg.default`, `fg.emphasized`, `fg.muted`, `bg.canvas`, `bg.subtle`, `bg.muted`
 - Custom palettes: `carbonBlack`, `glaucous`, `thistle`, `spicyPaprika`, `softBlush`
 - Dark mode via `_dark` variants in semantic tokens
+- **Page width**: the `Container` recipe is full-width and left-aligned (no gap after the sidebar). Data-heavy views fill the screen; narrow-content views cap with a v3 size token (`4xl`, `5xl`, `7xl`). v2's `container.lg`/`container.xl` don't exist in v3 and are silently ignored.
 
 ## Scouting View
 

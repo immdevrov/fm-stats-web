@@ -114,7 +114,7 @@ export function ListsView() {
   if (!isLoaded || !playersLoaded) {
     return (
       <Box minH="100vh" p={8}>
-        <Container maxW="container.xl">
+        <Container>
           <VStack gap={8}>
             <Spinner size="lg" colorPalette="glaucous" />
             <Text color="fg.muted">Loading lists...</Text>
@@ -246,7 +246,7 @@ export function ListsView() {
 
   return (
     <Box minH="100vh" p={8}>
-      <Container maxW="container.xl">
+      <Container>
         <VStack gap={6} align="stretch">
           <Heading size="2xl" colorPalette="glaucous" color="fg.emphasized">
             Lists

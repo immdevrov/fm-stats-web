@@ -37,7 +37,7 @@ export function TeamProfileView() {
   if (!decodedTeamName) {
     return (
       <Box minH="100vh" p={8}>
-        <Container maxW="container.lg">
+        <Container maxW="7xl">
           <VStack gap={4}>
             <Box p={4} borderRadius="md" bg="red.500" color="white">
               <Text fontWeight="medium">No team specified</Text>
@@ -54,7 +54,7 @@ export function TeamProfileView() {
   if (players === null) {
     return (
       <Box minH="100vh" p={8}>
-        <Container maxW="container.lg">
+        <Container maxW="7xl">
           <VStack gap={8}>
             <Spinner size="lg" colorPalette="glaucous" />
             <Text color="fg.muted">Loading team...</Text>
@@ -66,7 +66,7 @@ export function TeamProfileView() {
 
   return (
     <Box minH="100vh" p={8}>
-      <Container maxW="container.lg">
+      <Container maxW="7xl">
         <VStack gap={6} align="stretch">
           <HStack justify="space-between" align="center" flexWrap="wrap" gap={4}>
             <VStack align="start" gap={1}>

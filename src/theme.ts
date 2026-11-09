@@ -112,6 +112,8 @@ export const customSystem = createSystem(defaultConfig, {
       container: {
         base: {
           paddingInline: "2",
+          maxWidth: "full",
+          marginInline: "0",
         },
       },
     },

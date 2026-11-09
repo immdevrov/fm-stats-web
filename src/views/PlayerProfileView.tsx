@@ -128,7 +128,7 @@ export function PlayerProfileView() {
   if (isLoading) {
     return (
       <Box minH="100vh" p={8}>
-        <Container maxW="container.xl">
+        <Container>
           <VStack gap={8}>
             <Spinner size="lg" colorPalette="glaucous" />
             <Text color="fg.muted">Loading player...</Text>
@@ -141,7 +141,7 @@ export function PlayerProfileView() {
   if (error || (!player && !missingIdentity)) {
     return (
       <Box minH="100vh" p={8}>
-        <Container maxW="container.xl">
+        <Container>
           <VStack gap={4}>
             <Box p={4} borderRadius="md" bg="red.500" color="white">
               <Text fontWeight="medium">{error || "Player not found"}</Text>
@@ -158,7 +158,7 @@ export function PlayerProfileView() {
   if (missingIdentity) {
     return (
       <Box minH="100vh" p={3}>
-        <Container maxW="container.xl">
+        <Container>
           <VStack align="stretch" gap={3}>
             <Box borderWidth="1px" borderRadius="md" p={2}>
               <Heading size="lg" color="fg.emphasized">
@@ -184,7 +184,7 @@ export function PlayerProfileView() {
 
   return (
     <Box minH="100vh" p={3}>
-      <Container maxW="container.xl">
+      <Container>
         <HStack align="start" gap={3}>
           <PlayerInfoColumn player={player} onPlayerUpdate={reloadPlayer} allPlayers={allPlayers} />
 
@@ -207,7 +207,7 @@ function PlayerInfoColumn({
   const isGoalkeeper = getEffectivePosition(player).some((pos) => pos.type === "GK");
 
   return (
-    <VStack w="40%" align="stretch" gap={2}>
+    <VStack w="440px" flexShrink={0} align="stretch" gap={2}>
       <PlayerHeader player={player} onPlayerUpdate={onPlayerUpdate} />
       <PricingSection key={player.UID} player={player} />
       <PlayingTimeSection player={player} />
@@ -757,7 +757,7 @@ function ComparisonColumn({ player, allPlayers }: { player: Player; allPlayers: 
 
   if (applicableRoles.length === 0) {
     return (
-      <Box flex={1} bg="bg.subtle" p={2} borderRadius="md" minH="300px">
+      <Box flex={1} minW={0} bg="bg.subtle" p={2} borderRadius="md" minH="300px">
         <Text color="fg.muted">No applicable roles found for this player</Text>
       </Box>
     );
@@ -768,7 +768,7 @@ function ComparisonColumn({ player, allPlayers }: { player: Player; allPlayers: 
     : `Compared to ${cohortSize} players in ranked leagues with 900+ mins`;
 
   return (
-    <Box flex={1} bg="bg.subtle" p={2} borderRadius="md" minH="300px">
+    <Box flex={1} minW={0} bg="bg.subtle" p={2} borderRadius="md" minH="300px">
       <Tabs.Root
         value={selectedRole ?? undefined}
         onValueChange={(e) => setSelectedRole(e.value)}
