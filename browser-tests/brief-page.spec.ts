@@ -183,3 +183,60 @@ test('dragging a row reorders the shortlist and survives a reload; sorting turns
   await page.getByRole('button', { name: 'sort by rank' }).click();
   await expect(page.getByText('Drag rows to reorder.')).toBeVisible();
 });
+
+test('who beats whom compares the hovered or pinned player on the brief stats only', async ({ page }) => {
+  await page.goto('/import');
+  await expect(page.getByRole('heading', { name: 'Import Player Data' })).toBeVisible();
+  await seedPlayersAndCompareList(
+    page,
+    [
+      { uid: 1, name: 'Ann Striker', overrides: { DrbPer90: 1, ShTPer90: 1, ChCPer90: 5 } },
+      { uid: 2, name: 'Bea Striker', overrides: { DrbPer90: 2, ShTPer90: 4 } },
+      { uid: 3, name: 'Cat Striker', overrides: { DrbPer90: 3, ShTPer90: 3 } },
+      { uid: 4, name: 'Dee Striker', overrides: { DrbPer90: 4, ShTPer90: 5 } },
+    ],
+    []
+  );
+  await seedLeagueRankings(page, ['Premier League']);
+  await seedList(page, { id: 'l1', name: 'Targets', uids: [1, 2, 3, 4] });
+  await seedSettings(page, {
+    archetypes: [
+      {
+        id: 'b1',
+        name: 'Runner',
+        listId: 'l1',
+        filters: {
+          roleKey: 'ST',
+          side: 'both',
+          columnFilters: { stat_dribbles: { min: '0' }, stat_shots: { min: '0' } },
+          contractHorizon: null,
+          excludeInjuries: true,
+          excludedLeagues: [],
+          sortKey: 'name',
+          sortDirection: 'asc',
+        },
+      },
+    ],
+  });
+  await page.reload();
+  await page.goto('/briefs/b1');
+  const rows = page.locator('tbody').getByRole('row');
+  const row = (name: string) => rows.filter({ hasText: name });
+  await expect(rows).toHaveCount(4);
+
+  await page.getByText('Who beats whom').click();
+  await row('Cat Striker').getByRole('cell').nth(3).hover();
+  await expect(page.getByText('Cat Striker beats 1, beaten by 1.')).toBeVisible();
+  await expect(row('Ann Striker')).toHaveAttribute('data-dominance', 'beats');
+  await expect(row('Dee Striker')).toHaveAttribute('data-dominance', 'beaten-by');
+  await expect(row('Bea Striker')).not.toHaveAttribute('data-dominance');
+
+  await row('Cat Striker').getByRole('cell').nth(3).click();
+  await row('Dee Striker').getByRole('cell').nth(3).hover();
+  await expect(page.getByText('Cat Striker beats 1, beaten by 1.')).toBeVisible();
+
+  await page.keyboard.press('Escape');
+  await row('Dee Striker').getByRole('cell').nth(4).hover();
+  await expect(page.getByText('Dee Striker beats 3, beaten by 0.')).toBeVisible();
+  await expect(row('Bea Striker')).toHaveAttribute('data-dominance', 'beats');
+});

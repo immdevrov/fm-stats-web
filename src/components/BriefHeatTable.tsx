@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { Badge, Button, Checkbox, chakra, HStack, Table as ChakraTable, Text, VStack } from "@chakra-ui/react";
 import {
   DndContext,
@@ -19,6 +19,8 @@ import { PlayerStatusControl } from "./PlayerStatusControl";
 import { groupTooltip } from "./GroupTooltip";
 import { GradeControl, RemoveMenu, VerdictLine } from "./BriefPickControls";
 import { Table, sortRows, type Column, type SortDirection, type TableRowProps } from "./ui/table";
+import { Tooltip } from "./ui/tooltip";
+import { dominance } from "../utils/dominance";
 import { formatWage, displayDate } from "../utils/utils";
 import {
   briefRoleConfig,
@@ -121,6 +123,77 @@ export function BriefHeatTable({
     [brief, list, roster, rankings, annotations]
   );
 
+  const briefStatKeys = useMemo(
+    () =>
+      heatKeys(briefRoleConfig(brief))
+        .filter((heat) => !heat.key.startsWith("group_"))
+        .filter((heat) => thresholdText(brief.filters.columnFilters[heat.key]) !== null)
+        .map((heat) => heat.key),
+    [brief]
+  );
+
+  const [compareMode, setCompareMode] = useState(false);
+  const [hoveredUid, setHoveredUid] = useState<number | null>(null);
+  const [pinnedUid, setPinnedUid] = useState<number | null>(null);
+  const dragging = useRef(false);
+  const canCompare = briefStatKeys.length > 0;
+  const pinned = pinnedUid !== null && rows.some((r) => r.uid === pinnedUid) ? pinnedUid : null;
+  const focusUid = compareMode && canCompare ? (pinned ?? hoveredUid) : null;
+  const focusRow = focusUid === null ? undefined : rows.find((r) => r.uid === focusUid);
+  const outcome = useMemo(
+    () => (focusUid === null ? null : dominance(rows, briefStatKeys, focusUid)),
+    [rows, briefStatKeys, focusUid]
+  );
+
+  useEffect(() => {
+    if (pinned === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if ((e.target as HTMLElement).closest?.("input, textarea, [role='menu'], [role='dialog']")) return;
+      setPinnedUid(null);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [pinned]);
+
+  const onRowClick = (uid: number) => (e: MouseEvent<HTMLTableRowElement>) => {
+    const target = e.target as HTMLElement;
+    if (dragging.current || !e.currentTarget.contains(target)) return;
+    if (target.closest("a, button, input, textarea")) return;
+    setPinnedUid((current) => (current === uid ? null : uid));
+  };
+
+  const compareProps = (row: BriefRow) => {
+    if (!compareMode || !canCompare) return {};
+    const handlers = {
+      onMouseEnter: () => {
+        if (!dragging.current) setHoveredUid(row.uid);
+      },
+      onMouseLeave: () => setHoveredUid((current) => (current === row.uid ? null : current)),
+      onClick: onRowClick(row.uid),
+    };
+    if (row.uid === focusUid) {
+      return {
+        ...handlers,
+        "data-dominance": "focus",
+        outline: "2px solid",
+        outlineColor: "glaucous.400",
+        outlineOffset: "-2px",
+      };
+    }
+    if (outcome?.beats.has(row.uid)) return { ...handlers, "data-dominance": "beats", opacity: 0.3 };
+    if (outcome?.beatenBy.has(row.uid)) {
+      return {
+        ...handlers,
+        "data-dominance": "beaten-by",
+        bg: "glaucous.500/25",
+        _hover: { bg: "glaucous.500/35" },
+        boxShadow: "inset 4px 0 0 var(--chakra-colors-glaucous-400)",
+      };
+    }
+    return handlers;
+  };
+
   const availableColumns = useMemo(() => {
     const { columnFilters } = brief.filters;
     const keys = heatKeys(briefRoleConfig(brief));
@@ -216,7 +289,14 @@ export function BriefHeatTable({
   );
   const sortedRows = useMemo(() => sortRows(rows, sortKey, sortDirection), [rows, sortKey, sortDirection]);
 
+  const endDrag = () => {
+    setTimeout(() => {
+      dragging.current = false;
+    });
+  };
+
   const onDragEnd = ({ active, over }: DragEndEvent) => {
+    endDrag();
     if (!over || over.id === active.id) return;
     const target = rows.find((r) => r.uid === over.id);
     if (!target) return;
@@ -231,6 +311,21 @@ export function BriefHeatTable({
           <Checkbox.Control />
           <Checkbox.Label>All stats</Checkbox.Label>
         </Checkbox.Root>
+        <Tooltip content="This brief filters on no stats" disabled={canCompare}>
+          <Checkbox.Root
+            checked={compareMode && canCompare}
+            disabled={!canCompare}
+            onCheckedChange={(e) => {
+              setCompareMode(e.checked === true);
+              setPinnedUid(null);
+              setHoveredUid(null);
+            }}
+          >
+            <Checkbox.HiddenInput />
+            <Checkbox.Control />
+            <Checkbox.Label>Who beats whom</Checkbox.Label>
+          </Checkbox.Root>
+        </Tooltip>
         <Text fontSize="sm" color="fg.muted">
           {rankMode ? (
             "Drag rows to reorder."
@@ -257,8 +352,25 @@ export function BriefHeatTable({
             </>
           )}
         </Text>
+        {compareMode && canCompare && (
+          <Text fontSize="sm" color="fg.muted">
+            {!focusRow || !outcome
+              ? "Hover a player to compare him on the brief's stats; click to pin."
+              : !outcome.comparable
+                ? `${focusRow.name} is missing brief stats, so he is not compared.`
+                : `${focusRow.name} beats ${outcome.beats.size}, beaten by ${outcome.beatenBy.size}.`}
+          </Text>
+        )}
       </HStack>
-      <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragEnd={onDragEnd}>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={pointerWithin}
+        onDragStart={() => {
+          dragging.current = true;
+        }}
+        onDragEnd={onDragEnd}
+        onDragCancel={endDrag}
+      >
         <Table<BriefRow>
           data={sortedRows}
           columns={columns}
@@ -270,7 +382,11 @@ export function BriefHeatTable({
           }}
           getRowKey={(row) => row.uid}
           rowComponent={BriefDragRow}
-          rowProps={(row) => ({ className: "group", ...(row.absent ? { opacity: 0.6 } : {}) })}
+          rowProps={(row) => ({
+            className: "group",
+            ...(row.absent ? { opacity: 0.6 } : {}),
+            ...compareProps(row),
+          })}
         />
       </DndContext>
     </VStack>
