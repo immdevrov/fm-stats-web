@@ -19,7 +19,7 @@
 - Before each commit: `npx tsc -b && npm run lint`.
 - Commit messages: one short line, no attribution.
 
-**Human verification (at finish):** drawer look and feel on `/lists` and the brief page, light and dark; brief note line clipping and the textarea editor in the brief table; profile Notes box in both the normal and the missing-player branch; nested delete confirm inside the drawer closes with Esc without closing the drawer.
+**Human verification (at finish):** drawer look and feel on `/lists` and the brief page, light and dark; brief note line clipping and the textarea editor in the brief table; profile Notes box in both the normal and the missing-player branch; nested delete confirm inside the drawer closes with Esc without closing the drawer; Esc inside the drawer's *Edit note* textarea closes the whole drawer (accepted).
 
 ---
 
@@ -40,14 +40,14 @@
   - `db.updateNote(uid: number, noteId: string, text: string): Promise<void>`
   - `db.deleteNote(uid: number, noteId: string): Promise<void>`
   - Context: `addNote(uid: number, note: { text: string; briefId?: string; briefName?: string }, player?: PlayerIdentity)` — supplies `date` from `newestSnapshot(useSnapshots().snapshots)?.date ?? null` (`PlayerNotesProvider` sits inside `SnapshotProvider`); `updateNote(uid, noteId, text)`; `deleteNote(uid, noteId)`. All `Promise<void>`, each refreshing annotations.
-  - `src/utils/player-notes.ts`: `latestNote(notes: PlayerNote[] | undefined, briefId?: string): PlayerNote | null`; `noteBriefName(note: PlayerNote, briefs: Brief[]): string | null`; `noteSummary(note: PlayerNote, briefs: Brief[]): string`.
+  - `src/utils/player-notes.ts`: `latestNote(notes: PlayerNote[] | undefined, briefId?: string): PlayerNote | null`; `noteBriefName(note: PlayerNote, briefs: Brief[]): string | null`; `noteSummary(note: PlayerNote | null, briefs: Brief[]): string` (`""` for null).
 
 **Definition of done:**
 
 - `addNote` trims text; blank text → no write. Generates id with `generateId("note")`, appends to `notes`, refreshes `lastKnownName`/`lastKnownClub` like `setTransfer`, in one `readwrite` transaction.
 - `updateNote` trims; blank → no-op; unknown id → no-op; keeps `date`, `briefId`, position. `deleteNote` unknown id → no-op. Both single-transaction.
 - `setAnnotation` is a single read-modify-write transaction (same merge semantics as now).
-- v7 upgrade: when `oldVersion >= 4 && oldVersion < 7`, cursor over `playerAnnotations`, `delete value.note` + `cursor.update` only for records that have `note`. Only IDB requests awaited. Runs after `migrateToSnapshots` when a `players` store exists, alone otherwise; one `.catch` logging and aborting for the whole chain.
+- v7 upgrade: when `oldVersion >= 4 && oldVersion < 7`, cursor over `playerAnnotations`, `delete value.note` + `cursor.update` only for records that have `note` (cast: `cursor.value as PlayerAnnotation & { note?: string }`). Only IDB requests awaited. Runs after `migrateToSnapshots` when a `players` store exists, alone otherwise; one `.catch` logging and aborting for the whole chain.
 - `setPricing` takes `{ price?, wageDemand? }` only; `PricingFields` has no Note input.
 - `noteSummary`: tagged → `"<name>: <text>"` where name is the live brief's name, else `briefName`; untagged or no name → `text`.
 - `PlayerStatusBadge` tooltips use `noteSummary(latestNote(notes), briefs)`; `ListsView` Note column shows the same string (cell interactivity comes in Task 2); its rows memo depends on `briefs`.
@@ -55,7 +55,7 @@
 
 **Verify:** `npx tsc -b && npm run lint` clean; temporary `npx playwright test notes-migration` passes, then the file is deleted.
 
-- [ ] **Step 1: Temporary migration probe** — a spec that opens a raw v6 database (create it with `indexedDB.open(name, 6)` and the six stores, put `{ uid: 1, note: 'old', price: 5 }` and `{ uid: 2, unwanted: true }`), then loads the app and reads back: uid 1 → `{ uid: 1, price: 5 }` without `note`; uid 2 unchanged. Fails before the upgrade exists.
+- [ ] **Step 1: Temporary migration probe** — a spec that first visits `/vite.svg` (same origin, no app code), creates a raw v6 database there with `indexedDB.open(name, 6)` and all seven v6 stores with their keyPaths from `connection.ts` (`leagueRankings`, `compareList`, `playerAnnotations`, `playerLists`, `settings`, `snapshots`, `playerSnapshots` + `by-uid` index), closes the connection, put `{ uid: 1, note: 'old', price: 5 }` and `{ uid: 2, unwanted: true }`), then goes to `/import` and reads back: uid 1 → `{ uid: 1, price: 5 }` without `note`; uid 2 unchanged. Fails before the upgrade exists.
 - [ ] **Step 2: Implement** types, upgrade, DB functions, context, helpers, the three readers, seed helper.
 - [ ] **Step 3: Verify, delete the probe, commit** — `git commit -m "player notes: storage and helpers"`
 
@@ -76,9 +76,10 @@
 **Definition of done:**
 
 - Log per spec: add box (textarea *New note*, brief select *No brief* + briefs, *Add note* disabled while blank; adding clears text, keeps brief), entries newest first with date (`isoToDisplay` or *Undated*), tag (link if the brief exists, muted text otherwise; tags only once briefs `isLoaded`), text with line breaks (`whiteSpace="pre-wrap"`), pencil → textarea *Edit note* with *Save* / *Cancel* (blank save = cancel), trash → `ConfirmDialog` with one option *Delete note*. Empty: *No notes yet.*
-- Drawer: right side, title = `name`, body = `PlayerNotesLog` keyed per `open` call; closes on route change (`useLocation().key`/pathname effect). Provider mounted inside `BriefProvider` in `Layout`.
-- Profile: a *Notes* box under *Pricing* in the normal branch (`player` identity passed); in the missing-player branch a *Notes* box above `PlayerHistory` with no `player`.
-- `/lists` Note cell: a button, accessible name `Notes for <name>`, showing the summary clipped to one line with ellipsis or muted *Add note…*; opens the drawer with `{ uid, name: row.name, identity: row.identity }`. Sorting on `note` still sorts by the summary string.
+- Drawer: `Drawer.Root placement="end"` with `Portal`/`Drawer.Backdrop`/`Drawer.Positioner`/`Drawer.Content`, `onOpenChange={(e) => !e.open && close()}`; title = `name`, body = `PlayerNotesLog` keyed per `open` call. Closes on route change without an effect: state stores `{ target, at: location.key }` and `open = state?.at === location.key`. Provider mounted inside `BriefProvider` in `Layout`; the hook export carries the `react-refresh/only-export-components` disable like the other contexts.
+- Brief select is a `NativeSelect` (as in `LinkListDialog.tsx`). Delete confirm: `ConfirmDialog` title *Delete note?*, message *This note will be removed for good.*, one option *Delete note*.
+- Profile: a *Notes* box under *Pricing* in the normal branch (`player` identity passed, `key={player.UID}`); in the missing-player branch a *Notes* box above `PlayerHistory` with no `player`, `key={uid}`.
+- `/lists` Note cell: a button, accessible name `Notes for <name>`, showing the summary clipped to one line with ellipsis (column `width`, button `maxW="100%"` + `truncate`) or muted *Add note…*; opens the drawer with `{ uid, name: row.name, identity: row.identity }`. Sorting on `note` still sorts by the summary string.
 
 **Verify:** `npx tsc -b && npm run lint`; `verify: human-eyes` items at finish (see header). Behaviour is pinned by Task 3's tests, which go through the profile log.
 
@@ -89,7 +90,7 @@
 
 **Files:**
 
-- Modify: `src/types/briefs.ts`, `src/services/db/settings.ts`, `src/utils/brief-picks.ts`, `src/contexts/BriefContext.tsx`, `src/utils/brief-rows.ts`, `src/components/BriefPickControls.tsx`, `src/components/BriefHeatTable.tsx`, `browser-tests/brief-page.spec.ts`, `CLAUDE.md`
+- Modify: `src/types/briefs.ts`, `src/services/db/settings.ts`, `src/utils/brief-picks.ts`, `src/contexts/BriefContext.tsx`, `src/utils/brief-rows.ts`, `src/components/BriefPickControls.tsx`, `src/components/BriefHeatTable.tsx`, `browser-tests/brief-page.spec.ts`, `browser-tests/helpers/seed.ts` (add `readAnnotation(page, uid)`), `CLAUDE.md`
 
 **Interfaces:**
 
@@ -100,13 +101,13 @@
 
 - `BriefPick` = `{ uid; grade? }`; `_coercePicks` ignores `verdict`; `setVerdict` removed from `brief-picks.ts` and `BriefContext`; `withField` keyed on `"grade"` only.
 - `buildBriefRows` fills `note = latestNote(annotation?.notes, brief.id)` and `noteCount = annotation?.notes?.length ?? 0` for present and absent rows.
-- `BriefNoteLine`: clipped one line (`lineClamp={1}`); click → auto-growing textarea, Enter/blur save, Shift+Enter newline, Esc cancel, blank = cancel; existing note → `updateNote`, none → `addNote` tagged `{ briefId: brief.id, briefName: brief.name }` with `row.identity`. Line and editor both named `Brief note for <name>`. *Add note…* placeholder visible on row hover/focus.
+- `BriefNoteLine`: clipped one line (`lineClamp={1}`); click → `<Textarea autoresize />`, Enter (with `preventDefault`, and a `cancelled` ref like `VerdictLine` so the following blur does not save twice)/blur save, Shift+Enter newline, Esc cancel, blank = cancel; existing note → `updateNote`, none → `addNote` tagged `{ briefId: brief.id, briefName: brief.name }` with `row.identity`. Line and editor both named `Brief note for <name>`. *Add note…* placeholder visible on row hover/focus.
 - Notes icon button (`Notes for <name>`) in the name row when `noteCount >= 1`; tooltip *Notes* when `noteCount === 1 && row.note`, else *1 other note* / *N other notes* (`noteCount - (row.note ? 1 : 0)`); opens drawer `{ uid, name: row.name, identity: row.identity, briefId: brief.id }`.
 - Tests (rewritten in `brief-page.spec.ts`):
-  1. *a note written on the brief page shows on the profile under that brief and survives a reload*: grade B + brief note `Quick but raw` on Bea → stored pick `{ grade: 'B' }` and annotation uid 2 has one note with text `Quick but raw`, `briefId: 'b1'`; reload → grade B, line shows the note; `/players/2` shows `Quick but raw` with a `Dribbler` brief tag link (use the seeded brief's actual name).
+  1. *a note written on the brief page shows on the profile under that brief and survives a reload*: seed `seedAnnotation(page, { uid: 2, notes: [{ id: 'n0', text: 'Seen in pre-season', date: null }] })` before the first reload; grade B + brief note `Quick but raw` on Bea → stored pick `toEqual({ uid: 2, grade: 'B' })` and (polled before reloading) stored notes of uid 2 are exactly `[n0 unchanged, objectContaining({ text: 'Quick but raw', briefId: 'b1' })]`; reload → grade B, line shows the note; `/players/2` shows `Quick but raw` and a `getByRole('link', { name: 'Dribbler', exact: true })` tag.
   2. *a player removed from the shortlist loses his pick but keeps his note*: as the existing test, but after re-adding Dee the grade is `–` and `Plan B` is still on his brief line.
 - Both tests mutation-checked: (a) make `buildBriefRows` ignore `briefId` filtering or drop `note` → test 1 or 2 fails; (b) make `addNote` drop `briefId` → test 1 fails; (c) make removal also delete notes → test 2 fails.
-- `CLAUDE.md`: *Player notes* section; v6 → v7; Picks line without `verdict`; "the verdict editor" → "the brief note editor".
+- `CLAUDE.md`: *Player notes* section; v6 → v7 (and the v5→v6 migration line mentions v7 strips `note`); Picks line without `verdict` and without `setVerdict`; "the verdict editor" → "the brief note editor".
 
 **Verify:** `npx playwright test brief-page` → all pass; then full `npx playwright test` at final review.
 
