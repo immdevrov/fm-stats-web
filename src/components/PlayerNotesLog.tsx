@@ -23,17 +23,21 @@ interface PlayerNotesLogProps {
 }
 
 export function PlayerNotesLog({ uid, player, defaultBriefId }: PlayerNotesLogProps) {
-  const { annotations, addNote } = usePlayerNotes();
+  const { annotations, addNote, deleteNote } = usePlayerNotes();
   const { briefs } = useBriefs();
   const [text, setText] = useState("");
   const [briefId, setBriefId] = useState(defaultBriefId ?? "");
+  const [adding, setAdding] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const notes = annotations.get(uid)?.notes ?? [];
 
   const add = () => {
     const brief = briefs.find((b) => b.id === briefId);
+    setAdding(true);
     addNote(uid, { text, ...(brief ? { briefId: brief.id, briefName: brief.name } : {}) }, player)
       .then(() => setText(""))
-      .catch(failed("Note Not Added"));
+      .catch(failed("Note Not Added"))
+      .finally(() => setAdding(false));
   };
 
   return (
@@ -63,7 +67,7 @@ export function PlayerNotesLog({ uid, player, defaultBriefId }: PlayerNotesLogPr
             </NativeSelect.Field>
             <NativeSelect.Indicator />
           </NativeSelect.Root>
-          <Button size="sm" colorPalette="glaucous" disabled={!text.trim()} onClick={add}>
+          <Button size="sm" colorPalette="glaucous" disabled={!text.trim()} loading={adding} onClick={add}>
             Add note
           </Button>
         </HStack>
@@ -76,27 +80,45 @@ export function PlayerNotesLog({ uid, player, defaultBriefId }: PlayerNotesLogPr
       ) : (
         <VStack align="stretch" gap={2}>
           {[...notes].reverse().map((note) => (
-            <NoteEntry key={note.id} uid={uid} note={note} />
+            <NoteEntry key={note.id} uid={uid} note={note} onDelete={() => setDeleting(note.id)} />
           ))}
         </VStack>
       )}
+
+      <ConfirmDialog
+        isOpen={deleting !== null}
+        onClose={() => setDeleting(null)}
+        onConfirm={async () => {
+          const id = deleting;
+          setDeleting(null);
+          if (id) await deleteNote(uid, id).catch(failed("Note Not Deleted"));
+        }}
+        title="Delete note?"
+        message="This note will be removed for good."
+        options={[{ label: "Delete note", value: "delete" }]}
+      />
     </VStack>
   );
 }
 
-function NoteEntry({ uid, note }: { uid: number; note: PlayerNote }) {
-  const { updateNote, deleteNote } = usePlayerNotes();
+function NoteEntry({ uid, note, onDelete }: { uid: number; note: PlayerNote; onDelete: () => void }) {
+  const { updateNote } = usePlayerNotes();
   const { briefs, isLoaded: briefsLoaded } = useBriefs();
   const [draft, setDraft] = useState<string | null>(null);
-  const [confirming, setConfirming] = useState(false);
+  const [saving, setSaving] = useState(false);
   const liveBrief = briefs.find((b) => b.id === note.briefId);
   const briefName = noteBriefName(note, briefs);
 
   const save = () => {
-    if (draft !== null && draft.trim() && draft.trim() !== note.text) {
-      updateNote(uid, note.id, draft).catch(failed("Note Not Saved"));
+    if (draft === null || !draft.trim() || draft.trim() === note.text) {
+      setDraft(null);
+      return;
     }
-    setDraft(null);
+    setSaving(true);
+    updateNote(uid, note.id, draft)
+      .then(() => setDraft(null))
+      .catch(failed("Note Not Saved"))
+      .finally(() => setSaving(false));
   };
 
   return (
@@ -115,10 +137,10 @@ function NoteEntry({ uid, note }: { uid: number; note: PlayerNote }) {
             <Text>{briefName}</Text>
           ))}
         <HStack gap={0} ms="auto">
-          <IconButton size="2xs" variant="ghost" aria-label="Edit note" onClick={() => setDraft(note.text)}>
+          <IconButton size="2xs" variant="ghost" aria-label="Edit note" disabled={draft !== null} onClick={() => setDraft(note.text)}>
             <LuPencil />
           </IconButton>
-          <IconButton size="2xs" variant="ghost" aria-label="Delete note" onClick={() => setConfirming(true)}>
+          <IconButton size="2xs" variant="ghost" aria-label="Delete note" onClick={onDelete}>
             <LuTrash2 />
           </IconButton>
         </HStack>
@@ -142,28 +164,12 @@ function NoteEntry({ uid, note }: { uid: number; note: PlayerNote }) {
             <Button size="xs" variant="ghost" onClick={() => setDraft(null)}>
               Cancel
             </Button>
-            <Button size="xs" colorPalette="glaucous" onClick={save}>
+            <Button size="xs" colorPalette="glaucous" loading={saving} onClick={save}>
               Save
             </Button>
           </HStack>
         </VStack>
       )}
-
-      <ConfirmDialog
-        isOpen={confirming}
-        onClose={() => setConfirming(false)}
-        onConfirm={async () => {
-          try {
-            await deleteNote(uid, note.id);
-          } catch {
-            failed("Note Not Deleted")();
-          }
-          setConfirming(false);
-        }}
-        title="Delete note?"
-        message="This note will be removed for good."
-        options={[{ label: "Delete note", value: "delete" }]}
-      />
     </VStack>
   );
 }

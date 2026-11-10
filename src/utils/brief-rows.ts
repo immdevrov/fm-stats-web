@@ -1,6 +1,6 @@
 import { ROLE_CONFIG, INVERTED_STATS, STAT_LABELS, type RoleConfig } from "../roles";
 import type { Player, LeagueRanking } from "../types/types";
-import type { PlayerAnnotation, PlayerList } from "../types/annotations";
+import type { PlayerAnnotation, PlayerList, PlayerNote } from "../types/annotations";
 import type { Brief, ContractHorizon, Grade } from "../types/briefs";
 import { STAT_ABBREVIATIONS, GROUP_ABBREVIATIONS, roleClassFor } from "./scouting-columns";
 import { getStatGroupsForRole, type StatGroup } from "./stat-group-mapping";
@@ -16,6 +16,7 @@ import {
 import { formatWage } from "./utils";
 import { roleLabel, roleNoun } from "./briefs";
 import { orderedShortlist } from "./brief-picks";
+import { latestNote } from "./player-notes";
 
 export interface HeatKey {
   key: string;
@@ -28,7 +29,8 @@ export interface BriefRow extends Record<string, unknown> {
   index: number;
   uid: number;
   grade: Grade | null;
-  verdict: string | null;
+  note: PlayerNote | null;
+  noteCount: number;
   name: string;
   absent: boolean;
   tags: string[];
@@ -144,17 +146,20 @@ export function buildBriefRows(
   );
   const byUid = new Map(roster.map((player) => [player.UID, player]));
 
-  return orderedShortlist(brief.picks, list.uids).map(({ uid, grade, verdict }, i) => {
+  return orderedShortlist(brief.picks, list.uids).map(({ uid, grade }, i) => {
     const player = byUid.get(uid);
     const annotation = annotations.get(uid);
     const price = annotation?.price ?? null;
     const wageDemand = annotation?.wageDemand ?? null;
+    const note = latestNote(annotation?.notes, brief.id);
+    const noteCount = annotation?.notes?.length ?? 0;
     if (!player) {
       const row: BriefRow = {
         index: i + 1,
         uid,
         grade: grade ?? null,
-        verdict: verdict ?? null,
+        note,
+        noteCount,
         name: annotation?.lastKnownName ?? `UID ${uid}`,
         absent: true,
         tags: ["Not in this snapshot"],
@@ -185,7 +190,8 @@ export function buildBriefRows(
       index: i + 1,
       uid,
       grade: grade ?? null,
-      verdict: verdict ?? null,
+      note,
+      noteCount,
       name: player.Name,
       absent: false,
       tags,

@@ -4,7 +4,7 @@ import { toaster } from "../components/ui/toaster";
 import { useOnTabReturn } from "../hooks/useOnTabReturn";
 import { generateId } from "../utils/ids";
 import { usePlayerNotes } from "./PlayerNotesContext";
-import { moveTo, prunePicks, setGrade as applyGrade, setVerdict as applyVerdict } from "../utils/brief-picks";
+import { moveTo, prunePicks, setGrade as applyGrade } from "../utils/brief-picks";
 import type { Brief, Grade, ScoutingFilters } from "../types/briefs";
 
 interface BriefContextValue {
@@ -19,7 +19,6 @@ interface BriefContextValue {
   unlinkList: (listId: string) => void;
   unlinkAll: () => void;
   setGrade: (briefId: string, listUids: number[], uid: number, grade: Grade | null) => void;
-  setVerdict: (briefId: string, listUids: number[], uid: number, text: string) => void;
   movePick: (briefId: string, listUids: number[], uid: number, toIndex: number) => void;
 }
 
@@ -191,12 +190,6 @@ export function BriefProvider({ children }: { children: ReactNode }) {
     [editPicks]
   );
 
-  const setVerdict = useCallback(
-    (briefId: string, listUids: number[], uid: number, text: string) =>
-      editPicks(briefId, (a) => applyVerdict(a.picks, listUids, uid, text)),
-    [editPicks]
-  );
-
   const movePick = useCallback(
     (briefId: string, listUids: number[], uid: number, toIndex: number) =>
       editPicks(briefId, (a) => moveTo(a.picks, listUids, uid, toIndex)),
@@ -207,7 +200,7 @@ export function BriefProvider({ children }: { children: ReactNode }) {
     <BriefContext.Provider
       value={{
         briefs, isLoaded, loadError, create, update, rename, remove, setList, unlinkList, unlinkAll,
-        setGrade, setVerdict, movePick,
+        setGrade, movePick,
       }}
     >
       {children}

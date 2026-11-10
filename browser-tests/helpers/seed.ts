@@ -383,3 +383,30 @@ export async function readListUids(page: Page, listId: string): Promise<number[]
     { dbName: DB_NAME, dbVersion: DB_VERSION, listId }
   );
 }
+
+export async function readAnnotation(page: Page, uid: number): Promise<Record<string, unknown> | null> {
+  return page.evaluate(
+    ({ dbName, dbVersion, uid }) => {
+      return new Promise<Record<string, unknown> | null>((resolve, reject) => {
+        const request = indexedDB.open(dbName, dbVersion);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          const db = request.result;
+          const get = db
+            .transaction(['playerAnnotations'], 'readonly')
+            .objectStore('playerAnnotations')
+            .get(uid);
+          get.onsuccess = () => {
+            db.close();
+            resolve(get.result ?? null);
+          };
+          get.onerror = () => {
+            db.close();
+            reject(get.error);
+          };
+        };
+      });
+    },
+    { dbName: DB_NAME, dbVersion: DB_VERSION, uid }
+  );
+}

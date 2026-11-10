@@ -17,7 +17,7 @@ import { Link } from "react-router-dom";
 import { usePlayerNotes } from "../contexts/PlayerNotesContext";
 import { PlayerStatusControl } from "./PlayerStatusControl";
 import { groupTooltip } from "./GroupTooltip";
-import { GradeControl, RemoveMenu, VerdictLine } from "./BriefPickControls";
+import { BriefNoteLine, GradeControl, NotesButton, RemoveMenu } from "./BriefPickControls";
 import { Table, sortRows, type Column, type SortDirection, type TableRowProps } from "./ui/table";
 import { Tooltip } from "./ui/tooltip";
 import { dominance } from "../utils/dominance";
@@ -233,9 +233,10 @@ export function BriefHeatTable({
                   {tag}
                 </Badge>
               ))}
+              <NotesButton brief={brief} row={row} />
               <RemoveMenu list={list} row={row} />
             </HStack>
-            <VerdictLine brief={brief} list={list} row={row} />
+            <BriefNoteLine brief={brief} row={row} />
           </VStack>
         ),
       },

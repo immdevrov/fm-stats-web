@@ -5,6 +5,7 @@ import {
   seedList,
   readListUids,
   readSetting,
+  readAnnotation,
   seedPlayersAndCompareList,
   seedAnnotation,
   seedSettings,
@@ -85,37 +86,50 @@ test('adding an out-of-cohort player to a brief list warns, and he does not join
   await expect(rows.filter({ hasText: 'Dee Striker' }).getByLabel('Dribbles: 88', { exact: true })).toBeVisible();
 });
 
-type StoredPick = { uid: number; grade?: string; verdict?: string };
+type StoredPick = { uid: number; grade?: string };
 
 async function storedPicks(page: Page): Promise<StoredPick[] | undefined> {
   const briefs = (await readSetting(page, 'archetypes')) as Array<{ picks?: StoredPick[] }> | null;
   return briefs?.[0]?.picks;
 }
 
-test('a grade and a verdict survive a reload', async ({ page }) => {
+async function storedNotes(page: Page, uid: number): Promise<unknown> {
+  return (await readAnnotation(page, uid))?.notes;
+}
+
+test('a note written on the brief page shows on the profile under that brief and survives a reload', async ({ page }) => {
   await seedDribblerBrief(page);
+  await seedAnnotation(page, { uid: 2, notes: [{ id: 'n0', text: 'Seen in pre-season', date: null }] });
   await page.reload();
   await page.goto('/briefs/b1');
   const rows = page.locator('tbody').getByRole('row');
   const bea = rows.filter({ hasText: 'Bea Striker' });
   await bea.getByRole('button', { name: 'Grade for Bea Striker' }).click();
   await page.getByRole('menuitemradio', { name: 'Solid fallback' }).click();
-  await bea.getByRole('button', { name: 'Verdict for Bea Striker' }).click();
-  await page.getByRole('textbox', { name: 'Verdict for Bea Striker' }).fill('Quick but raw');
+  await bea.getByRole('button', { name: 'Brief note for Bea Striker' }).click();
+  await page.getByRole('textbox', { name: 'Brief note for Bea Striker' }).fill('Quick but raw');
   await page.keyboard.press('Enter');
   await expect
-    .poll(async () => (await storedPicks(page))?.find((p) => p.uid === 2))
-    .toMatchObject({ grade: 'B', verdict: 'Quick but raw' });
+    .poll(() => storedNotes(page, 2))
+    .toEqual([
+      { id: 'n0', text: 'Seen in pre-season', date: null },
+      expect.objectContaining({ text: 'Quick but raw', briefId: 'b1' }),
+    ]);
+  await expect.poll(async () => (await storedPicks(page))?.find((p) => p.uid === 2)).toEqual({ uid: 2, grade: 'B' });
 
   await page.reload();
   const beaAfter = page.locator('tbody').getByRole('row').filter({ hasText: 'Bea Striker' });
   await expect(beaAfter.getByRole('button', { name: 'Grade for Bea Striker' })).toHaveText('B');
-  await expect(beaAfter).toContainText('Quick but raw');
+  await expect(beaAfter.getByRole('button', { name: 'Brief note for Bea Striker' })).toHaveText('Quick but raw');
   const dee = page.locator('tbody').getByRole('row').filter({ hasText: 'Dee Striker' });
   await expect(dee.getByRole('button', { name: 'Grade for Dee Striker' })).toHaveText('–');
+
+  await page.goto('/players/2');
+  await expect(page.getByText('Quick but raw')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Dribbler', exact: true })).toBeVisible();
 });
 
-test('a player removed from the shortlist loses his pick', async ({ page }) => {
+test('a player removed from the shortlist loses his pick but keeps his note', async ({ page }) => {
   await seedDribblerBrief(page);
   await page.reload();
   await page.goto('/briefs/b1');
@@ -123,11 +137,11 @@ test('a player removed from the shortlist loses his pick', async ({ page }) => {
   const dee = rows.filter({ hasText: 'Dee Striker' });
   await dee.getByRole('button', { name: 'Grade for Dee Striker' }).click();
   await page.getByRole('menuitemradio', { name: 'Sign him' }).click();
-  await dee.getByRole('button', { name: 'Verdict for Dee Striker' }).click();
-  await page.getByRole('textbox', { name: 'Verdict for Dee Striker' }).fill('Plan B');
+  await dee.getByRole('button', { name: 'Brief note for Dee Striker' }).click();
+  await page.getByRole('textbox', { name: 'Brief note for Dee Striker' }).fill('Plan B');
   await page.keyboard.press('Enter');
   await expect(dee.getByRole('button', { name: 'Grade for Dee Striker' })).toHaveText('A');
-  await expect(page.getByText('Plan B')).toBeVisible();
+  await expect(dee.getByRole('button', { name: 'Brief note for Dee Striker' })).toHaveText('Plan B');
   await expect.poll(async () => (await storedPicks(page))?.some((p) => p.uid === 4)).toBe(true);
 
   await dee.getByRole('button', { name: 'Remove Dee Striker' }).click();
@@ -143,7 +157,7 @@ test('a player removed from the shortlist loses his pick', async ({ page }) => {
   await expect(rows).toHaveCount(2);
   await expect(rows.nth(1)).toContainText('Dee Striker');
   await expect(rows.nth(1).getByRole('button', { name: 'Grade for Dee Striker' })).toHaveText('–');
-  await expect(page.getByText('Plan B')).toHaveCount(0);
+  await expect(rows.nth(1).getByRole('button', { name: 'Brief note for Dee Striker' })).toHaveText('Plan B');
 });
 
 async function dragTo(page: Page, grip: Locator, target: Locator) {

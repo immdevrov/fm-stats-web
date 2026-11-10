@@ -156,12 +156,11 @@ function _coercePicks(value: unknown): BriefPick[] | undefined {
   const picks: BriefPick[] = [];
   for (const raw of value) {
     if (typeof raw !== 'object' || raw === null) continue;
-    const { uid, grade, verdict } = raw as Record<string, unknown>;
+    const { uid, grade } = raw as Record<string, unknown>;
     if (typeof uid !== 'number' || !Number.isFinite(uid) || seen.has(uid)) continue;
     seen.add(uid);
     const pick: BriefPick = { uid };
     if (grade === 'A' || grade === 'B' || grade === 'C') pick.grade = grade;
-    if (typeof verdict === 'string' && verdict.trim()) pick.verdict = verdict.trim();
     picks.push(pick);
   }
   return picks.length ? picks : undefined;

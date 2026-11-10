@@ -17,10 +17,10 @@ export function orderedShortlist(picks: BriefPick[] | undefined, listUids: numbe
   return ordered;
 }
 
-function withField<K extends "grade" | "verdict">(pick: BriefPick, key: K, value: BriefPick[K]): BriefPick {
+function withGrade(pick: BriefPick, grade: Grade | undefined): BriefPick {
   const copy = { ...pick };
-  if (value === undefined) delete copy[key];
-  else copy[key] = value;
+  if (grade === undefined) delete copy.grade;
+  else copy.grade = grade;
   return copy;
 }
 
@@ -39,17 +39,7 @@ export function setGrade(
   uid: number,
   grade: Grade | null
 ): BriefPick[] {
-  return edit(picks, listUids, uid, (pick) => withField(pick, "grade", grade ?? undefined));
-}
-
-export function setVerdict(
-  picks: BriefPick[] | undefined,
-  listUids: number[],
-  uid: number,
-  text: string
-): BriefPick[] {
-  const verdict = text.trim();
-  return edit(picks, listUids, uid, (pick) => withField(pick, "verdict", verdict || undefined));
+  return edit(picks, listUids, uid, (pick) => withGrade(pick, grade ?? undefined));
 }
 
 export function moveTo(

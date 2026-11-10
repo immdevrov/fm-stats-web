@@ -23,7 +23,6 @@ export type Grade = "A" | "B" | "C";
 export interface BriefPick {
   uid: number;
   grade?: Grade;
-  verdict?: string;
 }
 
 export interface Brief {

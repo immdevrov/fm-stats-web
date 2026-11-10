@@ -1,6 +1,9 @@
 import { useRef, useState } from "react";
-import { Badge, chakra, IconButton, Input, Menu, Portal } from "@chakra-ui/react";
-import { LuX } from "react-icons/lu";
+import { Badge, chakra, IconButton, Menu, Portal, Textarea } from "@chakra-ui/react";
+import { LuNotebookPen, LuX } from "react-icons/lu";
+import { useNotesDrawer } from "../contexts/NotesDrawerContext";
+import { Tooltip } from "./ui/tooltip";
+import { toaster } from "./ui/toaster";
 import { useBriefs } from "../contexts/BriefContext";
 import { usePlayerNotes } from "../contexts/PlayerNotesContext";
 import type { Brief, Grade } from "../types/briefs";
@@ -64,25 +67,36 @@ export function GradeControl({ brief, list, row }: { brief: Brief; list: PlayerL
   );
 }
 
-export function VerdictLine({ brief, list, row }: { brief: Brief; list: PlayerList; row: BriefRow }) {
-  const { setVerdict } = useBriefs();
+export function BriefNoteLine({ brief, row }: { brief: Brief; row: BriefRow }) {
+  const { addNote, updateNote } = usePlayerNotes();
   const [editing, setEditing] = useState(false);
   const cancelled = useRef(false);
-  const label = `Verdict for ${row.name}`;
+  const label = `Brief note for ${row.name}`;
+  const current = row.note?.text ?? "";
 
   if (editing) {
     const finish = (save: boolean, value: string) => {
       setEditing(false);
-      if (save && value.trim() !== (row.verdict ?? "")) setVerdict(brief.id, list.uids, row.uid, value);
+      const text = value.trim();
+      if (!save || !text || text === current) return;
+      const write = row.note
+        ? updateNote(row.uid, row.note.id, text)
+        : addNote(row.uid, { text, briefId: brief.id, briefName: brief.name }, row.identity);
+      write.catch(() =>
+        toaster.create({ title: "Note Not Saved", description: "Please try again.", type: "error", duration: 3000 })
+      );
     };
     return (
-      <Input
+      <Textarea
         size="xs"
+        autoresize
         autoFocus
+        rows={1}
         aria-label={label}
-        defaultValue={row.verdict ?? ""}
+        defaultValue={current}
         onKeyDown={(e) => {
-          if (e.key === "Enter") {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
             cancelled.current = true;
             finish(true, e.currentTarget.value);
           } else if (e.key === "Escape") {
@@ -104,7 +118,8 @@ export function VerdictLine({ brief, list, row }: { brief: Brief; list: PlayerLi
       textAlign="start"
       fontSize="xs"
       color="fg.muted"
-      opacity={row.verdict ? 1 : 0}
+      lineClamp={1}
+      opacity={row.note ? 1 : 0}
       _focusVisible={{ opacity: 1 }}
       _groupHover={{ opacity: 1 }}
       onClick={() => {
@@ -112,8 +127,29 @@ export function VerdictLine({ brief, list, row }: { brief: Brief; list: PlayerLi
         setEditing(true);
       }}
     >
-      {row.verdict ?? "Add verdict…"}
+      {row.note ? row.note.text : "Add note…"}
     </chakra.button>
+  );
+}
+
+export function NotesButton({ brief, row }: { brief: Brief; row: BriefRow }) {
+  const notesDrawer = useNotesDrawer();
+  if (row.noteCount === 0) return null;
+  const others = row.noteCount - (row.note ? 1 : 0);
+  const tip = others === 0 ? "Notes" : others === 1 ? "1 other note" : `${others} other notes`;
+  return (
+    <Tooltip content={tip}>
+      <IconButton
+        size="2xs"
+        variant="ghost"
+        aria-label={`Notes for ${row.name}`}
+        onClick={() =>
+          notesDrawer.open({ uid: row.uid, name: row.name, identity: row.identity, briefId: brief.id })
+        }
+      >
+        <LuNotebookPen />
+      </IconButton>
+    </Tooltip>
   );
 }
 
