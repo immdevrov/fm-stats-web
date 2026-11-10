@@ -20,8 +20,8 @@ Per brief, per shortlisted player:
 
 - **Rank** — a full order of everyone on the shortlist. There is no "unranked"
   state; a newly pinned player lands at the bottom.
-- **Grade** — `A` (sign him; he answers the brief), `B` (a solid fallback),
-  `C` (only if the price is right), or ungraded. There is no "no" grade: a no
+- **Grade** — `A`, `B`, `C`, or ungraded. The letters carry no fixed meaning;
+  the user decides what each one stands for. There is no "no" grade: a no
   means the player leaves the shortlist (see *Removing*).
 - **Verdict** — one line of free text.
 
@@ -151,9 +151,10 @@ unchanged.
 
 A narrow column right after `#`: the grade as a coloured badge (A green, B
 yellow, C orange; ungraded a grey outlined `–`) that opens a dropdown of the
-four choices, each with its meaning (*Sign him*, *Solid fallback*, *Only if the
-price is right*, *No grade*). Changed after build at Roman's request; the
-first version was a row of four buttons. Editable on any snapshot — picks are taste, not
+four choices, shown as the badges alone with no meaning attached. Changed
+after build at Roman's request; the first version was a row of four buttons,
+and the dropdown first labelled each letter (*Sign him*, *Solid fallback*,
+*Only if the price is right*) until those labels were dropped too. Editable on any snapshot — picks are taste, not
 snapshot data. The column sorts like any other (A first; ungraded last), which
 the table gives for free.
 

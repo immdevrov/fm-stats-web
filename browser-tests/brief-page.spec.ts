@@ -105,7 +105,7 @@ test('a note written on the brief page shows on the profile under that brief and
   const rows = page.locator('tbody').getByRole('row');
   const bea = rows.filter({ hasText: 'Bea Striker' });
   await bea.getByRole('button', { name: 'Grade for Bea Striker' }).click();
-  await page.getByRole('menuitemradio', { name: 'Solid fallback' }).click();
+  await page.getByRole('menuitemradio', { name: 'Grade B' }).click();
   await bea.getByRole('button', { name: 'Brief note for Bea Striker' }).click();
   await page.getByRole('textbox', { name: 'Brief note for Bea Striker' }).fill('Quick but raw');
   await page.keyboard.press('Enter');
@@ -136,7 +136,7 @@ test('a player removed from the shortlist loses his pick but keeps his note', as
   const rows = page.locator('tbody').getByRole('row');
   const dee = rows.filter({ hasText: 'Dee Striker' });
   await dee.getByRole('button', { name: 'Grade for Dee Striker' }).click();
-  await page.getByRole('menuitemradio', { name: 'Sign him' }).click();
+  await page.getByRole('menuitemradio', { name: 'Grade A' }).click();
   await dee.getByRole('button', { name: 'Brief note for Dee Striker' }).click();
   await page.getByRole('textbox', { name: 'Brief note for Dee Striker' }).fill('Plan B');
   await page.keyboard.press('Enter');
