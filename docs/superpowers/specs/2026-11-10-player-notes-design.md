@@ -49,8 +49,9 @@ interface PlayerNote {
 - `text` is trimmed and never empty.
 
 DB functions in `src/services/db/annotations.ts`, each one read-modify-write in
-a single `readwrite` transaction (not `setAnnotation`'s two separate calls), and
-each refreshing `lastKnownName`/`lastKnownClub` like the existing writers:
+a single `readwrite` transaction (not `setAnnotation`'s two separate calls);
+`addNote` also refreshes `lastKnownName`/`lastKnownClub` like the existing
+writers:
 
 - `addNote(uid, { text, date, briefId?, briefName? }, player?)` → generates the
   id (`generateId("note")`);
