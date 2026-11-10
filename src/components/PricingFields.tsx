@@ -13,7 +13,6 @@ export function PricingFields({ uid, player }: { uid: number; player: PlayerIden
 
   const [price, setPrice] = useState("");
   const [wageDemand, setWageDemand] = useState("");
-  const [note, setNote] = useState("");
 
   useEffect(() => {
     setPrice(annotation?.price !== undefined ? String(annotation.price) : ""); // eslint-disable-line react-hooks/set-state-in-effect
@@ -23,14 +22,10 @@ export function PricingFields({ uid, player }: { uid: number; player: PlayerIden
     setWageDemand(annotation?.wageDemand !== undefined ? String(annotation.wageDemand) : ""); // eslint-disable-line react-hooks/set-state-in-effect
   }, [uid, annotation?.wageDemand]);
 
-  useEffect(() => {
-    setNote(annotation?.note ?? ""); // eslint-disable-line react-hooks/set-state-in-effect
-  }, [uid, annotation?.note]);
-
   const commit = () =>
     setPricing(
       uid,
-      { price: toNumber(price), wageDemand: toNumber(wageDemand), note: note.trim() || undefined },
+      { price: toNumber(price), wageDemand: toNumber(wageDemand) },
       player
     );
 
@@ -60,18 +55,6 @@ export function PricingFields({ uid, player }: { uid: number; player: PlayerIden
           />
         </VStack>
       </HStack>
-      <VStack align="stretch" gap={1}>
-        <Text fontSize="xs" fontWeight="medium" color="fg.muted">
-          Note
-        </Text>
-        <Input
-          size="sm"
-          placeholder="Why he is on the list, or why he is not…"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          onBlur={commit}
-        />
-      </VStack>
     </VStack>
   );
 }

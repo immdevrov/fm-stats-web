@@ -202,7 +202,7 @@ export async function seedAnnotation(
     uid: number;
     unwanted?: boolean;
     transfer?: 'in' | 'out';
-    note?: string;
+    notes?: { id: string; text: string; date: string | null; briefId?: string; briefName?: string }[];
     lastKnownName?: string;
     price?: number;
     wageDemand?: number;

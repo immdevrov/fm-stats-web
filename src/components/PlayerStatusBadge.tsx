@@ -1,11 +1,14 @@
 import { HStack, Text, Badge } from "@chakra-ui/react";
 import { Tooltip } from "./ui/tooltip";
 import { usePlayerNotes } from "../contexts/PlayerNotesContext";
+import { useBriefs } from "../contexts/BriefContext";
+import { latestNote, noteSummary } from "../utils/player-notes";
 
 export function PlayerStatusBadge({ uid }: { uid: number }) {
   const { annotations, listsFor } = usePlayerNotes();
   const unwanted = annotations.get(uid)?.unwanted === true;
-  const note = annotations.get(uid)?.note;
+  const { briefs } = useBriefs();
+  const note = noteSummary(latestNote(annotations.get(uid)?.notes), briefs);
   const memberships = listsFor(uid);
   const transfer = annotations.get(uid)?.transfer;
 

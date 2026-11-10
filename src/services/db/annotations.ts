@@ -1,6 +1,7 @@
 import { getDB, wrapError } from './connection';
 import type { Player } from '../../types/types';
-import type { PlayerAnnotation, PlayerList, TransferMark } from '../../types/annotations';
+import type { PlayerAnnotation, PlayerList, PlayerNote, TransferMark } from '../../types/annotations';
+import { generateId } from '../../utils/ids';
 
 type PlayerIdentity = Pick<Player, 'Name' | 'Club'>;
 
@@ -29,18 +30,74 @@ export async function setAnnotation(
 ): Promise<void> {
   try {
     const db = await getDB();
-    const existing = await db.get('playerAnnotations', uid);
-    const merged: PlayerAnnotation = {
+    const tx = db.transaction('playerAnnotations', 'readwrite');
+    const existing = await tx.store.get(uid);
+    await tx.store.put({
       ...existing,
       ...patch,
       uid,
       lastKnownName: player?.Name ?? existing?.lastKnownName,
       lastKnownClub: player?.Club ?? existing?.lastKnownClub,
-    };
-    await db.put('playerAnnotations', merged);
+    });
+    await tx.done;
   } catch (error) {
     throw wrapError('set annotation', error);
   }
+}
+
+export type NewNote = Omit<PlayerNote, 'id'>;
+
+export async function addNote(uid: number, note: NewNote, player?: PlayerIdentity): Promise<void> {
+  const text = note.text.trim();
+  if (!text) return;
+  try {
+    const db = await getDB();
+    const tx = db.transaction('playerAnnotations', 'readwrite');
+    const existing = await tx.store.get(uid);
+    await tx.store.put({
+      ...existing,
+      uid,
+      notes: [...(existing?.notes ?? []), { ...note, id: generateId('note'), text }],
+      lastKnownName: player?.Name ?? existing?.lastKnownName,
+      lastKnownClub: player?.Club ?? existing?.lastKnownClub,
+    });
+    await tx.done;
+  } catch (error) {
+    throw wrapError('add note', error);
+  }
+}
+
+async function editNotes(
+  uid: number,
+  action: string,
+  edit: (notes: PlayerNote[]) => PlayerNote[] | null
+): Promise<void> {
+  try {
+    const db = await getDB();
+    const tx = db.transaction('playerAnnotations', 'readwrite');
+    const existing = await tx.store.get(uid);
+    const notes = existing?.notes ? edit(existing.notes) : null;
+    if (existing && notes) await tx.store.put({ ...existing, notes });
+    await tx.done;
+  } catch (error) {
+    throw wrapError(action, error);
+  }
+}
+
+export function updateNote(uid: number, noteId: string, text: string): Promise<void> {
+  const trimmed = text.trim();
+  if (!trimmed) return Promise.resolve();
+  return editNotes(uid, 'update note', (notes) =>
+    notes.some((n) => n.id === noteId)
+      ? notes.map((n) => (n.id === noteId ? { ...n, text: trimmed } : n))
+      : null
+  );
+}
+
+export function deleteNote(uid: number, noteId: string): Promise<void> {
+  return editNotes(uid, 'delete note', (notes) =>
+    notes.some((n) => n.id === noteId) ? notes.filter((n) => n.id !== noteId) : null
+  );
 }
 
 export async function clearAllAnnotations(): Promise<void> {

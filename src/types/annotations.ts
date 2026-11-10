@@ -2,6 +2,14 @@ import type { PlayerPositions } from '../fields/positions';
 
 export type TransferMark = 'in' | 'out';
 
+export interface PlayerNote {
+  id: string;
+  text: string;
+  date: string | null;
+  briefId?: string;
+  briefName?: string;
+}
+
 export interface PlayerAnnotation {
   uid: number;
   customPosition?: PlayerPositions;
@@ -9,7 +17,7 @@ export interface PlayerAnnotation {
   transfer?: TransferMark;
   price?: number;
   wageDemand?: number;
-  note?: string;
+  notes?: PlayerNote[];
   lastKnownName?: string;
   lastKnownClub?: string;
 }

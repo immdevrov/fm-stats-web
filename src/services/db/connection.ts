@@ -25,7 +25,7 @@ export interface FmStatsDB extends DBSchema {
 }
 
 const DB_NAME = 'fm-stats-db';
-export const DB_VERSION = 6;
+export const DB_VERSION = 7;
 
 type UpgradeTx = IDBPTransaction<FmStatsDB, StoreNames<FmStatsDB>[], 'versionchange'>;
 
@@ -86,6 +86,18 @@ async function migrateToSnapshots(db: IDBPDatabase<FmStatsDB>, tx: UpgradeTx): P
   db.deleteObjectStore('players');
 }
 
+async function dropOldNotes(tx: UpgradeTx): Promise<void> {
+  let cursor = await tx.objectStore('playerAnnotations').openCursor();
+  while (cursor) {
+    const annotation = cursor.value as PlayerAnnotation & { note?: string };
+    if ('note' in annotation) {
+      delete annotation.note;
+      await cursor.update(annotation);
+    }
+    cursor = await cursor.continue();
+  }
+}
+
 let dbPromise: Promise<IDBPDatabase<FmStatsDB>> | null = null;
 
 export function getDB(): Promise<IDBPDatabase<FmStatsDB>> {
@@ -114,22 +126,22 @@ export function getDB(): Promise<IDBPDatabase<FmStatsDB>> {
         }
 
         const hadPlayers = db.objectStoreNames.contains('players');
-        const chain =
+        let chain =
           oldVersion > 0 && oldVersion < 4 && hadPlayers
             ? migrateCustomPositions(tx)
             : Promise.resolve();
+        if (hadPlayers) chain = chain.then(() => migrateToSnapshots(db, tx));
+        if (oldVersion >= 4 && oldVersion < 7) chain = chain.then(() => dropOldNotes(tx));
 
-        if (hadPlayers) {
-          chain.then(() => migrateToSnapshots(db, tx)).catch((error) => {
-            console.error('Snapshot migration failed', error);
-            // A failed request auto-aborts tx already; abort() again would throw and mask this error.
-            try {
-              tx.abort();
-            } catch {
-              // already aborted
-            }
-          });
-        }
+        chain.catch((error) => {
+          console.error('Database migration failed', error);
+          // A failed request auto-aborts tx already; abort() again would throw and mask this error.
+          try {
+            tx.abort();
+          } catch {
+            // already aborted
+          }
+        });
       },
     });
   }

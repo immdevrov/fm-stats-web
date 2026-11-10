@@ -6,6 +6,7 @@ import { useRoster, useSnapshots } from "../contexts/SnapshotContext";
 import { useMyTeam } from "../contexts/MyTeamContext";
 import { useBriefs } from "../contexts/BriefContext";
 import { isTransferDone } from "../utils/squad";
+import { latestNote, noteSummary } from "../utils/player-notes";
 import type { TransferMark } from "../types/annotations";
 import { PlayerStatusControl } from "../components/PlayerStatusControl";
 import { Table, type Column } from "../components/ui/table";
@@ -98,14 +99,14 @@ export function ListsView() {
           price: annotation?.price ?? null,
           wageDemand: annotation?.wageDemand ?? null,
           expires: player?.Expires ?? null,
-          note: annotation?.note ?? "",
+          note: noteSummary(latestNote(annotation?.notes), briefs),
           done: Boolean(
             transferTab && isNewest && myClub && isTransferDone(transferTab, player?.Club, myClub)
           ),
           identity,
         };
       }),
-    [uids, playersByUid, annotations, transferTab, isNewest, myClub]
+    [uids, playersByUid, annotations, briefs, transferTab, isNewest, myClub]
   );
 
   const listsError = loadError ?? playersError;

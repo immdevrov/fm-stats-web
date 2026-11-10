@@ -8,6 +8,8 @@ import {
   type ReactNode,
 } from "react";
 import { db } from "../services/db";
+import { useSnapshots } from "./SnapshotContext";
+import { newestSnapshot } from "../utils/snapshot-order";
 import { useOnTabReturn } from "../hooks/useOnTabReturn";
 import { generateId } from "../utils/ids";
 import type { Player } from "../types/types";
@@ -35,9 +37,16 @@ interface PlayerNotesContextValue {
   deleteList: (id: string) => Promise<void>;
   setPricing: (
     uid: number,
-    values: { price?: number; wageDemand?: number; note?: string },
+    values: { price?: number; wageDemand?: number },
     player?: PlayerIdentity
   ) => Promise<void>;
+  addNote: (
+    uid: number,
+    note: { text: string; briefId?: string; briefName?: string },
+    player?: PlayerIdentity
+  ) => Promise<void>;
+  updateNote: (uid: number, noteId: string, text: string) => Promise<void>;
+  deleteNote: (uid: number, noteId: string) => Promise<void>;
 }
 
 const PlayerNotesContext = createContext<PlayerNotesContextValue | null>(null);
@@ -197,10 +206,41 @@ export function PlayerNotesProvider({ children }: { children: ReactNode }) {
   const setPricing = useCallback(
     async (
       uid: number,
-      values: { price?: number; wageDemand?: number; note?: string },
+      values: { price?: number; wageDemand?: number },
       player?: PlayerIdentity
     ) => {
       await db.setAnnotation(uid, values, player);
+      await refreshAnnotations();
+    },
+    [refreshAnnotations]
+  );
+
+  const { snapshots } = useSnapshots();
+  const noteDate = newestSnapshot(snapshots)?.date ?? null;
+
+  const addNote = useCallback(
+    async (
+      uid: number,
+      note: { text: string; briefId?: string; briefName?: string },
+      player?: PlayerIdentity
+    ) => {
+      await db.addNote(uid, { ...note, date: noteDate }, player);
+      await refreshAnnotations();
+    },
+    [noteDate, refreshAnnotations]
+  );
+
+  const updateNote = useCallback(
+    async (uid: number, noteId: string, text: string) => {
+      await db.updateNote(uid, noteId, text);
+      await refreshAnnotations();
+    },
+    [refreshAnnotations]
+  );
+
+  const deleteNote = useCallback(
+    async (uid: number, noteId: string) => {
+      await db.deleteNote(uid, noteId);
       await refreshAnnotations();
     },
     [refreshAnnotations]
@@ -227,6 +267,9 @@ export function PlayerNotesProvider({ children }: { children: ReactNode }) {
         renameList,
         deleteList: removeList,
         setPricing,
+        addNote,
+        updateNote,
+        deleteNote,
       }}
     >
       {children}
