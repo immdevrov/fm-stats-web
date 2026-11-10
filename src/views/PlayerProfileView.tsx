@@ -43,6 +43,7 @@ import { PercentileBar } from "../components/PercentileBar";
 import { SimilarPlayers } from "../components/SimilarPlayers";
 import { PlayerStatusControl } from "../components/PlayerStatusControl";
 import { PricingFields } from "../components/PricingFields";
+import { PlayerNotesLog } from "../components/PlayerNotesLog";
 import { PlayerHistory } from "../components/PlayerHistory";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 
@@ -173,6 +174,7 @@ export function PlayerProfileView() {
                 Not in the selected date's data.
               </Text>
             </Box>
+            <NotesSection key={uid} uid={uid} />
             <PlayerHistory uid={uid} roleKey={null} />
           </VStack>
         </Container>
@@ -210,6 +212,7 @@ function PlayerInfoColumn({
     <VStack w="440px" flexShrink={0} align="stretch" gap={2}>
       <PlayerHeader player={player} onPlayerUpdate={onPlayerUpdate} />
       <PricingSection key={player.UID} player={player} />
+      <NotesSection key={`notes-${player.UID}`} uid={player.UID} player={{ Name: player.Name, Club: player.Club }} />
       <PlayingTimeSection player={player} />
 
       {isGoalkeeper ? (
@@ -228,6 +231,17 @@ function PricingSection({ player }: { player: Player }) {
         Pricing
       </Heading>
       <PricingFields uid={player.UID} player={{ Name: player.Name, Club: player.Club }} />
+    </Box>
+  );
+}
+
+function NotesSection({ uid, player }: { uid: number; player?: { Name: string; Club: string } }) {
+  return (
+    <Box borderWidth="1px" borderRadius="md" p={2}>
+      <Heading size="sm" mb={2}>
+        Notes
+      </Heading>
+      <PlayerNotesLog uid={uid} player={player} />
     </Box>
   );
 }

@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
-import { Badge, Box, Button, Container, HStack, Heading, Spinner, Text, VStack } from "@chakra-ui/react";
+import { Badge, Box, Button, chakra, Container, HStack, Heading, Spinner, Text, VStack } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
 import { usePlayerNotes, type PlayerIdentity } from "../contexts/PlayerNotesContext";
 import { useRoster, useSnapshots } from "../contexts/SnapshotContext";
 import { useMyTeam } from "../contexts/MyTeamContext";
 import { useBriefs } from "../contexts/BriefContext";
+import { useNotesDrawer } from "../contexts/NotesDrawerContext";
 import { isTransferDone } from "../utils/squad";
 import { latestNote, noteSummary } from "../utils/player-notes";
 import type { TransferMark } from "../types/annotations";
@@ -51,6 +52,7 @@ export function ListsView() {
   } = usePlayerNotes();
   const { briefs, isLoaded: briefsLoaded, unlinkList } = useBriefs();
   const { myClub } = useMyTeam();
+  const notesDrawer = useNotesDrawer();
   const { isNewest } = useSnapshots();
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const { players: rosterPlayers, error: playersError } = useRoster();
@@ -166,7 +168,26 @@ export function ListsView() {
       render: (v) => (v === null ? "–" : formatWage(v as number)),
     },
     { key: "expires", header: "Expires", render: (v) => (v ? displayDate(v as Date) : "–") },
-    { key: "note", header: "Note", render: (v) => (v as string) || "" },
+    {
+      key: "note",
+      header: "Note",
+      width: "260px",
+      render: (v, row) => (
+        <chakra.button
+          aria-label={`Notes for ${row.name}`}
+          display="block"
+          maxW="260px"
+          truncate
+          textAlign="start"
+          cursor="pointer"
+          color={v ? undefined : "fg.muted"}
+          title={(v as string) || undefined}
+          onClick={() => notesDrawer.open({ uid: row.uid, name: row.name, identity: row.identity })}
+        >
+          {(v as string) || "Add note…"}
+        </chakra.button>
+      ),
+    },
   ];
 
   if (transferTab) {
