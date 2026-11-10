@@ -37,7 +37,9 @@ interface PlayerNote {
 
 - **Array order is write order**; the log is shown newest first, and "latest"
   means the last entry in the array (of those matching, when filtered by
-  brief). Editing keeps a note's position.
+  brief). Editing keeps a note's position. Order follows writing, not `date`,
+  on purpose: deleting a snapshot or editing its date can make the dates
+  disagree with the order, and that is fine.
 - **`date`** is the newest snapshot's game date (`newestSnapshot()`, ISO
   `YYYY-MM-DD`) at the moment the note is added, `null` when that snapshot is
   undated or there is none. Never the machine clock. Editing never changes it.
@@ -55,18 +57,40 @@ each refreshing `lastKnownName`/`lastKnownClub` like the existing writers:
 - `updateNote(uid, noteId, text)`;
 - `deleteNote(uid, noteId)`.
 
+`updateNote` and `deleteNote` on a note id that no longer exists are silent
+no-ops.
+
+`setAnnotation` becomes a single read-modify-write transaction too, so a price
+or list write landing at the same moment as a note write cannot overwrite the
+note with a stale copy.
+
 `PlayerNotesContext` exposes `addNote`, `updateNote`, `deleteNote` (each
 refreshing annotations afterwards). `setPricing` loses its `note` field;
 `PricingFields` loses the Note input.
 
 ### Old notes and verdicts are dropped
 
-Roman chose not to migrate them. Database version 7: the upgrade deletes the
-`note` field from every `playerAnnotations` record and the `verdict` field from
-every pick inside the `archetypes` settings value. No other change; no new
-store. `BriefPick` loses `verdict`, `_coercePicks` stops reading it,
-`setVerdict` goes from `brief-picks.ts` and `BriefContext`, `BriefRow` loses
-`verdict`.
+Roman chose not to migrate them.
+
+- **Annotation `note`**: database version 7. The upgrade walks
+  `playerAnnotations` with a cursor and, for each record that has a `note`,
+  deletes the field and `cursor.update`s it. It runs only when
+  `oldVersion >= 4 && oldVersion < 7` (below 4 the store was just created). It
+  awaits nothing but IDB requests (the versionchange transaction auto-commits
+  otherwise) and joins the existing upgrade chain: after
+  `migrateToSnapshots` when there is a `players` store, on its own otherwise,
+  with one `.catch` that aborts the transaction either way. Needed because
+  every annotation writer spreads the existing record and would carry `note`
+  forever.
+- **Pick `verdict`**: no upgrade step. `_coercePicks` stops reading it, and
+  `BriefProvider` saves the coerced briefs as soon as it loads, so the field is
+  gone from storage on the first visit.
+
+No new store. `BriefPick` loses `verdict`, `setVerdict` goes from
+`brief-picks.ts` and `BriefContext`, `BriefRow` swaps `verdict` for
+`note: PlayerNote | null` (the latest note tagged with this brief, computed in
+`buildBriefRows` from the annotations it already receives) and
+`noteCount: number` (all his notes).
 
 ### Lifecycle
 
@@ -93,18 +117,24 @@ store. `BriefPick` loses `verdict`, `_coercePicks` stops reading it,
 
 One component, used inline on the profile and inside the drawer.
 
-Props: `uid`, `player` (identity for `lastKnown*`), optional `defaultBriefId`.
+Props: `uid`, optional `player` (identity for `lastKnown*`; omitted for a
+player absent from the active snapshot, so nothing like *Unknown player* is
+ever written into `lastKnownName`), optional `defaultBriefId`.
 
-- **Add box** at the top: a multi-line text field, a brief select (*No brief*
-  plus every brief by name; preselected to `defaultBriefId` when given) and an
-  *Add note* button, disabled while the text is blank. Adding clears the text
-  and keeps the selected brief.
+- **Add box** at the top: a textarea labelled *New note*, a brief select (*No
+  brief* plus every brief by name; preselected to `defaultBriefId` when given)
+  and an *Add note* button, disabled while the text is blank. Adding clears the
+  text and keeps the selected brief.
 - **Entries**, newest first. Each shows its date (`isoToDisplay`, or
   *Undated*), the brief tag when tagged — a link to `/briefs/:briefId` if the
   brief exists, plain muted text otherwise — and the text (line breaks kept).
-- **Edit** (pencil) turns the text into a text field with *Save* / *Cancel*.
-  Saving blank text is the same as *Cancel*. The date and tag never change.
-- **Delete** (trash) asks with the existing `confirm-dialog`, then removes.
+  Tags render only once briefs have loaded, so a live brief never flashes as a
+  deleted one.
+- **Edit** (pencil) turns the text into a textarea labelled *Edit note* with
+  *Save* / *Cancel*. Saving blank text is the same as *Cancel*. The date and
+  tag never change.
+- **Delete** (trash) asks with the existing `ConfirmDialog` (one option,
+  *Delete note*), then removes.
 - Empty log: *No notes yet.*
 
 Notes work for a player absent from the active snapshot as well: they live on
@@ -121,16 +151,20 @@ in the selected date's data) shows the Notes box too, above the history.
 ### Brief page
 
 The line under the player's name (where the verdict was) shows his **latest
-note tagged with this brief**.
+note tagged with this brief**, on one line, clipped (`lineClamp={1}`).
 
-- Clicking it edits that note inline (Enter / blur saves, Esc cancels, blank =
-  cancel). With no tagged note, the line reads *Add note…* (visible on row
-  hover or focus, as the verdict placeholder was) and saving adds a note tagged
-  with this brief.
-- Accessible name: `Brief note for <name>`.
-- A small notes icon button after the name row, shown only when the player has
-  any note **other than** the one on the line, opens the drawer with this brief
-  preselected. Tooltip: `N other notes`. Accessible name: `Notes for <name>`.
+- Clicking it edits that note inline in an auto-growing textarea: Enter or
+  blur saves, Shift+Enter adds a line break, Esc cancels, blank = cancel. A
+  textarea rather than an input, so a multi-line note is never flattened by
+  being opened and closed. With no tagged note, the line reads *Add note…*
+  (visible on row hover or focus, as the verdict placeholder was) and saving
+  adds a note tagged with this brief.
+- Accessible name of both the line and its editor: `Brief note for <name>`.
+- A small notes icon button in the name row, shown whenever the player has at
+  least one note, opens the drawer with this brief preselected — the way to
+  add a second, later-dated note for this brief, see dates, or delete.
+  Tooltip: *Notes* when the line already shows his only note, otherwise
+  *1 other note* / *N other notes*. Accessible name: `Notes for <name>`.
 
 ### `/lists`
 
@@ -147,9 +181,13 @@ note of any kind, as they used the plain note before.
 ## The drawer — `NotesDrawerProvider`
 
 One Chakra `Drawer` (right side) for the whole app. `NotesDrawerProvider` sits
-in `Layout` inside `BriefProvider` and exposes `useNotesDrawer().open(uid,
-player, briefId?)`. The drawer's title is the player's name; its body is
-`PlayerNotesLog`. Closing it is the only way out; it does not navigate.
+in `Layout` inside `BriefProvider` and exposes
+`useNotesDrawer().open({ uid, name, identity?, briefId? })`. `name` is the
+title (whatever the caller displays for the row); `identity` goes to
+`PlayerNotesLog` as `player`. The body is `PlayerNotesLog`, keyed by every
+`open` call so its add box starts empty with the right brief each time. The
+drawer closes on any route change, so following a brief tag inside it lands on
+the brief page without the drawer left open over it.
 
 ## Not included
 
@@ -176,5 +214,13 @@ committed. `seedAnnotation` loses its `note` field.
 
 `CLAUDE.md`: a *Player notes* section (storage, date rule, drawer, where notes
 show); *Database version 6* → 7 in Historic Snapshots; the Briefs section's
-*Picks* line loses `verdict` and the brief page's two-ways-to-remove paragraph
-loses "prune the pick" wording about verdicts.
+*Picks* line loses `verdict`; the who-beats-whom line's "the verdict editor"
+becomes "the brief note editor".
+
+## Known and left alone
+
+- A note added on the profile while a historic snapshot is active refreshes
+  `lastKnownName`/`lastKnownClub` from that snapshot, as price and list writes
+  already do.
+- No `blocked` handler on `openDB`: a second tab still on version 6 holds the
+  upgrade until it is closed, as with every earlier version bump.
