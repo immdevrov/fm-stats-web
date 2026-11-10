@@ -65,12 +65,11 @@ export function printTable<T extends Record<string, any>>(arr: T[]) {
 }
 
 export function formatWage(number: number) {
-  return new Intl.NumberFormat("de-DE", {
-    style: "currency",
-    currency: "EUR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(number);
+  const twoDecimals = (value: number) => String(Math.round(value * 100) / 100);
+  const abs = Math.abs(number);
+  if (abs >= 999_995) return `${twoDecimals(number / 1_000_000)}M €`;
+  if (abs >= 999.995) return `${twoDecimals(number / 1_000)}K €`;
+  return `${Math.round(number)} €`;
 }
 
 export function getEffectivePosition(player: { Position: PlayerPositions; CustomPosition?: PlayerPositions }): PlayerPositions {

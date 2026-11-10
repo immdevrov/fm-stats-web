@@ -28,6 +28,7 @@ import {
   INVERTED_STATS,
 } from "../roles";
 import { formatWage, displayDate } from "../utils/utils";
+import { MoneyInput } from "../components/MoneyInput";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { useSnapshots } from "../contexts/SnapshotContext";
 import { resolveHorizon } from "../utils/planner";
@@ -193,23 +194,40 @@ function ColumnFilterPopover({
       <ChakraPopover.Positioner>
         <ChakraPopover.Content w="auto" p={2}>
           <ChakraPopover.Body p={0}>
-            <VStack gap={1.5} align="stretch">
-              <Input
-                size="xs"
-                placeholder="min"
-                value={minVal}
-                onChange={(e) => onChange(colKey, "min", e.target.value)}
-                type="number"
-                w="100px"
-              />
-              <Input
-                size="xs"
-                placeholder="max"
-                value={maxVal}
-                onChange={(e) => onChange(colKey, "max", e.target.value)}
-                type="number"
-                w="100px"
-              />
+            <VStack gap={1.5} align="stretch" w="100px">
+              {colKey === "wage" ? (
+                <>
+                  <MoneyInput
+                    size="xs"
+                    placeholder="min"
+                    value={minVal === "" ? undefined : Number(minVal)}
+                    onChange={(amount) => onChange(colKey, "min", amount === undefined ? "" : String(amount))}
+                  />
+                  <MoneyInput
+                    size="xs"
+                    placeholder="max"
+                    value={maxVal === "" ? undefined : Number(maxVal)}
+                    onChange={(amount) => onChange(colKey, "max", amount === undefined ? "" : String(amount))}
+                  />
+                </>
+              ) : (
+                <>
+                  <Input
+                    size="xs"
+                    placeholder="min"
+                    value={minVal}
+                    onChange={(e) => onChange(colKey, "min", e.target.value)}
+                    type="number"
+                  />
+                  <Input
+                    size="xs"
+                    placeholder="max"
+                    value={maxVal}
+                    onChange={(e) => onChange(colKey, "max", e.target.value)}
+                    type="number"
+                  />
+                </>
+              )}
             </VStack>
           </ChakraPopover.Body>
         </ChakraPopover.Content>

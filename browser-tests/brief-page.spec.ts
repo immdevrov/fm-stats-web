@@ -263,9 +263,11 @@ test('a price and wage demand set on the profile show in the brief table', async
   await page.goto('/players/2');
   const field = (label: string) =>
     page.getByText(label, { exact: true }).locator('..').getByRole('textbox');
-  await field('Price').fill('12000000');
-  await field('Wage demand').fill('45000');
+  await field('Price').fill('12m');
+  await expect(page.getByText('= 12.000.000 €')).toBeVisible();
+  await field('Wage demand').fill('45,5k');
   await field('Wage demand').blur();
+  await expect(field('Price')).toHaveValue('12M €');
 
   await page.getByRole('link', { name: 'Briefs', exact: true }).click();
   await page.getByRole('link', { name: 'Dribbler', exact: true }).click();
@@ -277,9 +279,15 @@ test('a price and wage demand set on the profile show in the brief table', async
   const cells = (name: string) =>
     page.locator('tbody').getByRole('row').filter({ hasText: name }).getByRole('cell');
 
-  await expect(cells('Bea Striker').nth(priceColumn)).toHaveText('12.000.000 €');
-  await expect(cells('Bea Striker').nth(demandColumn)).toHaveText('45.000 €');
+  await expect(cells('Bea Striker').nth(priceColumn)).toHaveText('12M €');
+  await expect(cells('Bea Striker').nth(demandColumn)).toHaveText('45.5K €');
   await expect(cells('Dee Striker').nth(priceColumn)).toHaveText('');
-  await expect(cells('Gone Striker').nth(priceColumn)).toHaveText('3.000.000 €');
-  await expect(cells('Gone Striker').nth(demandColumn)).toHaveText('20.000 €');
+  await expect(cells('Gone Striker').nth(priceColumn)).toHaveText('3M €');
+  await expect(cells('Gone Striker').nth(demandColumn)).toHaveText('20K €');
+
+  const order = page.locator('tbody').getByRole('row').filter({ hasText: /Striker/ });
+  await headers.filter({ hasText: /^Price/ }).click();
+  await expect(order).toHaveText([/Bea Striker/, /Gone Striker/, /Dee Striker/]);
+  await headers.filter({ hasText: /^Price/ }).click();
+  await expect(order).toHaveText([/Gone Striker/, /Bea Striker/, /Dee Striker/]);
 });

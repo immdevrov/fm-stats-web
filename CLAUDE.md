@@ -53,6 +53,7 @@ GK (Goalkeeper), D (Defender), WB (Wing Back), DM (Defensive Midfielder), M (Mid
 - Private methods: underscore prefix in service classes
 - Functional components only (no class components)
 - **No generic code comments** - only add comments in complex/hard-to-understand places. User will ask for comments if needed.
+- **Money**: stored, filtered and sorted as raw numbers only. `formatWage` is the short display form (`1.5M €`, `45K €`) used everywhere; money is typed through `MoneyInput`, which parses shorthand (`10m`, `45,5k`) with `parseMoney` in `src/utils/money.ts` and previews the exact amount. The scouting wage filter still stores a plain digit string.
 
 ## Component Patterns
 
