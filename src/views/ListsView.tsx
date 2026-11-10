@@ -10,6 +10,7 @@ import { isTransferDone } from "../utils/squad";
 import { latestNote, noteSummary } from "../utils/player-notes";
 import type { TransferMark } from "../types/annotations";
 import { PlayerStatusControl } from "../components/PlayerStatusControl";
+import { CopyNameButton } from "../components/CopyNameButton";
 import { Table, type Column } from "../components/ui/table";
 import { formatWage, displayDate, formatPositions, getEffectivePosition } from "../utils/utils";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
@@ -144,16 +145,20 @@ export function ListsView() {
         row.missing ? (
           <HStack gap={2}>
             <Text>{value as string}</Text>
+            <CopyNameButton name={row.name} />
             <Text fontSize="2xs" color="fg.muted" borderWidth="1px" borderStyle="dashed" px={1}>
               NOT IN DATA
             </Text>
           </HStack>
         ) : (
-          <Link to={`/players/${row.uid}`}>
-            <Text color="glaucous.400" _hover={{ textDecoration: "underline" }}>
-              {value as string}
-            </Text>
-          </Link>
+          <HStack gap={1}>
+            <Link to={`/players/${row.uid}`}>
+              <Text color="glaucous.400" _hover={{ textDecoration: "underline" }}>
+                {value as string}
+              </Text>
+            </Link>
+            <CopyNameButton name={row.name} />
+          </HStack>
         ),
     },
     { key: "age", header: "Age", render: (v) => (v === null ? "–" : String(v)) },

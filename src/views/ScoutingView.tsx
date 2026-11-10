@@ -36,6 +36,7 @@ import { loadWorkingState, saveWorkingState } from "../utils/scouting-filters";
 import type { Brief, ColumnFilters, ContractHorizon, ScoutingFilters, Side } from "../types/briefs";
 import { BriefPicker } from "../components/BriefPicker";
 import { ShortlistPin } from "../components/ShortlistPin";
+import { CopyNameButton } from "../components/CopyNameButton";
 import { linkedListOf } from "../utils/briefs";
 import { useBriefs } from "../contexts/BriefContext";
 
@@ -548,6 +549,7 @@ export function ScoutingView() {
                   {row.name}
                 </Text>
               </Link>
+              <CopyNameButton name={row.name} />
               <Button
                 size="xs"
                 variant={inCompare ? "solid" : "outline"}

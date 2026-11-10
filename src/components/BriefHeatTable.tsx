@@ -16,6 +16,7 @@ import { useBriefs } from "../contexts/BriefContext";
 import { Link } from "react-router-dom";
 import { usePlayerNotes } from "../contexts/PlayerNotesContext";
 import { PlayerStatusControl } from "./PlayerStatusControl";
+import { CopyNameButton } from "./CopyNameButton";
 import { groupTooltip } from "./GroupTooltip";
 import { BriefNoteLine, GradeControl, NotesButton, RemoveMenu } from "./BriefPickControls";
 import { Table, sortRows, type Column, type SortDirection, type TableRowProps } from "./ui/table";
@@ -228,6 +229,7 @@ export function BriefHeatTable({
                   </Text>
                 </Link>
               )}
+              <CopyNameButton name={row.name} />
               {row.tags.map((tag) => (
                 <Badge key={tag} size="sm" variant="outline">
                   {tag}
