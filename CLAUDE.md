@@ -162,11 +162,11 @@ A per-player log of dated, editable notes, each optionally tagged with a brief. 
 
 - **Storage**: `notes?: PlayerNote[]` on the `playerAnnotations` record (`{ id, text, date, briefId?, briefName? }`), written only through `db.addNote` / `updateNote` / `deleteNote`, each one transaction. Array order is write order; "latest" is the last entry, and the log shows newest first. It replaced the old single `note` and the brief pick's `verdict`; both were dropped, not migrated.
 - **Date** is the newest snapshot's game date when the note is added (`null` if undated), never the machine clock. Editing changes the text only.
-- **A brief tag** keeps `briefName` so a note still reads after its brief is deleted; a live brief always shows its current name, as a link. Tags render only once briefs have loaded. Nothing about a brief (removal from its list, unlinking, deleting it) ever touches notes.
+- **A brief tag** keeps `briefName` so a note still reads after its brief is deleted; a live brief always shows its current name, as a link. In the log, tags render only once briefs have loaded (the one-line summaries fall back to `briefName` until then). Nothing about a brief (removal from its list, unlinking, deleting it) ever touches notes.
 - **Helpers**: `latestNote`, `noteBriefName`, `noteSummary` in `src/utils/player-notes.ts`.
 - **One log component**, `PlayerNotesLog`, inline on the profile (both the normal and the missing-player branch) and inside the app-wide drawer.
 - **The drawer**: `NotesDrawerProvider` (`src/contexts/NotesDrawerContext.tsx`) in `Layout` inside `BriefProvider`; `useNotesDrawer().open({ uid, name, identity?, briefId? })`. It closes on any change of `location.key`, detected during render, not by an effect, so browser Back never reopens it.
-- **Where the latest note shows**: `/lists` Note column (the latest of any kind as `noteSummary`, a button that opens the drawer) and the status badge tooltip. On the brief page, the line under the name is his latest note tagged with *this* brief (click to edit, or add one); the notes icon beside the name opens the drawer with the brief preselected.
+- **Where the latest note shows**: `/lists` Note column (the latest of any kind as `noteSummary`, a button that opens the drawer) and the status badge tooltip. On the brief page, the line under the name is his latest note tagged with *this* brief (click to edit, or add one); the notes icon beside the name, shown once he has any note, opens the drawer with the brief preselected.
 - **Lifecycle**: notes are annotations, so *New save* and *Clear lists* clear them with everything else.
 
 ## Briefs

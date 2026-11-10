@@ -57,14 +57,16 @@ export async function updatePlayerPosition(
   try {
     const db = await getDB();
     const player = await getPlayer(uid);
-    const existing = await db.get('playerAnnotations', uid);
-    await db.put('playerAnnotations', {
+    const tx = db.transaction('playerAnnotations', 'readwrite');
+    const existing = await tx.store.get(uid);
+    await tx.store.put({
       ...existing,
       uid,
       customPosition,
       lastKnownName: player?.Name ?? existing?.lastKnownName,
       lastKnownClub: player?.Club ?? existing?.lastKnownClub,
     });
+    await tx.done;
   } catch (error) {
     throw wrapError('update player position', error);
   }
@@ -73,11 +75,14 @@ export async function updatePlayerPosition(
 export async function clearPlayerCustomPosition(uid: number): Promise<void> {
   try {
     const db = await getDB();
-    const existing = await db.get('playerAnnotations', uid);
-    if (!existing) return;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { customPosition: _removed, ...rest } = existing;
-    await db.put('playerAnnotations', rest);
+    const tx = db.transaction('playerAnnotations', 'readwrite');
+    const existing = await tx.store.get(uid);
+    if (existing) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { customPosition: _removed, ...rest } = existing;
+      await tx.store.put(rest);
+    }
+    await tx.done;
   } catch (error) {
     throw wrapError('clear player custom position', error);
   }
@@ -86,10 +91,9 @@ export async function clearPlayerCustomPosition(uid: number): Promise<void> {
 export async function clearAllCustomPositions(): Promise<void> {
   try {
     const db = await getDB();
-    const annotations = await db.getAll('playerAnnotations');
-    const withCustom = annotations.filter((a) => a.customPosition);
-    if (withCustom.length === 0) return;
     const tx = db.transaction('playerAnnotations', 'readwrite');
+    const annotations = await tx.store.getAll();
+    const withCustom = annotations.filter((a) => a.customPosition);
     await Promise.all(
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       withCustom.map(({ customPosition: _removed, ...rest }) => tx.store.put(rest))

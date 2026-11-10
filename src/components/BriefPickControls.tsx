@@ -70,6 +70,7 @@ export function GradeControl({ brief, list, row }: { brief: Brief; list: PlayerL
 export function BriefNoteLine({ brief, row }: { brief: Brief; row: BriefRow }) {
   const { addNote, updateNote } = usePlayerNotes();
   const [editing, setEditing] = useState(false);
+  const [pending, setPending] = useState<string | null>(null);
   const cancelled = useRef(false);
   const label = `Brief note for ${row.name}`;
   const current = row.note?.text ?? "";
@@ -82,9 +83,12 @@ export function BriefNoteLine({ brief, row }: { brief: Brief; row: BriefRow }) {
       const write = row.note
         ? updateNote(row.uid, row.note.id, text)
         : addNote(row.uid, { text, briefId: brief.id, briefName: brief.name }, row.identity);
-      write.catch(() =>
-        toaster.create({ title: "Note Not Saved", description: "Please try again.", type: "error", duration: 3000 })
-      );
+      setPending(text);
+      write
+        .catch(() =>
+          toaster.create({ title: "Note Not Saved", description: "Please try again.", type: "error", duration: 3000 })
+        )
+        .finally(() => setPending(null));
     };
     return (
       <Textarea
@@ -95,7 +99,7 @@ export function BriefNoteLine({ brief, row }: { brief: Brief; row: BriefRow }) {
         aria-label={label}
         defaultValue={current}
         onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
+          if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
             e.preventDefault();
             cancelled.current = true;
             finish(true, e.currentTarget.value);
@@ -119,7 +123,8 @@ export function BriefNoteLine({ brief, row }: { brief: Brief; row: BriefRow }) {
       fontSize="xs"
       color="fg.muted"
       lineClamp={1}
-      opacity={row.note ? 1 : 0}
+      opacity={row.note || pending ? 1 : 0}
+      disabled={pending !== null}
       _focusVisible={{ opacity: 1 }}
       _groupHover={{ opacity: 1 }}
       onClick={() => {
@@ -127,7 +132,7 @@ export function BriefNoteLine({ brief, row }: { brief: Brief; row: BriefRow }) {
         setEditing(true);
       }}
     >
-      {row.note ? row.note.text : "Add note…"}
+      {pending ?? row.note?.text ?? "Add note…"}
     </chakra.button>
   );
 }
